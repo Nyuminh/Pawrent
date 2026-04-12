@@ -138,20 +138,22 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`
-  ╔═══════════════════════════════════════════╗
-  ║                                           ║
-  ║   🐾 PAWRENT API Server                  ║
-  ║   Mode: ${process.env.NODE_ENV || 'development'}                     ║
-  ║   Port: ${PORT}                              ║
-  ║   URL:  http://localhost:${PORT}              ║
-  ║                                           ║
-  ║   "An toàn cho Boss – An tâm cho Sen"     ║
-  ║                                           ║
-  ╚═══════════════════════════════════════════╝
-  `);
-});
+if (process.env.NODE_ENV !== 'production') {
+  const server = app.listen(PORT, () => {
+    console.log(`
+    ╔═══════════════════════════════════════════╗
+    ║                                           ║
+    ║   🐾 PAWRENT API Server                  ║
+    ║   Mode: ${process.env.NODE_ENV || 'development'}                     ║
+    ║   Port: ${PORT}                              ║
+    ║   URL:  http://localhost:${PORT}              ║
+    ║                                           ║
+    ║   "An toàn cho Boss – An tâm cho Sen"     ║
+    ║                                           ║
+    ╚═══════════════════════════════════════════╝
+    `);
+  });
+}
 
 // Graceful shutdown
 process.on('unhandledRejection', (err) => {
