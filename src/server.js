@@ -99,7 +99,7 @@ app.get(['/api-docs', '/api-docs/'], (req, res) => {
   <head>
     <meta charset="UTF-8">
     <title>PAWRENT API Docs</title>
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.css" />
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
     <style>
       html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
       *, *:before, *:after { box-sizing: inherit; }
@@ -108,12 +108,12 @@ app.get(['/api-docs', '/api-docs/'], (req, res) => {
   </head>
   <body>
     <div id="swagger-ui"></div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js" charset="UTF-8"> </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js" charset="UTF-8"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
     <script>
     window.onload = function() {
       window.ui = SwaggerUIBundle({
-        url: "/api-docs.json",
+        spec: ${JSON.stringify(swaggerSpecs)},
         dom_id: '#swagger-ui',
         deepLinking: true,
         presets: [
