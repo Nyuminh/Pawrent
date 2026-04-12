@@ -85,11 +85,15 @@ app.use('/api/v1/subscription', require('./routes/subscriptionRoutes'));
 app.use('/api/v1/admin', require('./routes/adminRoutes'));
 // Swagger UI - Custom Vercel safe implementation
 app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpecs);
 });
 
 app.get(['/api-docs', '/api-docs/'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.send(`<!DOCTYPE html>
 <html lang="en">
   <head>
