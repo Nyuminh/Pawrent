@@ -55,6 +55,5 @@ const ChatHistorySchema = new mongoose.Schema(
 
 // Indexes
 ChatHistorySchema.index({ user: 1, createdAt: -1 });
-ChatHistorySchema.index({ sessionId: 1 });
 
 module.exports = mongoose.model('ChatHistory', ChatHistorySchema);
