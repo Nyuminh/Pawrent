@@ -14,21 +14,9 @@ const options = {
     },
     servers: [
       {
-        url: '{protocol}://{host}:{port}/api/v1',
-        description: 'Server hiện tại',
-        variables: {
-          protocol: {
-            enum: ['http', 'https'],
-            default: 'http'
-          },
-          host: {
-            default: 'localhost'
-          },
-          port: {
-            default: '5000'
-          }
-        }
-      },
+        url: '/api/v1',
+        description: 'Current Environment API'
+      }
     ],
     components: {
       securitySchemes: {
