@@ -84,8 +84,16 @@ app.use('/api/v1/activity', require('./routes/activityRoutes'));
 app.use('/api/v1/subscription', require('./routes/subscriptionRoutes'));
 app.use('/api/v1/admin', require('./routes/adminRoutes'));
 
-// Swagger UI Route
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, { explorer: true }));
+// Swagger UI Route with CDN for Vercel support
+const swaggerUiOptions = {
+  explorer: true,
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css',
+  customJs: [
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js'
+  ]
+};
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, swaggerUiOptions));
 
 // ==================== API INFO ====================
 
