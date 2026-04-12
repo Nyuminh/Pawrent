@@ -196,12 +196,13 @@ if (process.env.NODE_ENV !== 'production') {
 // Graceful shutdown
 process.on('unhandledRejection', (err) => {
   console.error(`❌ Unhandled Rejection: ${err.message}`);
-  server.close(() => process.exit(1));
+  // Avoid crashing if server is not defined (e.g. on Vercel)
+  process.exit(1);
 });
 
 process.on('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down...');
-  server.close(() => process.exit(0));
+  process.exit(0);
 });
 
 module.exports = app;
