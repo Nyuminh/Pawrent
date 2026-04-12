@@ -1,0 +1,78 @@
+tags:
+  - name: Auth
+    description: Xác thực và tài khoản
+paths:
+  /auth/refresh-token:
+    post:
+      summary: Làm mới token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        200:
+          description: Cấp token mới thành công
+  /auth/logout:
+    post:
+      summary: Đăng xuất
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Đăng xuất thành công
+  /auth/me:
+    get:
+      summary: Lấy thông tin cá nhân
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thông tin user
+  /auth/profile:
+    put:
+      summary: Cập nhật thông tin cá nhân
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        200:
+          description: Cập nhật thành công
+  /auth/change-password:
+    put:
+      summary: Đổi mật khẩu
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        200:
+          description: Đổi mật khẩu thành công

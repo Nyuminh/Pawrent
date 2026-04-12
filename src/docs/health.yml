@@ -1,0 +1,85 @@
+tags:
+  - name: Health Records & Reminders
+    description: Hồ sơ y tế và Nhắc nhở chăm sóc
+paths:
+  /health-records:
+    post:
+      summary: Tạo hồ sơ sức khỏe
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pet:
+                  type: string
+                recordType:
+                  type: string
+                title:
+                  type: string
+      responses:
+        201:
+          description: Thành công
+  /health-records/pet/{petId}:
+    get:
+      summary: Xem sổ sức khỏe của thú cưng
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: petId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+  /reminders:
+    get:
+      summary: Danh sách nhắc nhở của tôi
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công
+    post:
+      summary: Tạo nhắc nhở mới
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pet:
+                  type: string
+                type:
+                  type: string
+                title:
+                  type: string
+                scheduledDate:
+                  type: string
+                  format: date-time
+                scheduledTime:
+                  type: string
+      responses:
+        201:
+          description: Thành công
+  /reminders/upcoming:
+    get:
+      summary: Lịch nhắc nhở 7 ngày tới
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công

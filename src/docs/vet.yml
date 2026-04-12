@@ -1,0 +1,88 @@
+tags:
+  - name: Vets & Appointments
+    description: Bác sĩ thú y và Đặt lịch khám
+paths:
+  /vets:
+    get:
+      summary: Danh sách bác sĩ thú y
+      tags: [Vets & Appointments]
+      responses:
+        200:
+          description: Thành công
+  /vets/register:
+    post:
+      summary: Đăng ký hồ sơ bác sĩ
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                licenseNumber:
+                  type: string
+                specializations:
+                  type: array
+                  items:
+                    type: string
+                yearsOfExperience:
+                  type: number
+                clinic:
+                  type: object
+      responses:
+        201:
+          description: Đăng ký thành công
+  /vets/{id}:
+    get:
+      summary: Chi tiết chuyên gia/bác sĩ
+      tags: [Vets & Appointments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+  /appointments:
+    get:
+      summary: Lịch hẹn của tôi
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công
+    post:
+      summary: Đặt lịch khám
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pet:
+                  type: string
+                vet:
+                  type: string
+                appointmentType:
+                  type: string
+                  enum: [in_person, online]
+                date:
+                  type: string
+                  format: date-time
+                timeSlot:
+                  type: object
+                reason:
+                  type: string
+      responses:
+        201:
+          description: Đặt lịch thành công

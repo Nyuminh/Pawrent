@@ -1,0 +1,86 @@
+tags:
+  - name: Hotels & Bookings
+    description: Khách sạn thú cưng và Dịch vụ đặt phòng
+  - name: AI Chatbot & Activity
+    description: AI Tư vấn sức khỏe tự động
+paths:
+  /hotels:
+    get:
+      summary: Danh sách khách sạn thú cưng
+      tags: [Hotels & Bookings]
+      responses:
+        200:
+          description: Thành công
+    post:
+      summary: Đăng ký khách sạn (dành cho Hotel Owner)
+      tags: [Hotels & Bookings]
+      security:
+        - bearerAuth: []
+      responses:
+        201:
+          description: Đăng ký thành công
+  /hotel-bookings:
+    get:
+      summary: Lịch sử đặt phòng
+      tags: [Hotels & Bookings]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công
+    post:
+      summary: Đặt phòng khách sạn
+      tags: [Hotels & Bookings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pet:
+                  type: string
+                hotel:
+                  type: string
+                roomType:
+                  type: string
+                checkIn:
+                  type: string
+                checkOut:
+                  type: string
+      responses:
+        201:
+          description: Đặt phòng thành công
+          
+  /chat:
+    post:
+      summary: Chat với AI tư vấn (Premium)
+      tags: [AI Chatbot & Activity]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                petId:
+                  type: string
+                sessionId:
+                  type: string
+      responses:
+        200:
+          description: Phản hồi từ AI
+          
+  /subscription/plans:
+    get:
+      summary: Xem các gói cước Subscription (Free / Premium)
+      tags: [AI Chatbot & Activity]
+      responses:
+        200:
+          description: Thông tin các gói
