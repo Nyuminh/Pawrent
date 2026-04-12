@@ -30,9 +30,9 @@ const options = {
     security: [{ bearerAuth: [] }],
   },
   apis: [
-    require('path').join(__dirname, '../docs/*.yml'),
-    require('path').join(__dirname, '../docs/*.js'),
-    require('path').join(__dirname, '../routes/*.js')
+    './src/docs/*.yml',
+    './src/docs/*.js',
+    './src/routes/*.js'
   ],
 };
 
