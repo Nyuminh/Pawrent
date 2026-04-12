@@ -89,7 +89,7 @@ app.get('/api-docs.json', (req, res) => {
   res.send(swaggerSpecs);
 });
 
-app.get('/api-docs', (req, res) => {
+app.get(['/api-docs', '/api-docs/'], (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
@@ -106,6 +106,7 @@ app.get('/api-docs', (req, res) => {
     <body>
       <div id="swagger-ui"></div>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js" crossorigin="anonymous"></script>
       <script>
         window.onload = () => {
           window.ui = SwaggerUIBundle({
@@ -113,8 +114,9 @@ app.get('/api-docs', (req, res) => {
             dom_id: '#swagger-ui',
             presets: [
               SwaggerUIBundle.presets.apis,
-              SwaggerUIBundle.SwaggerUIStandalonePreset
-            ]
+              SwaggerUIStandalonePreset
+            ],
+            layout: "BaseLayout"
           });
         };
       </script>
