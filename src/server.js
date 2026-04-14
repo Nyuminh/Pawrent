@@ -23,10 +23,12 @@ app.use(helmet());
 // CORS
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || '*',
+    origin: function (origin, callback) {
+      callback(null, origin || '*');
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   })
 );
 
