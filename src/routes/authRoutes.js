@@ -25,6 +25,10 @@ const registerValidation = [
     .optional()
     .matches(/^(\+84|0)\d{9,10}$/)
     .withMessage('Số điện thoại không hợp lệ'),
+  body('role')
+    .optional()
+    .isIn(['user', 'vet'])
+    .withMessage('Role không hợp lệ. Chỉ được phép là user hoặc vet'),
 ];
 
 const loginValidation = [
@@ -55,10 +59,21 @@ const loginValidation = [
  *             properties:
  *               fullName:
  *                 type: string
+ *                 example: Nguyễn Văn A
  *               email:
  *                 type: string
+ *                 example: user@example.com
+ *               phone:
+ *                 type: string
+ *                 example: "0901234567"
  *               password:
  *                 type: string
+ *                 example: "123456"
+ *               role:
+ *                 type: string
+ *                 enum: [user, vet]
+ *                 default: user
+ *                 description: "Vai trò người dùng (user: người nuôi thú cưng, vet: bác sĩ)"
  *     responses:
  *       201:
  *         description: User registered successfully
