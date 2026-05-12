@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Vet = require('../models/Vet');
 
 // Helper: Send token response
 const sendTokenResponse = async (user, statusCode, res, message) => {
@@ -29,12 +30,13 @@ const sendTokenResponse = async (user, statusCode, res, message) => {
   });
 };
 
-// @desc    Register user
+// @desc    Register user or vet
 // @route   POST /api/v1/auth/register
 // @access  Public
+// @param   role: 'user' - người dùng thường, 'vet' - bác sĩ thú y
 exports.register = async (req, res, next) => {
   try {
-    const { fullName, email, phone, password, role } = req.body;
+    const { fullName, email, phone, password, role, ...vetData } = req.body;
 
     // --- Role validation ---
     const PUBLIC_ALLOWED_ROLES = ['user', 'vet'];
@@ -77,6 +79,17 @@ exports.register = async (req, res, next) => {
       });
     }
 
+    // For vet registration, check for duplicate license number
+    if (assignedRole === 'vet' && vetData.licenseNumber) {
+      const existingVet = await Vet.findOne({ licenseNumber: vetData.licenseNumber });
+      if (existingVet) {
+        return res.status(409).json({
+          success: false,
+          message: 'Số giấy phép hành nghề này đã được đăng ký bởi người khác.',
+        });
+      }
+    }
+
     // Build subscription defaults based on role
     const subscription =
       assignedRole === 'vet'
@@ -92,8 +105,60 @@ exports.register = async (req, res, next) => {
       subscription,
     });
 
-    await sendTokenResponse(user, 201, res, 'Đăng ký thành công!');
+    // If vet, create vet profile immediately
+    let vetProfile = null;
+    if (assignedRole === 'vet') {
+      vetProfile = await Vet.create({
+        user: user._id,
+        licenseNumber: vetData.licenseNumber,
+        specializations: vetData.specializations,
+        yearsOfExperience: vetData.yearsOfExperience,
+        clinic: vetData.clinic,
+        speciesExpertise: vetData.speciesExpertise,
+        isAvailableOnline: vetData.isAvailableOnline || false,
+        bio: vetData.bio,
+        education: vetData.education,
+        workingHours: vetData.workingHours,
+        consultationFee: vetData.consultationFee,
+        isActive: true,
+      });
+    }
+
+    // Generate token response
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    const userData = user.toObject();
+    delete userData.password;
+    delete userData.refreshToken;
+
+    res.status(201).json({
+      success: true,
+      message: assignedRole === 'vet' 
+        ? 'Đăng ký bác sĩ thú y thành công! Hồ sơ của bạn đang chờ xác minh từ quản trị viên.' 
+        : 'Đăng ký thành công!',
+      data: {
+        user: userData,
+        ...(vetProfile && { vetProfile }),
+        accessToken,
+        refreshToken,
+        tokenType: 'Bearer',
+        expiresIn: process.env.JWT_EXPIRE,
+      },
+    });
   } catch (error) {
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(409).json({
+        success: false,
+        message: `${field === 'licenseNumber' ? 'Số giấy phép hành nghề' : field} này đã tồn tại.`,
+      });
+    }
     next(error);
   }
 };

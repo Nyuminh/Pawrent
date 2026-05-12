@@ -2,6 +2,155 @@ tags:
   - name: Auth
     description: Xác thực và tài khoản
 paths:
+  /auth/register:
+    post:
+      summary: Đăng ký tài khoản
+      description: |
+        Đăng ký tài khoản mới cho người dùng hoặc bác sĩ thú y.
+        
+        **Người dùng thường (role: user):**
+        - Chỉ cần: fullName, email, password
+        
+        **Bác sĩ thú y (role: vet):**
+        - Cung cấp tất cả thông tin chuyên môn cùng lúc (nếu có, bắt buộc: licenseNumber, specializations, yearsOfExperience, clinic.name)
+        - Hồ sơ sẽ chờ admin xác minh
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, email, password]
+              properties:
+                fullName:
+                  type: string
+                  example: Nguyễn Văn A
+                email:
+                  type: string
+                  example: user@example.com
+                phone:
+                  type: string
+                  example: "0901234567"
+                password:
+                  type: string
+                  example: "123456"
+                role:
+                  type: string
+                  enum: [user, vet]
+                  default: user
+                  description: "Vai trò: user (người nuôi thú cưng) hoặc vet (bác sĩ thú y)"
+                licenseNumber:
+                  type: string
+                  description: "Bắt buộc nếu role = vet. Số giấy phép hành nghề"
+                  example: "DV-2024-001234"
+                specializations:
+                  type: array
+                  description: "Bắt buộc nếu role = vet. Danh sách chuyên môn"
+                  items:
+                    type: string
+                  example: ["general", "surgery"]
+                yearsOfExperience:
+                  type: number
+                  description: "Bắt buộc nếu role = vet. Số năm kinh nghiệm"
+                  example: 5
+                clinic:
+                  type: object
+                  description: "Bắt buộc nếu role = vet"
+                  properties:
+                    name:
+                      type: string
+                      example: "Phòng khám thú cưng Hà Nội"
+                    address:
+                      type: object
+                      properties:
+                        street:
+                          type: string
+                        city:
+                          type: string
+                        district:
+                          type: string
+                        ward:
+                          type: string
+                    phone:
+                      type: string
+                speciesExpertise:
+                  type: array
+                  description: "Tùy chọn. Các loài thú cưng chuyên gia"
+                  items:
+                    type: string
+                isAvailableOnline:
+                  type: boolean
+                  description: "Tùy chọn. Có khám tuyến trực tuyến không"
+                  default: false
+                bio:
+                  type: string
+                  description: "Tùy chọn. Tiểu sử/giới thiệu bản thân"
+                consultationFee:
+                  type: object
+                  description: "Tùy chọn. Phí khám chữa"
+                  properties:
+                    inPerson:
+                      type: number
+                    online:
+                      type: number
+            examples:
+              user_registration:
+                summary: "Đăng ký người dùng thường"
+                value:
+                  fullName: "Trần Thị B"
+                  email: "user@example.com"
+                  password: "123456"
+              vet_registration:
+                summary: "Đăng ký bác sĩ thú y"
+                value:
+                  fullName: "Nguyễn Văn A"
+                  email: "vet@example.com"
+                  password: "123456"
+                  phone: "0901234567"
+                  role: "vet"
+                  licenseNumber: "DV-2024-001234"
+                  specializations: ["general", "surgery"]
+                  yearsOfExperience: 5
+                  clinic:
+                    name: "Phòng khám thú cưng Hà Nội"
+                    address:
+                      street: "123 Đường Tây Sơn"
+                      city: "Hà Nội"
+                      district: "Đống Đa"
+                    phone: "0243456789"
+                  speciesExpertise: ["dog", "cat"]
+                  isAvailableOnline: true
+      responses:
+        201:
+          description: Đăng ký thành công
+        400:
+          description: Yêu cầu không hợp lệ
+        409:
+          description: Email hoặc licenseNumber đã tồn tại
+  /auth/login:
+    post:
+      summary: Đăng nhập
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: "123456"
+      responses:
+        200:
+          description: Đăng nhập thành công
+        401:
+          description: Email hoặc mật khẩu không chính xác
   /auth/refresh-token:
     post:
       summary: Làm mới token

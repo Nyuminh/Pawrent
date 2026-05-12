@@ -1,9 +1,6 @@
 const express = require('express');
-const { body } = require('express-validator');
-const validate = require('../middleware/validate');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const {
-  registerVet,
   getVets,
   getVet,
   updateVetProfile,
@@ -22,9 +19,14 @@ router.get('/', optionalAuth, getVets);
 router.get('/:id', optionalAuth, getVet);
 
 // Protected vet routes
-router.post('/register', protect, registerVet);
+// PUT /profile để cập nhật hồ sơ bác sĩ (sau khi đã đăng ký bằng POST /auth/register)
 router.put('/profile', protect, authorize('vet'), updateVetProfile);
 router.get('/recommend/:petId', protect, getRecommendedVets);
+
+module.exports = router;
+
+// ===== APPOINTMENT ROUTES (separate file) =====
+// Exported separately for clarity
 
 module.exports = router;
 

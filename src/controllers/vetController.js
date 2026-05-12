@@ -4,37 +4,6 @@ const Pet = require('../models/Pet');
 
 // ==================== VET PROFILE ====================
 
-// @desc    Register as vet (create vet profile)
-// @route   POST /api/v1/vets/register
-// @access  Private (user with role 'vet')
-exports.registerVet = async (req, res, next) => {
-  try {
-    // Check if already registered
-    const existing = await Vet.findOne({ user: req.user.id });
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: 'Bạn đã có hồ sơ bác sĩ thú y.',
-      });
-    }
-
-    req.body.user = req.user.id;
-    const vet = await Vet.create(req.body);
-
-    // Update user role
-    req.user.role = 'vet';
-    await req.user.save({ validateBeforeSave: false });
-
-    res.status(201).json({
-      success: true,
-      message: 'Đăng ký bác sĩ thú y thành công.',
-      data: vet,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 // @desc    Get all vets (public listing)
 // @route   GET /api/v1/vets
 // @access  Public

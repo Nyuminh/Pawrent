@@ -9,32 +9,6 @@ paths:
       responses:
         200:
           description: Thành công
-  /vets/register:
-    post:
-      summary: Đăng ký hồ sơ bác sĩ
-      tags: [Vets & Appointments]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                licenseNumber:
-                  type: string
-                specializations:
-                  type: array
-                  items:
-                    type: string
-                yearsOfExperience:
-                  type: number
-                clinic:
-                  type: object
-      responses:
-        201:
-          description: Đăng ký thành công
   /vets/{id}:
     get:
       summary: Chi tiết chuyên gia/bác sĩ
@@ -48,6 +22,61 @@ paths:
       responses:
         200:
           description: Thành công
+  /vets/profile:
+    put:
+      summary: Cập nhật hồ sơ bác sĩ thú y
+      description: |
+        Cập nhật thông tin hồ sơ bác sĩ thú y (sau khi đã đăng ký).
+        Chỉ bác sĩ thú y (role: vet) có thể cập nhật hồ sơ của mình.
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                specializations:
+                  type: array
+                  items:
+                    type: string
+                yearsOfExperience:
+                  type: number
+                clinic:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    address:
+                      type: object
+                    phone:
+                      type: string
+                speciesExpertise:
+                  type: array
+                  items:
+                    type: string
+                isAvailableOnline:
+                  type: boolean
+                bio:
+                  type: string
+                consultationFee:
+                  type: object
+                  properties:
+                    inPerson:
+                      type: number
+                    online:
+                      type: number
+      responses:
+        200:
+          description: Cập nhật thành công
+        401:
+          description: Chưa xác thực
+        403:
+          description: Không có quyền (không phải role 'vet')
+        404:
+          description: Không tìm thấy hồ sơ bác sĩ
   /appointments:
     get:
       summary: Lịch hẹn của tôi
