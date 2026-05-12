@@ -10,8 +10,8 @@ const swaggerSpecs = require('./config/swagger');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
-// Connect to database
-connectDB();
+// Connect to database — middleware ensures connection is ready before each request (Vercel serverless)
+
 
 const app = express();
 
@@ -70,6 +70,22 @@ if (process.env.NODE_ENV === 'development') {
 
 // Static files
 app.use('/uploads', express.static('uploads'));
+
+// ==================== DATABASE MIDDLEWARE (Vercel Serverless) ====================
+
+// Ensure DB is connected before handling any API request
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('❌ DB connection failed:', error.message);
+    res.status(503).json({
+      success: false,
+      message: 'Không thể kết nối cơ sở dữ liệu. Vui lòng thử lại sau.',
+    });
+  }
+});
 
 // ==================== ROUTES ====================
 
