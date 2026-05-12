@@ -36,6 +36,38 @@ exports.register = async (req, res, next) => {
   try {
     const { fullName, email, phone, password, role } = req.body;
 
+    // --- Role validation ---
+    const PUBLIC_ALLOWED_ROLES = ['user', 'vet'];
+    const ALL_VALID_ROLES = ['user', 'vet', 'hotel_owner', 'admin'];
+
+    if (role !== undefined && role !== null) {
+      // Must be a non-empty string
+      if (typeof role !== 'string' || role.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Role phải là một chuỗi hợp lệ.',
+        });
+      }
+
+      // Must be a known role
+      if (!ALL_VALID_ROLES.includes(role)) {
+        return res.status(400).json({
+          success: false,
+          message: `Role không hợp lệ. Các role hợp lệ: ${ALL_VALID_ROLES.join(', ')}.`,
+        });
+      }
+
+      // admin & hotel_owner cannot self-register
+      if (!PUBLIC_ALLOWED_ROLES.includes(role)) {
+        return res.status(403).json({
+          success: false,
+          message: `Bạn không có quyền đăng ký với vai trò "${role}". Chỉ admin mới có thể tạo tài khoản này.`,
+        });
+      }
+    }
+
+    const assignedRole = role || 'user';
+
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -45,26 +77,19 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    // Only admin can create admin/vet/hotel_owner accounts
-    const allowedRoles = ['user'];
-    if (role && !allowedRoles.includes(role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền đăng ký với vai trò này.',
-      });
-    }
+    // Build subscription defaults based on role
+    const subscription =
+      assignedRole === 'vet'
+        ? { plan: 'free', isActive: true, maxPets: 0 }
+        : { plan: 'free', isActive: true, maxPets: 1 };
 
     const user = await User.create({
       fullName,
       email,
       phone,
       password,
-      role: role || 'user',
-      subscription: {
-        plan: 'free',
-        isActive: true,
-        maxPets: 1,
-      },
+      role: assignedRole,
+      subscription,
     });
 
     await sendTokenResponse(user, 201, res, 'Đăng ký thành công!');
