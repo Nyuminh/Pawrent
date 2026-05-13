@@ -200,8 +200,39 @@ paths:
               properties:
                 fullName:
                   type: string
+                  description: Họ tên
                 phone:
                   type: string
+                  description: Số điện thoại
+                avatar:
+                  type: string
+                  description: URL ảnh đại diện
+                address:
+                  type: object
+                  description: Địa chỉ
+                  properties:
+                    street:
+                      type: string
+                      description: Đường/số nhà
+                    city:
+                      type: string
+                      description: Thành phố
+                    district:
+                      type: string
+                      description: Quận/Huyện
+                    ward:
+                      type: string
+                      description: Phường/Xã
+                    coordinates:
+                      type: object
+                      description: Tọa độ GPS
+                      properties:
+                        lat:
+                          type: number
+                          description: Vĩ độ
+                        lng:
+                          type: number
+                          description: Kinh độ
       responses:
         200:
           description: Cập nhật thành công

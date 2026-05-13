@@ -68,6 +68,72 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                name:
+                  type: string
+                  description: Tên thú cưng
+                species:
+                  type: string
+                  enum: [dog, cat, bird, hamster, rabbit, fish, other]
+                  description: Loại thú cưng
+                breed:
+                  type: string
+                  description: Giống
+                gender:
+                  type: string
+                  enum: [male, female, unknown]
+                  description: Giới tính
+                dateOfBirth:
+                  type: string
+                  format: date
+                  description: Ngày sinh (YYYY-MM-DD)
+                weight:
+                  type: number
+                  description: Cân nặng (kg)
+                color:
+                  type: string
+                  description: Màu sắc
+                avatar:
+                  type: string
+                  description: URL ảnh đại diện
+                microchipId:
+                  type: string
+                  description: ID vi điểm (microchip)
+                isNeutered:
+                  type: boolean
+                  description: Đã triệt sản hay chưa
+                allergies:
+                  type: array
+                  items:
+                    type: string
+                  description: Danh sách dị ứng
+                specialNotes:
+                  type: string
+                  description: Ghi chú đặc biệt
+                healthStatus:
+                  type: string
+                  enum: [healthy, sick, recovering, chronic]
+                  description: Tình trạng sức khỏe
+                trackingDevice:
+                  type: object
+                  description: Thiết bị định vị
+                  properties:
+                    deviceId:
+                      type: string
+                      description: ID thiết bị
+                    isActive:
+                      type: boolean
+                      description: Có hoạt động hay không
+                    lastLocation:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                        lng:
+                          type: number
+                        updatedAt:
+                          type: string
+                          format: date-time
       responses:
         200:
           description: Thành công

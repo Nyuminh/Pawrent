@@ -8,6 +8,50 @@ paths:
     get:
       summary: Danh sách khách sạn thú cưng
       tags: [Hotels & Bookings]
+      parameters:
+        - name: city
+          in: query
+          description: Tìm kiếm theo thành phố
+          schema:
+            type: string
+        - name: petType
+          in: query
+          description: Loại thú cưng (dog, cat, bird, hamster, rabbit, other)
+          schema:
+            type: string
+        - name: minRating
+          in: query
+          description: Xếp hạng tối thiểu (0-5)
+          schema:
+            type: number
+        - name: minPrice
+          in: query
+          description: Giá tối thiểu (VND/đêm)
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          description: Giá tối đa (VND/đêm)
+          schema:
+            type: number
+        - name: sortBy
+          in: query
+          description: Sắp xếp theo (-rating.average, price, etc)
+          schema:
+            type: string
+            default: '-rating.average'
+        - name: page
+          in: query
+          description: Số trang
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Số lượng khách sạn trên 1 trang
+          schema:
+            type: integer
+            default: 20
       responses:
         200:
           description: Thành công
@@ -16,9 +60,267 @@ paths:
       tags: [Hotels & Bookings]
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - address
+                - phone
+              properties:
+                name:
+                  type: string
+                  description: Tên khách sạn
+                description:
+                  type: string
+                  description: Mô tả khách sạn (tối đa 2000 ký tự)
+                phone:
+                  type: string
+                  description: Số điện thoại liên hệ
+                email:
+                  type: string
+                  description: Email liên hệ
+                address:
+                  type: object
+                  required:
+                    - street
+                    - city
+                  properties:
+                    street:
+                      type: string
+                      description: Đường/số nhà
+                    city:
+                      type: string
+                      description: Thành phố
+                    district:
+                      type: string
+                      description: Quận/Huyện
+                    ward:
+                      type: string
+                      description: Phường/Xã
+                    coordinates:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                          description: Vĩ độ
+                        lng:
+                          type: number
+                          description: Kinh độ
+                acceptedPets:
+                  type: array
+                  items:
+                    type: string
+                    enum: [dog, cat, bird, hamster, rabbit, other]
+                  description: Các loại thú cưng được chấp nhận
+                services:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      price:
+                        type: number
+                      currency:
+                        type: string
+                        default: VND
+                  description: Danh sách dịch vụ cung cấp
+                rooms:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [standard, deluxe, vip, suite]
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      pricePerNight:
+                        type: number
+                      capacity:
+                        type: number
+                        description: Số thú cưng tối đa trên phòng
+                      totalRooms:
+                        type: number
+                      availableRooms:
+                        type: number
+                      amenities:
+                        type: array
+                        items:
+                          type: string
+                  description: Các loại phòng
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      caption:
+                        type: string
+                  description: Hình ảnh khách sạn
+                operatingHours:
+                  type: object
+                  properties:
+                    checkIn:
+                      type: string
+                      description: Giờ check-in (HH:mm)
+                    checkOut:
+                      type: string
+                      description: Giờ check-out (HH:mm)
+                    isOpen24h:
+                      type: boolean
+                policies:
+                  type: object
+                  properties:
+                    cancellationHours:
+                      type: number
+                      default: 24
+                      description: Số giờ trước đó để hủy
+                    requireVaccination:
+                      type: boolean
+                      default: true
+                    maxPetWeight:
+                      type: number
+                      description: Cân nặng tối đa của thú cưng (kg)
+                    additionalNotes:
+                      type: string
       responses:
         201:
           description: Đăng ký thành công
+  /hotels/{id}:
+    put:
+      summary: Cập nhật thông tin khách sạn
+      tags: [Hotels & Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID của khách sạn cần cập nhật
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Tên khách sạn
+                description:
+                  type: string
+                  description: Mô tả khách sạn (tối đa 2000 ký tự)
+                phone:
+                  type: string
+                  description: Số điện thoại liên hệ
+                email:
+                  type: string
+                  description: Email liên hệ
+                address:
+                  type: object
+                  properties:
+                    street:
+                      type: string
+                    city:
+                      type: string
+                    district:
+                      type: string
+                    ward:
+                      type: string
+                    coordinates:
+                      type: object
+                      properties:
+                        lat:
+                          type: number
+                        lng:
+                          type: number
+                acceptedPets:
+                  type: array
+                  items:
+                    type: string
+                    enum: [dog, cat, bird, hamster, rabbit, other]
+                services:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      price:
+                        type: number
+                      currency:
+                        type: string
+                rooms:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [standard, deluxe, vip, suite]
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      pricePerNight:
+                        type: number
+                      capacity:
+                        type: number
+                      totalRooms:
+                        type: number
+                      availableRooms:
+                        type: number
+                      amenities:
+                        type: array
+                        items:
+                          type: string
+                images:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      caption:
+                        type: string
+                operatingHours:
+                  type: object
+                  properties:
+                    checkIn:
+                      type: string
+                    checkOut:
+                      type: string
+                    isOpen24h:
+                      type: boolean
+                policies:
+                  type: object
+                  properties:
+                    cancellationHours:
+                      type: number
+                    requireVaccination:
+                      type: boolean
+                    maxPetWeight:
+                      type: number
+                    additionalNotes:
+                      type: string
+      responses:
+        200:
+          description: Cập nhật khách sạn thành công
   /hotel-bookings:
     get:
       summary: Lịch sử đặt phòng
@@ -39,20 +341,69 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - pet
+                - hotel
+                - roomType
+                - checkIn
+                - checkOut
               properties:
                 pet:
                   type: string
+                  description: ID của thú cưng cần đặt phòng (bắt buộc)
                 hotel:
                   type: string
+                  description: ID của khách sạn (bắt buộc)
                 roomType:
                   type: string
+                  enum: [standard, deluxe, vip, suite]
+                  description: Loại phòng (bắt buộc)
                 checkIn:
                   type: string
+                  format: date
+                  description: Ngày check-in (YYYY-MM-DD, bắt buộc)
                 checkOut:
                   type: string
+                  format: date
+                  description: Ngày check-out (YYYY-MM-DD, bắt buộc)
+                notes:
+                  type: string
+                  description: Ghi chú thêm cho khách sạn
       responses:
         201:
           description: Đặt phòng thành công
+  /hotel-bookings/{id}/status:
+    put:
+      summary: Cập nhật trạng thái booking
+      tags: [Hotels & Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID của booking cần cập nhật
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+                  description: Trạng thái mới của booking (bắt buộc)
+                cancellationReason:
+                  type: string
+                  description: Lý do hủy (bắt buộc nếu status là 'cancelled')
+      responses:
+        200:
+          description: Cập nhật trạng thái thành công
           
   /chat:
     post:
