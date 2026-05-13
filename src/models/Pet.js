@@ -27,8 +27,10 @@ const PetSchema = new mongoose.Schema(
       enum: ['male', 'female', 'unknown'],
       default: 'unknown',
     },
-    dateOfBirth: {
-      type: Date,
+    age: {
+      type: Number,
+      description: 'Tuổi (năm)',
+      min: [0, 'Tuổi phải lớn hơn 0'],
     },
     weight: {
       type: Number,
@@ -54,16 +56,6 @@ const PetSchema = new mongoose.Schema(
       enum: ['healthy', 'sick', 'recovering', 'chronic'],
       default: 'healthy',
     },
-    // Tracking device
-    trackingDevice: {
-      deviceId: String,
-      isActive: { type: Boolean, default: false },
-      lastLocation: {
-        lat: Number,
-        lng: Number,
-        updatedAt: Date,
-      },
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -77,16 +69,8 @@ const PetSchema = new mongoose.Schema(
 );
 
 // Virtual: Age calculation
-PetSchema.virtual('age').get(function () {
-  if (!this.dateOfBirth) return null;
-  const now = new Date();
-  const birth = new Date(this.dateOfBirth);
-  const years = now.getFullYear() - birth.getFullYear();
-  const months = now.getMonth() - birth.getMonth();
-  return {
-    years: months < 0 ? years - 1 : years,
-    months: months < 0 ? 12 + months : months,
-  };
+PetSchema.virtual('ageDisplay').get(function () {
+  return this.age ? `${this.age} tuổi` : 'Chưa xác định';
 });
 
 // Virtual: Health records

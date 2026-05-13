@@ -26,10 +26,6 @@ const PetHotelSchema = new mongoose.Schema(
       city: { type: String, required: true },
       district: String,
       ward: String,
-      coordinates: {
-        lat: Number,
-        lng: Number,
-      },
     },
     phone: {
       type: String,

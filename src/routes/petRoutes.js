@@ -8,8 +8,6 @@ const {
   getPet,
   updatePet,
   deletePet,
-  updateLocation,
-  getLocation,
 } = require('../controllers/petController');
 
 const router = express.Router();
@@ -35,8 +33,5 @@ router.route('/:id')
   .get(getPet)
   .put(updatePet)
   .delete(deletePet);
-
-router.put('/:id/location', updateLocation);
-router.get('/:id/location', getLocation);
 
 module.exports = router;

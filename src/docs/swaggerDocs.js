@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   - name: Pets
- *     description: Quản lý thiết bị định vị và thú cưng
+ *     description: Quản lý thú cưng
  *   - name: Vets & Appointments
  *     description: Hệ thống khám chữa bệnh
  *   - name: Health Records & Reminders
@@ -39,19 +39,6 @@
  *       responses:
  *         200:
  *           description: Chi tiết thú cưng
- *   /pets/{id}/location:
- *     get:
- *       summary: Xem định vị thú cưng (GPS)
- *       tags: [Pets]
- *       parameters:
- *         - in: path
- *           name: id
- *           required: true
- *           schema:
- *             type: string
- *       responses:
- *         200:
- *           description: Vị trí an toàn
  *   /vets:
  *     get:
  *       summary: Xem danh sách bác sĩ thú y

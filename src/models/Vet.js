@@ -60,10 +60,6 @@ const VetSchema = new mongoose.Schema(
         city: String,
         district: String,
         ward: String,
-        coordinates: {
-          lat: Number,
-          lng: Number,
-        },
       },
       phone: String,
     },

@@ -56,24 +56,32 @@ paths:
                   example: 5
                 clinic:
                   type: object
-                  description: "Bắt buộc nếu role = vet"
+                  description: "Bắt buộc nếu role = vet. Thông tin phòng khám"
                   properties:
                     name:
                       type: string
+                      description: "Tên phòng khám (bắt buộc)"
                       example: "Phòng khám thú cưng Hà Nội"
                     address:
                       type: object
+                      description: "Địa chỉ phòng khám (bắt buộc street, city)"
                       properties:
                         street:
                           type: string
+                          description: "Đường/số nhà (bắt buộc)"
                         city:
                           type: string
+                          description: "Thành phố (bắt buộc)"
                         district:
                           type: string
+                          description: "Quận/Huyện"
                         ward:
                           type: string
+                          description: "Phường/Xã"
                     phone:
                       type: string
+                      description: "Số điện thoại phòng khám (bắt buộc, khác với phone cá nhân)"
+                      example: "0243456789"
                 speciesExpertise:
                   type: array
                   description: "Tùy chọn. Các loài thú cưng chuyên gia"

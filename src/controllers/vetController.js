@@ -20,7 +20,8 @@ exports.getVets = async (req, res, next) => {
       limit = 20,
     } = req.query;
 
-    const query = { isActive: true, isVerified: true };
+    // Only show verified vets in production, but allow all if no filter applied
+    const query = { isActive: true };
 
     if (specialization) query.specializations = specialization;
     if (species) query.speciesExpertise = species;

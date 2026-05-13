@@ -102,15 +102,6 @@ paths:
                     ward:
                       type: string
                       description: Phường/Xã
-                    coordinates:
-                      type: object
-                      properties:
-                        lat:
-                          type: number
-                          description: Vĩ độ
-                        lng:
-                          type: number
-                          description: Kinh độ
                 acceptedPets:
                   type: array
                   items:
@@ -240,13 +231,6 @@ paths:
                       type: string
                     ward:
                       type: string
-                    coordinates:
-                      type: object
-                      properties:
-                        lat:
-                          type: number
-                        lng:
-                          type: number
                 acceptedPets:
                   type: array
                   items:

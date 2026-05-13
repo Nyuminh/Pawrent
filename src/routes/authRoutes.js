@@ -38,6 +38,18 @@ const validateVetFieldsIfNeeded = (req, res, next) => {
       errors.push('Tên phòng khám không được để trống');
     }
 
+    // Validate clinic phone (required for vet)
+    if (!req.body.clinic || !req.body.clinic.phone || typeof req.body.clinic.phone !== 'string' || req.body.clinic.phone.trim() === '') {
+      errors.push('Số điện thoại phòng khám không được để trống');
+    } else if (!/^(\+84|0)\d{9,10}$/.test(req.body.clinic.phone)) {
+      errors.push('Số điện thoại phòng khám không hợp lệ');
+    }
+
+    // Validate clinic address
+    if (!req.body.clinic || !req.body.clinic.address || !req.body.clinic.address.street || !req.body.clinic.address.city) {
+      errors.push('Địa chỉ phòng khám (street, city) không được để trống');
+    }
+
     if (errors.length > 0) {
       return res.status(400).json({
         success: false,
