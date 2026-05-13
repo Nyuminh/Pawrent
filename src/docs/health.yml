@@ -14,13 +14,118 @@ paths:
           application/json:
             schema:
               type: object
+              required: [pet, recordType, title]
               properties:
                 pet:
                   type: string
+                  description: ID thú cưng (bắt buộc)
                 recordType:
                   type: string
+                  enum: [vaccination, deworming, medical_exam, surgery, treatment, lab_result, weight_check, dental, other]
+                  description: Loại hồ sơ (bắt buộc)
                 title:
                   type: string
+                  description: Tiêu đề (bắt buộc)
+                description:
+                  type: string
+                  description: Mô tả chi tiết
+                date:
+                  type: string
+                  format: date-time
+                  description: Ngày hồ sơ
+                vaccination:
+                  type: object
+                  description: Chi tiết tiêm phòng
+                  properties:
+                    vaccineName:
+                      type: string
+                    batchNumber:
+                      type: string
+                    nextDueDate:
+                      type: string
+                      format: date
+                    manufacturer:
+                      type: string
+                deworming:
+                  type: object
+                  description: Chi tiết tẩy giun
+                  properties:
+                    medicineName:
+                      type: string
+                    dosage:
+                      type: string
+                    nextDueDate:
+                      type: string
+                      format: date
+                medical:
+                  type: object
+                  description: Chi tiết khám/điều trị
+                  properties:
+                    diagnosis:
+                      type: string
+                    symptoms:
+                      type: array
+                      items:
+                        type: string
+                    treatment:
+                      type: string
+                    prescriptions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          medicineName:
+                            type: string
+                          dosage:
+                            type: string
+                          frequency:
+                            type: string
+                          duration:
+                            type: string
+                          notes:
+                            type: string
+                weightRecord:
+                  type: object
+                  description: Chi tiết kiểm tra cân nặng
+                  properties:
+                    weight:
+                      type: number
+                    unit:
+                      type: string
+                      default: kg
+                vet:
+                  type: string
+                  description: ID bác sĩ
+                vetName:
+                  type: string
+                  description: Tên bác sĩ
+                clinicName:
+                  type: string
+                  description: Tên phòng khám
+                attachments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      fileName:
+                        type: string
+                      fileUrl:
+                        type: string
+                      fileType:
+                        type: string
+                  description: Danh sách tài liệu đính kèm
+                cost:
+                  type: object
+                  description: Chi phí
+                  properties:
+                    amount:
+                      type: number
+                    currency:
+                      type: string
+                      default: VND
+                notes:
+                  type: string
+                  description: Ghi chú thêm
       responses:
         201:
           description: Thành công
@@ -59,18 +164,77 @@ paths:
           application/json:
             schema:
               type: object
+              required: [pet, type, title, scheduledDate, scheduledTime]
               properties:
                 pet:
                   type: string
+                  description: ID thú cưng (bắt buộc)
                 type:
                   type: string
+                  enum: [vaccination, medicine, deworming, bathing, walking, feeding, grooming, vet_visit, weight_check, custom]
+                  description: Loại nhắc nhở (bắt buộc)
                 title:
                   type: string
+                  description: Tiêu đề (bắt buộc)
+                description:
+                  type: string
+                  description: Mô tả chi tiết
                 scheduledDate:
                   type: string
-                  format: date-time
+                  format: date
+                  description: Ngày hẹn (YYYY-MM-DD, bắt buộc)
                 scheduledTime:
                   type: string
+                  description: Giờ hẹn (HH:mm, bắt buộc)
+                isRecurring:
+                  type: boolean
+                  description: Có lặp lại hay không
+                recurrence:
+                  type: object
+                  description: Chi tiết lặp lại
+                  properties:
+                    frequency:
+                      type: string
+                      enum: [daily, weekly, biweekly, monthly, quarterly, yearly, custom]
+                    interval:
+                      type: number
+                      description: Cứ mỗi X ngày/tuần/tháng
+                    endDate:
+                      type: string
+                      format: date
+                    daysOfWeek:
+                      type: array
+                      items:
+                        type: number
+                      description: "0=Sun, 1=Mon, ..., 6=Sat"
+                status:
+                  type: string
+                  enum: [pending, completed, missed, cancelled, snoozed]
+                  description: Trạng thái
+                notification:
+                  type: object
+                  description: Cài đặt thông báo
+                  properties:
+                    enabled:
+                      type: boolean
+                    beforeMinutes:
+                      type: number
+                      description: Nhắc nhở X phút trước
+                    channels:
+                      type: array
+                      items:
+                        type: string
+                        enum: [push, email, sms]
+                isPersonalized:
+                  type: boolean
+                  description: Có được cá nhân hóa hay không
+                personalizedReason:
+                  type: string
+                  description: Lý do cá nhân hóa
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  description: Độ ưu tiên
       responses:
         201:
           description: Thành công
@@ -83,3 +247,168 @@ paths:
       responses:
         200:
           description: Thành công
+  /reminders/{id}:
+    get:
+      summary: Lấy chi tiết nhắc nhở
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Chi tiết nhắc nhở
+    put:
+      summary: Cập nhật nhắc nhở
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                type:
+                  type: string
+                  enum: [vaccination, medicine, deworming, bathing, walking, feeding, grooming, vet_visit, weight_check, custom]
+                scheduledDate:
+                  type: string
+                  format: date
+                scheduledTime:
+                  type: string
+                status:
+                  type: string
+                  enum: [pending, completed, missed, cancelled, snoozed]
+      responses:
+        200:
+          description: Cập nhật thành công
+    delete:
+      summary: Xóa nhắc nhở
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Đã xóa
+  /reminders/{id}/complete:
+    put:
+      summary: Đánh dấu nhắc nhở hoàn thành
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Đã đánh dấu hoàn thành
+  /health-records/{id}:
+    get:
+      summary: Lấy chi tiết hồ sơ sức khỏe
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Chi tiết hồ sơ
+    put:
+      summary: Cập nhật hồ sơ sức khỏe
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                recordType:
+                  type: string
+                  enum: [vaccination, deworming, medical_exam, surgery, treatment, lab_result, weight_check, dental, other]
+      responses:
+        200:
+          description: Cập nhật thành công
+    delete:
+      summary: Xóa hồ sơ sức khỏe
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Đã xóa
+  /health-records/pet/{petId}/vaccinations:
+    get:
+      summary: Danh sách tiêm phòng
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: petId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Danh sách tiêm phòng
+  /health-records/pet/{petId}/summary:
+    get:
+      summary: Tóm tắt sức khỏe (Premium)
+      tags: [Health Records & Reminders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: petId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Tóm tắt sức khỏe

@@ -83,6 +83,25 @@ paths:
       tags: [Vets & Appointments]
       security:
         - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, in_progress, completed, cancelled, no_show]
+          description: Lọc theo trạng thái
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Số trang
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Số lượng trên 1 trang
       responses:
         200:
           description: Thành công
@@ -97,21 +116,107 @@ paths:
           application/json:
             schema:
               type: object
+              required: [pet, vet, appointmentType, date, reason]
               properties:
                 pet:
                   type: string
+                  description: ID thú cưng (bắt buộc)
                 vet:
                   type: string
+                  description: ID bác sĩ thú y (bắt buộc)
                 appointmentType:
                   type: string
                   enum: [in_person, online]
+                  description: Hình thức khám (bắt buộc)
                 date:
                   type: string
-                  format: date-time
+                  format: date
+                  description: Ngày khám (YYYY-MM-DD, bắt buộc)
                 timeSlot:
                   type: object
+                  description: Khung giờ khám (bắt buộc)
+                  required: [startTime]
+                  properties:
+                    startTime:
+                      type: string
+                      description: Giờ bắt đầu (HH:mm)
+                    endTime:
+                      type: string
+                      description: Giờ kết thúc (HH:mm)
                 reason:
                   type: string
+                  description: Lý do khám (bắt buộc)
+                symptoms:
+                  type: array
+                  items:
+                    type: string
+                  description: Các triệu chứng
+                notes:
+                  type: string
+                  description: Ghi chú thêm
       responses:
         201:
           description: Đặt lịch thành công
+  /appointments/{id}/status:
+    put:
+      summary: Cập nhật trạng thái lịch hẹn
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID lịch hẹn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, confirmed, in_progress, completed, cancelled, no_show]
+                  description: Trạng thái mới (bắt buộc)
+                reason:
+                  type: string
+                  description: Lý do (nếu hủy/không đến)
+      responses:
+        200:
+          description: Cập nhật trạng thái thành công
+  /appointments/{id}/review:
+    post:
+      summary: Đánh giá lịch hẹn
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID lịch hẹn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating, comment]
+              properties:
+                rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                  description: Xếp hạng (1-5 sao)
+                comment:
+                  type: string
+                  description: Nhận xét/bình luận
+      responses:
+        201:
+          description: Đánh giá đã lưu
