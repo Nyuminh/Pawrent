@@ -19,7 +19,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               required: [name, species]
@@ -49,15 +49,14 @@ paths:
                   description: Màu sắc
                 avatar:
                   type: string
-                  description: URL ảnh đại diện
+                  format: binary
+                  description: Ảnh đại diện (JPEG, PNG, GIF, WebP - tối đa 5MB)
                 isNeutered:
                   type: boolean
                   description: Đã triệt sản hay chưa
                 allergies:
-                  type: array
-                  items:
-                    type: string
-                  description: Danh sách dị ứng
+                  type: string
+                  description: Danh sách dị ứng (JSON array string hoặc text)
                 specialNotes:
                   type: string
                   description: Ghi chú đặc biệt
@@ -97,7 +96,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
@@ -115,10 +114,9 @@ paths:
                   type: string
                   enum: [male, female, unknown]
                   description: Giới tính
-                dateOfBirth:
-                  type: string
-                  format: date
-                  description: Ngày sinh (YYYY-MM-DD)
+                age:
+                  type: number
+                  description: Tuổi (năm)
                 weight:
                   type: number
                   description: Cân nặng (kg)
@@ -127,15 +125,14 @@ paths:
                   description: Màu sắc
                 avatar:
                   type: string
-                  description: URL ảnh đại diện
+                  format: binary
+                  description: Ảnh đại diện (JPEG, PNG, GIF, WebP - tối đa 5MB)
                 isNeutered:
                   type: boolean
                   description: Đã triệt sản hay chưa
                 allergies:
-                  type: array
-                  items:
-                    type: string
-                  description: Danh sách dị ứng
+                  type: string
+                  description: Danh sách dị ứng (JSON array string hoặc text)
                 specialNotes:
                   type: string
                   description: Ghi chú đặc biệt

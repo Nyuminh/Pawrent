@@ -297,7 +297,7 @@ exports.getMe = async (req, res, next) => {
 // @access  Private
 exports.updateProfile = async (req, res, next) => {
   try {
-    const allowedFields = ['fullName', 'phone', 'avatar', 'address'];
+    const allowedFields = ['fullName', 'phone', 'address'];
     const updates = {};
 
     allowedFields.forEach((field) => {
@@ -305,6 +305,11 @@ exports.updateProfile = async (req, res, next) => {
         updates[field] = req.body[field];
       }
     });
+
+    // Handle avatar upload from Cloudinary
+    if (req.file) {
+      updates.avatar = req.file.path; // Cloudinary returns file.path as URL
+    }
 
     const user = await User.findByIdAndUpdate(req.user.id, updates, {
       new: true,

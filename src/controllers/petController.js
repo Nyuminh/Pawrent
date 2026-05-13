@@ -22,6 +22,12 @@ exports.createPet = async (req, res, next) => {
     }
 
     req.body.owner = req.user.id;
+    
+    // Handle avatar upload from Cloudinary
+    if (req.file) {
+      req.body.avatar = req.file.path; // Cloudinary returns file.path as URL
+    }
+    
     const pet = await Pet.create(req.body);
 
     res.status(201).json({
@@ -99,6 +105,11 @@ exports.updatePet = async (req, res, next) => {
 
     // Prevent changing owner
     delete req.body.owner;
+
+    // Handle avatar upload from Cloudinary
+    if (req.file) {
+      req.body.avatar = req.file.path; // Cloudinary returns file.path as URL
+    }
 
     pet = await Pet.findByIdAndUpdate(req.params.id, req.body, {
       new: true,

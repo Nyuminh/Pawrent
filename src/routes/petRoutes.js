@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 const { protect } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');
 const {
   createPet,
   getMyPets,
@@ -27,11 +28,11 @@ router.use(protect);
 
 router.route('/')
   .get(getMyPets)
-  .post(petValidation, validate, createPet);
+  .post(upload.single('avatar'), petValidation, validate, createPet);
 
 router.route('/:id')
   .get(getPet)
-  .put(updatePet)
+  .put(upload.single('avatar'), updatePet)
   .delete(deletePet);
 
 module.exports = router;
