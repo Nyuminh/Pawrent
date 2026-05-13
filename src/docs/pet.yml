@@ -50,9 +50,6 @@ paths:
                 avatar:
                   type: string
                   description: URL ảnh đại diện
-                microchipId:
-                  type: string
-                  description: ID vi điểm (microchip)
                 isNeutered:
                   type: boolean
                   description: Đã triệt sản hay chưa
@@ -131,9 +128,6 @@ paths:
                 avatar:
                   type: string
                   description: URL ảnh đại diện
-                microchipId:
-                  type: string
-                  description: ID vi điểm (microchip)
                 isNeutered:
                   type: boolean
                   description: Đã triệt sản hay chưa

@@ -41,10 +41,6 @@ const PetSchema = new mongoose.Schema(
       type: String,
       default: 'default-pet.png',
     },
-    microchipId: {
-      type: String,
-      sparse: true,
-    },
     isNeutered: {
       type: Boolean,
       default: false,
