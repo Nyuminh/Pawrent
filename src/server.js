@@ -17,6 +17,9 @@ const app = express();
 
 // ==================== SECURITY MIDDLEWARE ====================
 
+// Trust Vercel proxy (needed for express-rate-limit on Vercel)
+app.set('trust proxy', 1);
+
 // Helmet - secure HTTP headers
 app.use(helmet());
 

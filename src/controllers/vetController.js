@@ -80,6 +80,8 @@ exports.getVet = async (req, res, next) => {
 // @access  Private (vet)
 exports.updateVetProfile = async (req, res, next) => {
   try {
+    const User = require('../models/User');
+    
     let vet = await Vet.findOne({ user: req.user.id });
 
     if (!vet) {
@@ -93,10 +95,23 @@ exports.updateVetProfile = async (req, res, next) => {
     delete req.body.rating;
     delete req.body.isVerified;
 
+    // Handle avatar upload from Cloudinary and sync with User table
+    if (req.file) {
+      req.body.avatar = req.file.path; // Cloudinary returns file.path as URL
+      // Update avatar in User table to keep in sync
+      await User.findByIdAndUpdate(req.user.id, { avatar: req.file.path }, {
+        new: true,
+        runValidators: true,
+      });
+    }
+
     vet = await Vet.findByIdAndUpdate(vet._id, req.body, {
       new: true,
       runValidators: true,
     });
+
+    // Populate user info to return updated profile
+    vet = await Vet.findById(vet._id).populate('user', 'fullName avatar email phone');
 
     res.status(200).json({
       success: true,

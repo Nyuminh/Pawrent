@@ -1,5 +1,6 @@
 const express = require('express');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');
 const {
   getVets,
   getVet,
@@ -20,7 +21,7 @@ router.get('/:id', optionalAuth, getVet);
 
 // Protected vet routes
 // PUT /profile để cập nhật hồ sơ bác sĩ (sau khi đã đăng ký bằng POST /auth/register)
-router.put('/profile', protect, authorize('vet'), updateVetProfile);
+router.put('/profile', protect, authorize('vet'), upload.single('avatar'), updateVetProfile);
 router.get('/recommend/:petId', protect, getRecommendedVets);
 
 module.exports = router;
