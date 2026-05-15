@@ -1,5 +1,6 @@
 const express = require('express');
 const { protect, optionalAuth } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');
 const {
   createHotel,
   getHotels,
@@ -18,6 +19,6 @@ const router = express.Router();
 router.get('/', optionalAuth, getHotels);
 router.get('/:id', optionalAuth, getHotel);
 router.post('/', protect, createHotel);
-router.put('/:id', protect, updateHotel);
+router.put('/:id', protect, upload.array('images', 10), updateHotel);
 
 module.exports = router;

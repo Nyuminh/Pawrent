@@ -1,0 +1,81 @@
+tags:
+  - name: Uploads
+    description: Upload hình ảnh
+
+paths:
+  /uploads:
+    post:
+      summary: Upload một hoặc nhiều ảnh
+      tags: [Uploads]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [images]
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Các file ảnh (tối đa 10 ảnh, định dạng JPEG/PNG/GIF/WebP, mỗi file tối đa 5MB)
+              example:
+                images: ["image1.jpg", "image2.png", "image3.webp"]
+      responses:
+        200:
+          description: Upload thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Upload 3 ảnh thành công!"
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 3
+                      urls:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - "https://res.cloudinary.com/pawrent/image/upload/v1234567890/pawrent/image1.jpg"
+                          - "https://res.cloudinary.com/pawrent/image/upload/v1234567890/pawrent/image2.png"
+                          - "https://res.cloudinary.com/pawrent/image/upload/v1234567890/pawrent/image3.webp"
+                      url:
+                        type: string
+                        description: URL duy nhất (khi chỉ upload 1 ảnh) hoặc null (khi upload nhiều)
+                        example: "https://res.cloudinary.com/pawrent/image/upload/v1234567890/pawrent/image1.jpg"
+        400:
+          description: Lỗi - Không có file được chọn hoặc định dạng không hợp lệ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Vui lòng chọn ít nhất một ảnh để upload"
+                  code:
+                    type: string
+                    example: "NO_FILES_PROVIDED"
+        401:
+          description: Chưa xác thực (thiếu token hoặc token không hợp lệ)
+        413:
+          description: File quá lớn (vượt quá 5MB)
+        415:
+          description: Định dạng file không được hỗ trợ (chỉ hỗ trợ JPEG, PNG, GIF, WebP)

@@ -123,6 +123,15 @@ exports.updateHotel = async (req, res, next) => {
     delete req.body.rating;
     delete req.body.commissionRate;
 
+    // Handle multiple image uploads
+    if (req.files && req.files.length > 0) {
+      const newImages = req.files.map(file => ({
+        url: file.path, // Cloudinary URL
+        caption: ''
+      }));
+      req.body.images = newImages;
+    }
+
     hotel = await PetHotel.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,

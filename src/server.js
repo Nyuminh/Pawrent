@@ -104,6 +104,7 @@ app.use('/api/v1/chat', require('./routes/chatRoutes'));
 app.use('/api/v1/activity', require('./routes/activityRoutes'));
 app.use('/api/v1/subscription', require('./routes/subscriptionRoutes'));
 app.use('/api/v1/admin', require('./routes/adminRoutes'));
+app.use('/api/v1/uploads', require('./routes/uploadRoutes'));
 // Swagger UI Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   explorer: true,
@@ -132,6 +133,7 @@ app.get('/', (req, res) => {
       activity: '/api/v1/activity',
       subscription: '/api/v1/subscription',
       admin: '/api/v1/admin',
+      uploads: '/api/v1/uploads',
     },
   });
 });
