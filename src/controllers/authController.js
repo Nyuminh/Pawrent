@@ -163,6 +163,135 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// @desc    Register hotel owner with initial hotel information
+// @route   POST /api/v1/auth/register-hotel-owner
+// @access  Public
+// Creates user account with hotel_owner role + creates initial hotel
+exports.registerHotelOwner = async (req, res, next) => {
+  try {
+    const {
+      // User info
+      fullName,
+      email,
+      phone,
+      password,
+      // Hotel info
+      hotelName,
+      hotelDescription,
+      hotelPhone,
+      hotelEmail,
+      address,
+      acceptedPets = ['dog', 'cat'],
+    } = req.body;
+
+    // Validate required fields
+    if (!fullName || !email || !phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin tài khoản (tên, email, phone, mật khẩu).',
+      });
+    }
+
+    if (!hotelName || !hotelDescription) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin khách sạn (tên, mô tả).',
+      });
+    }
+
+    if (!address || !address.street || !address.city) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ địa chỉ (đường, thành phố).',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu phải có ít nhất 6 ký tự.',
+      });
+    }
+
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email đã được đăng ký. Vui lòng sử dụng email khác.',
+      });
+    }
+
+    // Create user with hotel_owner role
+    const user = await User.create({
+      fullName,
+      email,
+      phone,
+      password,
+      role: 'hotel_owner',
+      subscription: { plan: 'free', isActive: true, maxPets: 1 },
+    });
+
+    // Create initial hotel
+    const PetHotel = require('../models/PetHotel');
+    const hotel = await PetHotel.create({
+      owner: user._id,
+      name: hotelName,
+      description: hotelDescription,
+      phone: hotelPhone || phone,
+      email: hotelEmail || email,
+      address,
+      acceptedPets,
+      services: [],
+      rooms: [],
+      operatingHours: {
+        checkIn: '14:00',
+        checkOut: '12:00',
+        isOpen24h: false,
+      },
+      isActive: true,
+    });
+
+    // Generate tokens
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    const userData = user.toObject();
+    delete userData.password;
+    delete userData.refreshToken;
+
+    res.status(201).json({
+      success: true,
+      message: 'Đăng ký chủ khách sạn thú cưng thành công! Khách sạn đã được tạo.',
+      data: {
+        user: userData,
+        hotel: {
+          hotelId: hotel._id,
+          name: hotel.name,
+          slug: hotel.slug,
+        },
+        accessToken,
+        refreshToken,
+        tokenType: 'Bearer',
+        expiresIn: process.env.JWT_EXPIRE,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(409).json({
+        success: false,
+        message: `${field} này đã tồn tại.`,
+      });
+    }
+    next(error);
+  }
+};
+
 // @desc    Login user
 // @route   POST /api/v1/auth/login
 // @access  Public

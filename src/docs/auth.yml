@@ -136,6 +136,152 @@ paths:
           description: Yêu cầu không hợp lệ
         409:
           description: Email hoặc licenseNumber đã tồn tại
+
+  /auth/register-hotel-owner:
+    post:
+      summary: Đăng ký chủ khách sạn thú cưng
+      description: |
+        Đăng ký tài khoản chủ khách sạn thú cưng và tạo khách sạn ban đầu.
+        
+        Endpoint này sẽ:
+        1. Tạo tài khoản người dùng với role = hotel_owner
+        2. Tạo khách sạn ban đầu liên kết với tài khoản
+        3. Trả về token để sử dụng ngay
+        
+        Khách sạn được tạo sẽ ở trạng thái active nhưng chưa verified. Chủ khách sạn có thể thêm phòng, dịch vụ, hình ảnh sau.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, email, phone, password, hotelName, hotelDescription, address]
+              properties:
+                # User account info
+                fullName:
+                  type: string
+                  description: Tên chủ khách sạn
+                  example: Nguyễn Văn B
+                email:
+                  type: string
+                  description: Email tài khoản (dùng để đăng nhập)
+                  example: hotelowner@example.com
+                phone:
+                  type: string
+                  description: Số điện thoại chủ khách sạn
+                  example: "0901234567"
+                password:
+                  type: string
+                  description: Mật khẩu (tối thiểu 6 ký tự)
+                  example: "123456"
+                # Hotel info
+                hotelName:
+                  type: string
+                  description: Tên khách sạn
+                  example: "Happy Pet Hotel"
+                hotelDescription:
+                  type: string
+                  description: Mô tả khách sạn (tối thiểu 20 ký tự)
+                  example: "Khách sạn thú cưng cao cấp với dịch vụ chăm sóc chuyên nghiệp 24/7"
+                hotelPhone:
+                  type: string
+                  description: "Tùy chọn. Số điện thoại khách sạn (nếu khác với phone cá nhân)"
+                  example: "0212345678"
+                hotelEmail:
+                  type: string
+                  description: "Tùy chọn. Email khách sạn (nếu khác với email cá nhân)"
+                  example: "info@happypethotel.com"
+                address:
+                  type: object
+                  description: Địa chỉ khách sạn
+                  required: [street, city]
+                  properties:
+                    street:
+                      type: string
+                      description: "Đường/số nhà (bắt buộc)"
+                      example: "123 Đường Trần Hưng Đạo"
+                    city:
+                      type: string
+                      description: "Thành phố (bắt buộc)"
+                      example: "Hà Nội"
+                    district:
+                      type: string
+                      description: "Quận/Huyện"
+                      example: "Hoàn Kiếm"
+                    ward:
+                      type: string
+                      description: "Phường/Xã"
+                      example: "Tràng Tiền"
+                acceptedPets:
+                  type: array
+                  description: "Tùy chọn. Các loại thú cưng được chấp nhận"
+                  items:
+                    type: string
+                    enum: [dog, cat, bird, hamster, rabbit, other]
+                  default: ["dog", "cat"]
+                  example: ["dog", "cat", "bird"]
+      responses:
+        201:
+          description: Đăng ký thành công, khách sạn đã được tạo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Đăng ký chủ khách sạn thú cưng thành công! Khách sạn đã được tạo."
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        description: Thông tin người dùng
+                        properties:
+                          _id:
+                            type: string
+                            example: "507f1f77bcf86cd799439011"
+                          fullName:
+                            type: string
+                          email:
+                            type: string
+                          phone:
+                            type: string
+                          role:
+                            type: string
+                            example: "hotel_owner"
+                      hotel:
+                        type: object
+                        description: Thông tin khách sạn được tạo
+                        properties:
+                          hotelId:
+                            type: string
+                            example: "507f1f77bcf86cd799439012"
+                          name:
+                            type: string
+                          slug:
+                            type: string
+                            description: "Slug dùng cho URL"
+                      accessToken:
+                        type: string
+                        description: JWT access token
+                      refreshToken:
+                        type: string
+                        description: JWT refresh token
+                      tokenType:
+                        type: string
+                        example: "Bearer"
+                      expiresIn:
+                        type: string
+                        example: "24h"
+        400:
+          description: Yêu cầu không hợp lệ (thiếu trường, dữ liệu không hợp lệ)
+        409:
+          description: Email đã tồn tại
   /auth/login:
     post:
       summary: Đăng nhập

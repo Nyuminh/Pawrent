@@ -5,6 +5,7 @@ const { protect } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const {
   register,
+  registerHotelOwner,
   login,
   refreshToken,
   logout,
@@ -223,6 +224,37 @@ const loginValidation = [
  *         description: Email hoặc licenseNumber đã tồn tại
  */
 router.post('/register', registerValidation, validateVetFieldsIfNeeded, validate, register);
+
+// Hotel owner registration
+const hotelOwnerValidation = [
+  body('fullName').notEmpty().withMessage('Tên chủ khách sạn không được để trống'),
+  body('email')
+    .isEmail()
+    .withMessage('Email không hợp lệ')
+    .normalizeEmail(),
+  body('phone')
+    .matches(/^(\+84|0)\d{9,10}$/)
+    .withMessage('Số điện thoại không hợp lệ'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Mật khẩu phải có ít nhất 6 ký tự'),
+  body('hotelName')
+    .notEmpty()
+    .withMessage('Tên khách sạn không được để trống'),
+  body('hotelDescription')
+    .notEmpty()
+    .withMessage('Mô tả khách sạn không được để trống')
+    .isLength({ min: 20 })
+    .withMessage('Mô tả phải có ít nhất 20 ký tự'),
+  body('address.street')
+    .notEmpty()
+    .withMessage('Địa chỉ (đường) không được để trống'),
+  body('address.city')
+    .notEmpty()
+    .withMessage('Thành phố không được để trống'),
+];
+
+router.post('/register-hotel-owner', hotelOwnerValidation, validate, registerHotelOwner);
 
 /**
  * @swagger
