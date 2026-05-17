@@ -56,67 +56,255 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    description: Trạng thái yêu cầu
                     example: true
                   count:
                     type: integer
+                    description: Số lượng khách sạn trong trang hiện tại
                     example: 2
                   total:
                     type: integer
+                    description: Tổng số khách sạn trong database
                     example: 12
                   page:
                     type: integer
+                    description: Trang hiện tại
                     example: 1
                   totalPages:
                     type: integer
+                    description: Tổng số trang
                     example: 6
                   data:
                     type: array
+                    description: Danh sách khách sạn
                     items:
                       type: object
-                      example:
-                        _id: "507f1f77bcf86cd799439011"
-                        name: "Happy Pet Hotel"
-                        description: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
+                      properties:
+                        hotelId:
+                          type: string
+                          description: ID khách sạn (MongoDB ObjectId)
+                          example: "507f1f77bcf86cd799439011"
+                        name:
+                          type: string
+                          description: Tên khách sạn
+                          example: "Happy Pet Hotel"
+                        description:
+                          type: string
+                          description: Mô tả khách sạn
+                          example: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
                         owner:
-                          _id: "507f1f77bcf86cd799439012"
-                          fullName: "Nguyễn Văn A"
-                          avatar: "https://res.cloudinary.com/pawrent/image/upload/v123/avatar.jpg"
+                          type: object
+                          description: Thông tin chủ khách sạn
+                          properties:
+                            ownerId:
+                              type: string
+                              description: ID chủ sở hữu (User ID)
+                              example: "507f1f77bcf86cd799439012"
+                            fullName:
+                              type: string
+                              example: "Nguyễn Văn A"
+                            avatar:
+                              type: string
+                              description: URL avatar của chủ sạn
+                              example: "https://res.cloudinary.com/pawrent/image/upload/v123/avatar.jpg"
                         address:
-                          street: "123 Đường Nguyễn Hữu Cảnh"
-                          city: "TP. Hồ Chí Minh"
-                          district: "Quận 1"
-                          ward: "Phường Bến Nghé"
-                        phone: "0123456789"
-                        email: "contact@happypethotel.vn"
-                        acceptedPets: [dog, cat]
-                        priceRange:
-                          min: 200000
-                          max: 500000
-                          currency: "VND"
-                        rating:
-                          average: 4.8
-                          count: 25
-                        images:
-                          - url: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel1.jpg"
-                            caption: "Phòng ở"
-                          - url: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel2.jpg"
-                            caption: "Khu chơi"
+                          type: object
+                          description: Địa chỉ khách sạn
+                          properties:
+                            street:
+                              type: string
+                              example: "123 Đường Nguyễn Hữu Cảnh"
+                            city:
+                              type: string
+                              example: "TP. Hồ Chí Minh"
+                            district:
+                              type: string
+                              example: "Quận 1"
+                            ward:
+                              type: string
+                              example: "Phường Bến Nghé"
+                            coordinates:
+                              type: object
+                              description: Tọa độ địa lý (GPS)
+                              properties:
+                                lat:
+                                  type: number
+                                  description: Vĩ độ
+                                  example: 10.7769
+                                lng:
+                                  type: number
+                                  description: Kinh độ
+                                  example: 106.6966
+                        phone:
+                          type: string
+                          description: Số điện thoại khách sạn
+                          example: "0123456789"
+                        email:
+                          type: string
+                          description: Email khách sạn
+                          example: "contact@happypethotel.vn"
+                        acceptedPets:
+                          type: array
+                          description: Loại thú cưng được chấp nhận
+                          items:
+                            type: string
+                          example: [dog, cat]
                         services:
-                          - name: "Phòng VIP"
-                            description: "Phòng sang trọng với điều hòa"
-                            price: 500000
-                            currency: "VND"
-                          - name: "Tắm gội"
-                            description: "Dịch vụ tắm gội chuyên nghiệp"
-                            price: 150000
-                            currency: "VND"
+                          type: array
+                          description: Danh sách dịch vụ cung cấp
+                          items:
+                            type: object
+                            properties:
+                              serviceId:
+                                type: string
+                                description: ID dịch vụ
+                                example: "507f1f77bcf86cd799439013"
+                              name:
+                                type: string
+                                example: "Phòng VIP"
+                              description:
+                                type: string
+                                example: "Phòng sang trọng với điều hòa"
+                              price:
+                                type: number
+                                example: 500000
+                              currency:
+                                type: string
+                                example: "VND"
+                        rooms:
+                          type: array
+                          description: Danh sách loại phòng
+                          items:
+                            type: object
+                            properties:
+                              roomId:
+                                type: string
+                                description: ID loại phòng
+                                example: "507f1f77bcf86cd799439014"
+                              type:
+                                type: string
+                                enum: [standard, deluxe, vip, suite]
+                                example: "vip"
+                              name:
+                                type: string
+                                example: "Phòng VIP"
+                              description:
+                                type: string
+                                example: "Phòng cao cấp"
+                              pricePerNight:
+                                type: number
+                                description: Giá mỗi đêm (VND)
+                                example: 500000
+                              capacity:
+                                type: integer
+                                description: Sức chứa (số thú cưng)
+                                example: 2
+                              totalRooms:
+                                type: integer
+                                description: Tổng số phòng loại này
+                                example: 10
+                              availableRooms:
+                                type: integer
+                                description: Số phòng còn trống
+                                example: 8
+                              amenities:
+                                type: array
+                                description: Tiện nghi phòng
+                                items:
+                                  type: string
+                                example: [điều hòa, giường lớn, TV]
+                        images:
+                          type: array
+                          description: Danh sách hình ảnh khách sạn
+                          items:
+                            type: object
+                            properties:
+                              imageId:
+                                type: string
+                                description: ID hình ảnh
+                                example: "507f1f77bcf86cd799439015"
+                              url:
+                                type: string
+                                description: URL hình ảnh
+                                example: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel1.jpg"
+                              caption:
+                                type: string
+                                description: Chú thích hình ảnh
+                                example: "Phòng ở"
+                        rating:
+                          type: object
+                          description: Xếp hạng khách sạn
+                          properties:
+                            average:
+                              type: number
+                              description: Điểm xếp hạng trung bình (0-5)
+                              example: 4.8
+                            count:
+                              type: integer
+                              description: Số lượng đánh giá
+                              example: 25
                         operatingHours:
-                          checkIn: "14:00"
-                          checkOut: "12:00"
-                          isOpen24h: false
-                        capacity:
-                          total: 50
-                          available: 10
+                          type: object
+                          description: Giờ hoạt động
+                          properties:
+                            checkIn:
+                              type: string
+                              description: Giờ check-in (HH:mm)
+                              example: "14:00"
+                            checkOut:
+                              type: string
+                              description: Giờ check-out (HH:mm)
+                              example: "12:00"
+                            isOpen24h:
+                              type: boolean
+                              description: Hoạt động 24/7?
+                              example: false
+                        policies:
+                          type: object
+                          description: Chính sách khách sạn
+                          properties:
+                            cancellationHours:
+                              type: integer
+                              description: Hủy trước bao nhiêu giờ
+                              example: 24
+                            requireVaccination:
+                              type: boolean
+                              description: Yêu cầu tiêm chủng?
+                              example: true
+                            maxPetWeight:
+                              type: number
+                              description: Cân nặng tối đa thú cưng (kg)
+                              example: 20
+                            additionalNotes:
+                              type: string
+                              description: Ghi chú thêm
+                              example: "Không nhận chó hung hăng"
+                        commissionRate:
+                          type: number
+                          description: Tỉ lệ hoa hồng cho hệ thống
+                          example: 0.15
+                        slug:
+                          type: string
+                          description: Slug dùng cho URL
+                          example: "happy-pet-hotel-mp3qzgzp"
+                        isVerified:
+                          type: boolean
+                          description: Khách sạn đã được xác minh?
+                          example: true
+                        isActive:
+                          type: boolean
+                          description: Khách sạn còn hoạt động?
+                          example: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: Ngày tạo
+                          example: "2024-01-10T10:30:00Z"
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          description: Ngày cập nhật cuối
+                          example: "2024-05-17T14:30:00Z"
     post:
       summary: Đăng ký khách sạn thú cưng mới
       tags: [Hotels]
