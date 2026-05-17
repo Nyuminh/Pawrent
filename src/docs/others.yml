@@ -311,9 +311,79 @@ paths:
       tags: [Hotels & Bookings]
       security:
         - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Lọc theo trạng thái
+          schema:
+            type: string
+            enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+        - name: page
+          in: query
+          description: Số trang
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Số bộ ghi trên trang
+          schema:
+            type: integer
+            default: 20
       responses:
         200:
           description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 2
+                  total:
+                    type: integer
+                    example: 5
+                  page:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 3
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      example:
+                        _id: "507f1f77bcf86cd799439020"
+                        user:
+                          _id: "507f1f77bcf86cd799439001"
+                          fullName: "Trần Thị B"
+                          phone: "0987654321"
+                        pet:
+                          _id: "507f1f77bcf86cd799439002"
+                          name: "Milu"
+                          species: "dog"
+                          breed: "Golden Retriever"
+                          avatar: "https://res.cloudinary.com/pawrent/image/upload/v123/milu.jpg"
+                        hotel:
+                          _id: "507f1f77bcf86cd799439011"
+                          name: "Happy Pet Hotel"
+                          city: "TP. Hồ Chí Minh"
+                          rating:
+                            average: 4.8
+                        roomType: "vip"
+                        checkIn: "2024-06-01"
+                        checkOut: "2024-06-05"
+                        numberOfNights: 4
+                        totalPrice: 2000000
+                        status: "confirmed"
+                        notes: "Chó hay sủa, cần chỗ yên tĩnh"
+                        createdAt: "2024-05-17T10:00:00Z"
+                        updatedAt: "2024-05-17T10:30:00Z"
     post:
       summary: Đặt phòng khách sạn
       tags: [Hotels & Bookings]
@@ -335,27 +405,66 @@ paths:
                 pet:
                   type: string
                   description: ID của thú cưng cần đặt phòng (bắt buộc)
+                  example: "507f1f77bcf86cd799439002"
                 hotel:
                   type: string
                   description: ID của khách sạn (bắt buộc)
+                  example: "507f1f77bcf86cd799439011"
                 roomType:
                   type: string
                   enum: [standard, deluxe, vip, suite]
                   description: Loại phòng (bắt buộc)
+                  example: "vip"
                 checkIn:
                   type: string
                   format: date
                   description: Ngày check-in (YYYY-MM-DD, bắt buộc)
+                  example: "2024-06-01"
                 checkOut:
                   type: string
                   format: date
                   description: Ngày check-out (YYYY-MM-DD, bắt buộc)
+                  example: "2024-06-05"
                 notes:
                   type: string
                   description: Ghi chú thêm cho khách sạn
+                  example: "Chó hay sủa, cần chỗ yên tĩnh. Thích chơi với chó khác"
+            example:
+              pet: "507f1f77bcf86cd799439002"
+              hotel: "507f1f77bcf86cd799439011"
+              roomType: "vip"
+              checkIn: "2024-06-01"
+              checkOut: "2024-06-05"
+              notes: "Chó hay sủa, cần chỗ yên tĩnh"
       responses:
         201:
           description: Đặt phòng thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Đặt phòng thành công!"
+                  data:
+                    type: object
+                    example:
+                      _id: "507f1f77bcf86cd799439020"
+                      user: "507f1f77bcf86cd799439001"
+                      pet: "507f1f77bcf86cd799439002"
+                      hotel: "507f1f77bcf86cd799439011"
+                      roomType: "vip"
+                      checkIn: "2024-06-01"
+                      checkOut: "2024-06-05"
+                      numberOfNights: 4
+                      totalPrice: 2000000
+                      status: "pending"
+                      notes: "Chó hay sủa, cần chỗ yên tĩnh"
+                      createdAt: "2024-05-17T10:00:00Z"
   /hotel-bookings/{id}/status:
     put:
       summary: Cập nhật trạng thái booking
@@ -368,7 +477,8 @@ paths:
           required: true
           schema:
             type: string
-          description: ID của booking cần cập nhật
+            description: ID của booking cần cập nhật
+            example: "507f1f77bcf86cd799439020"
       requestBody:
         required: true
         content:
@@ -382,12 +492,48 @@ paths:
                   type: string
                   enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
                   description: Trạng thái mới của booking (bắt buộc)
+                  example: "confirmed"
                 cancellationReason:
                   type: string
                   description: Lý do hủy (bắt buộc nếu status là 'cancelled')
+                  example: "Thay đổi kế hoạch"
+            example:
+              status: "confirmed"
       responses:
         200:
           description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Cập nhật trạng thái booking thành công."
+                  data:
+                    type: object
+                    example:
+                      _id: "507f1f77bcf86cd799439020"
+                      user: "507f1f77bcf86cd799439001"
+                      pet: "507f1f77bcf86cd799439002"
+                      hotel: "507f1f77bcf86cd799439011"
+                      roomType: "vip"
+                      checkIn: "2024-06-01"
+                      checkOut: "2024-06-05"
+                      numberOfNights: 4
+                      totalPrice: 2000000
+                      status: "confirmed"
+                      notes: "Chó hay sủa, cần chỗ yên tĩnh"
+                      updatedAt: "2024-05-17T10:30:00Z"
+        400:
+          description: Yêu cầu không hợp lệ
+        403:
+          description: Không có quyền
+        404:
+          description: Không tìm thấy booking
           
   /chat:
     post:
