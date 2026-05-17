@@ -9,6 +9,8 @@
  *     description: Sổ y tế điện tử
  *   - name: Hotels & Bookings
  *     description: Đặt phòng khách sạn
+ *   - name: Products
+ *     description: Bán và quản lý sản phẩm cho thú cưng
  *   - name: Chatbot & Premium
  *     description: Dịch vụ AI Chatbot và Đăng ký bản Premium
  * 

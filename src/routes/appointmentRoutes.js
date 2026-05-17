@@ -8,6 +8,7 @@ const {
   getVetAppointments,
   updateAppointmentStatus,
   reviewAppointment,
+  deleteAppointment,
 } = require('../controllers/vetController');
 
 const router = express.Router();
@@ -35,5 +36,6 @@ router.get('/vet', authorize('vet'), getVetAppointments);
 
 router.put('/:id/status', updateAppointmentStatus);
 router.post('/:id/review', reviewAppointment);
+router.delete('/:id', deleteAppointment);
 
 module.exports = router;

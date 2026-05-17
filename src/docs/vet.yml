@@ -220,3 +220,29 @@ paths:
       responses:
         201:
           description: Đánh giá đã lưu
+  /appointments/{id}:
+    delete:
+      summary: Xóa lịch hẹn
+      description: |
+        Xóa lịch hẹn của người dùng.
+        Chỉ có thể xóa lịch hẹn đang ở trạng thái 'pending' hoặc 'confirmed'.
+        Chỉ chủ nhân lịch hẹn hoặc admin có thể xóa.
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID lịch hẹn
+      responses:
+        200:
+          description: Xóa lịch hẹn thành công
+        403:
+          description: Không có quyền xóa lịch hẹn này
+        404:
+          description: Không tìm thấy lịch hẹn
+        400:
+          description: Không thể xóa lịch hẹn ở trạng thái này

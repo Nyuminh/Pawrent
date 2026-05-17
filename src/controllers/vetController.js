@@ -438,3 +438,46 @@ exports.reviewAppointment = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Delete appointment
+// @route   DELETE /api/v1/appointments/:id
+// @access  Private
+exports.deleteAppointment = async (req, res, next) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy lịch hẹn.',
+      });
+    }
+
+    // Check permission
+    const isOwner = appointment.user.toString() === req.user.id;
+    
+    if (!isOwner && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xóa lịch hẹn này.',
+      });
+    }
+
+    // Only allow deletion for pending or confirmed appointments
+    if (!['pending', 'confirmed'].includes(appointment.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Chỉ có thể xóa lịch hẹn đang chờ xác nhận hoặc đã xác nhận.',
+      });
+    }
+
+    await Appointment.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Xóa lịch hẹn thành công.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

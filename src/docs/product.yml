@@ -1,0 +1,335 @@
+tags:
+  - name: Products
+    description: Bán và quản lý sản phẩm cho thú cưng
+paths:
+  /products:
+    get:
+      summary: Danh sách sản phẩm
+      description: |
+        Lấy danh sách tất cả sản phẩm với các bộ lọc.
+        Mặc định hiển thị các sản phẩm đang hoạt động.
+      tags: [Products]
+      parameters:
+        - name: category
+          in: query
+          description: Danh mục sản phẩm
+          schema:
+            type: string
+            enum:
+              - gps_tracker
+              - collar
+              - food
+              - toy
+              - bed
+              - grooming
+              - health
+              - clothing
+              - accessory
+              - other
+        - name: petType
+          in: query
+          description: Loại thú cưng
+          schema:
+            type: string
+            enum: [dog, cat, bird, hamster, rabbit, other]
+        - name: minPrice
+          in: query
+          description: Giá tối thiểu (VND)
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          description: Giá tối đa (VND)
+          schema:
+            type: number
+        - name: search
+          in: query
+          description: Tìm kiếm theo tên hoặc mô tả
+          schema:
+            type: string
+        - name: inStock
+          in: query
+          description: Chỉ hiển thị sản phẩm còn hàng
+          schema:
+            type: boolean
+            default: true
+        - name: minRating
+          in: query
+          description: Xếp hạng tối thiểu (0-5)
+          schema:
+            type: number
+        - name: sortBy
+          in: query
+          description: Sắp xếp theo (-createdAt, price, rating, etc)
+          schema:
+            type: string
+            default: '-createdAt'
+        - name: page
+          in: query
+          description: Số trang
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Số sản phẩm trên 1 trang
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  data:
+                    type: array
+    post:
+      summary: Tạo sản phẩm mới
+      description: Chỉ người bán hàng (seller) hoặc admin có thể tạo sản phẩm
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - category
+                - price
+                - petTypes
+              properties:
+                name:
+                  type: string
+                  description: Tên sản phẩm (bắt buộc)
+                  maxLength: 100
+                description:
+                  type: string
+                  description: Mô tả chi tiết (bắt buộc)
+                  maxLength: 2000
+                category:
+                  type: string
+                  description: Danh mục sản phẩm (bắt buộc)
+                  enum:
+                    - gps_tracker
+                    - collar
+                    - food
+                    - toy
+                    - bed
+                    - grooming
+                    - health
+                    - clothing
+                    - accessory
+                    - other
+                price:
+                  type: number
+                  description: Giá sản phẩm (VND, bắt buộc)
+                  minimum: 0
+                stock:
+                  type: object
+                  properties:
+                    quantity:
+                      type: integer
+                      description: Số lượng tồn kho
+                      minimum: 0
+                petTypes:
+                  type: array
+                  items:
+                    type: string
+                    enum: [dog, cat, bird, hamster, rabbit, other]
+                  description: Loại thú cưng (bắt buộc)
+                images:
+                  type: array
+                  items:
+                    type: string
+                  description: Danh sách URL hình ảnh
+                specifications:
+                  type: object
+                  description: Thông số kỹ thuật (tuỳ theo loại)
+                discount:
+                  type: object
+                  properties:
+                    percentage:
+                      type: number
+                      minimum: 0
+                      maximum: 100
+                    active:
+                      type: boolean
+                    validUntil:
+                      type: string
+                      format: date-time
+      responses:
+        201:
+          description: Tạo sản phẩm thành công
+        403:
+          description: Không có quyền tạo sản phẩm
+  /products/{id}:
+    get:
+      summary: Chi tiết sản phẩm
+      tags: [Products]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID sản phẩm
+      responses:
+        200:
+          description: Thành công
+        404:
+          description: Không tìm thấy sản phẩm
+    put:
+      summary: Cập nhật sản phẩm
+      description: Chỉ chủ sở hữu (seller) hoặc admin có thể cập nhật
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                category:
+                  type: string
+                price:
+                  type: number
+                stock:
+                  type: object
+                  properties:
+                    quantity:
+                      type: integer
+                    status:
+                      type: string
+                petTypes:
+                  type: array
+                  items:
+                    type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                discount:
+                  type: object
+                status:
+                  type: string
+                  enum: [active, inactive, discontinued]
+      responses:
+        200:
+          description: Cập nhật thành công
+        403:
+          description: Không có quyền cập nhật
+        404:
+          description: Không tìm thấy sản phẩm
+    delete:
+      summary: Xóa sản phẩm
+      description: Chỉ chủ sở hữu (seller) hoặc admin có thể xóa
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Xóa thành công
+        403:
+          description: Không có quyền xóa
+        404:
+          description: Không tìm thấy sản phẩm
+  /products/{id}/review:
+    post:
+      summary: Thêm đánh giá sản phẩm
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID sản phẩm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating, comment]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Xếp hạng (1-5 sao)
+                comment:
+                  type: string
+                  description: Nhận xét/bình luận
+      responses:
+        201:
+          description: Đánh giá đã thêm
+        400:
+          description: Bạn đã đánh giá sản phẩm này rồi
+        404:
+          description: Không tìm thấy sản phẩm
+  /products/seller/my-products:
+    get:
+      summary: Sản phẩm của tôi
+      description: Xem danh sách các sản phẩm bạn đang bán
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Lọc theo trạng thái
+          schema:
+            type: string
+            enum: [active, inactive, discontinued]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Thành công
+        403:
+          description: Không có quyền
