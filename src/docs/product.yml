@@ -98,7 +98,7 @@ paths:
                     type: array
     post:
       summary: Tạo sản phẩm mới
-      description: Chỉ người bán hàng (seller) hoặc admin có thể tạo sản phẩm
+      description: Chỉ admin có thể tạo sản phẩm
       tags: [Products]
       security:
         - bearerAuth: []
@@ -197,7 +197,7 @@ paths:
           description: Không tìm thấy sản phẩm
     put:
       summary: Cập nhật sản phẩm
-      description: Chỉ chủ sở hữu (seller) hoặc admin có thể cập nhật
+      description: Chỉ admin có thể cập nhật
       tags: [Products]
       security:
         - bearerAuth: []
@@ -251,7 +251,7 @@ paths:
           description: Không tìm thấy sản phẩm
     delete:
       summary: Xóa sản phẩm
-      description: Chỉ chủ sở hữu (seller) hoặc admin có thể xóa
+      description: Chỉ admin có thể xóa
       tags: [Products]
       security:
         - bearerAuth: []
@@ -304,20 +304,7 @@ paths:
           description: Bạn đã đánh giá sản phẩm này rồi
         404:
           description: Không tìm thấy sản phẩm
-  /products/seller/my-products:
-    get:
-      summary: Sản phẩm của tôi
-      description: Xem danh sách các sản phẩm bạn đang bán
-      tags: [Products]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: status
-          in: query
-          description: Lọc theo trạng thái
-          schema:
-            type: string
-            enum: [active, inactive, discontinued]
+
         - name: page
           in: query
           schema:

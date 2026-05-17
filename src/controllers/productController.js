@@ -37,7 +37,6 @@ exports.getAllProducts = async (req, res, next) => {
 
     const total = await Product.countDocuments(searchQuery);
     const products = await Product.find(searchQuery)
-      .populate('seller', 'fullName avatar phone')
       .sort(sortBy)
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -61,7 +60,6 @@ exports.getAllProducts = async (req, res, next) => {
 exports.getProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('seller', 'fullName avatar phone email')
       .populate('reviews.user', 'fullName avatar');
 
     if (!product || product.status === 'inactive') {
@@ -82,7 +80,7 @@ exports.getProduct = async (req, res, next) => {
 
 // @desc    Create product
 // @route   POST /api/v1/products
-// @access  Private (seller/admin)
+// @access  Private (admin)
 exports.createProduct = async (req, res, next) => {
   try {
     const {
@@ -96,14 +94,6 @@ exports.createProduct = async (req, res, next) => {
       specifications,
     } = req.body;
 
-    // Check if user is seller or admin
-    if (req.user.role !== 'seller' && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Chỉ người bán hàng có thể tạo sản phẩm.',
-      });
-    }
-
     const product = await Product.create({
       name,
       description,
@@ -113,7 +103,6 @@ exports.createProduct = async (req, res, next) => {
       petTypes,
       images: images || [],
       specifications,
-      seller: req.user.id,
     });
 
     res.status(201).json({
@@ -128,7 +117,7 @@ exports.createProduct = async (req, res, next) => {
 
 // @desc    Update product
 // @route   PUT /api/v1/products/:id
-// @access  Private (seller/admin)
+// @access  Private (admin)
 exports.updateProduct = async (req, res, next) => {
   try {
     let product = await Product.findById(req.params.id);
@@ -140,19 +129,7 @@ exports.updateProduct = async (req, res, next) => {
       });
     }
 
-    // Check ownership
-    if (
-      product.seller.toString() !== req.user.id &&
-      req.user.role !== 'admin'
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền cập nhật sản phẩm này.',
-      });
-    }
-
-    // Don't allow updating seller
-    delete req.body.seller;
+    // Don't allow updating reviews
     delete req.body.reviews;
 
     product = await Product.findByIdAndUpdate(req.params.id, req.body, {
@@ -172,7 +149,7 @@ exports.updateProduct = async (req, res, next) => {
 
 // @desc    Delete product
 // @route   DELETE /api/v1/products/:id
-// @access  Private (seller/admin)
+// @access  Private (admin)
 exports.deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -181,17 +158,6 @@ exports.deleteProduct = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy sản phẩm.',
-      });
-    }
-
-    // Check ownership
-    if (
-      product.seller.toString() !== req.user.id &&
-      req.user.role !== 'admin'
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền xóa sản phẩm này.',
       });
     }
 
@@ -258,41 +224,4 @@ exports.addReview = async (req, res, next) => {
   }
 };
 
-// @desc    Get seller's products
-// @route   GET /api/v1/products/seller/my-products
-// @access  Private (seller)
-exports.getMyProducts = async (req, res, next) => {
-  try {
-    if (req.user.role !== 'seller' && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Chỉ người bán hàng có thể xem danh sách sản phẩm của mình.',
-      });
-    }
 
-    const { page = 1, limit = 20, status } = req.query;
-
-    const query = {
-      seller: req.user.id,
-    };
-
-    if (status) query.status = status;
-
-    const total = await Product.countDocuments(query);
-    const products = await Product.find(query)
-      .sort('-createdAt')
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
-
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      total,
-      page: Number(page),
-      totalPages: Math.ceil(total / limit),
-      data: products,
-    });
-  } catch (error) {
-    next(error);
-  }
-};

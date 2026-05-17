@@ -239,7 +239,6 @@ const seedData = async () => {
 
     await Product.create([
       {
-        seller: premiumUser._id,
         name: 'GPS Tracker Cho Thú Cưng',
         description: 'Thiết bị theo dõi vị trí GPS cho chó, mèo. Công nghệ 4G, pin 8 ngày, chống nước IP67',
         category: 'gps_tracker',
@@ -265,7 +264,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Vòng Cổ Phát Sáng LED',
         description: 'Vòng cổ LED phát sáng 3 chế độ. An toàn, dễ sạc, pin lâu dài',
         category: 'collar',
@@ -291,7 +289,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Thức Ăn Cao Cấp Premium Dog Food',
         description: 'Thức ăn chó cao cấp, đặc biệt dành cho chó lông dài. Giàu dinh dưỡng, 20kg',
         category: 'food',
@@ -317,7 +314,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Đồ Chơi Cao Su Dẻo Cho Mèo',
         description: 'Bộ 5 đồ chơi cao su an toàn cho mèo. Giúp thú cưng vận động, giải tỏa stress',
         category: 'toy',
@@ -343,7 +339,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Giường Nệm Ôm Ấp Cho Chó',
         description: 'Giường ngủ ấm cúng cho chó, mèo. Vải cotton dịu mềm, dễ giặt. Size M 60x50cm',
         category: 'bed',
@@ -368,7 +363,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Dụng Cụ Tắm Gội Chuyên Nghiệp',
         description: 'Bộ dụng cụ tắm gội: chải lông, lược, kéo cắt tỉa lông cao cấp. Bằng thép không gỉ',
         category: 'grooming',
@@ -394,7 +388,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Vitamin & Bổ Sung Sức Khỏe',
         description: 'Viên bổ sung canxi, vitamin D3, Omega-3 cho chó mèo. 90 viên/hộp',
         category: 'health',
@@ -420,7 +413,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Áo Quần Dạo Phố Cho Chó',
         description: 'Bộ áo quần chó đáng yêu, chống nước, ấm. Size S M L XL. Nhiều mẫu mã',
         category: 'clothing',
@@ -446,7 +438,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Phụ Kiện Đi Dạo: Dây Xích & Vòng Cổ',
         description: 'Bộ dây xích và vòng cổ cao cấp. Da thật, khóa an toàn. Cho chó, mèo',
         category: 'accessory',
@@ -472,7 +463,6 @@ const seedData = async () => {
         reviews: [],
       },
       {
-        seller: premiumUser._id,
         name: 'Khay Vệ Sinh Tự Động',
         description: 'Khay vệ sinh thông minh tự vệ sinh cho mèo. Tiết kiệm cát, sạch sẽ, mùi hôi',
         category: 'other',
@@ -504,7 +494,7 @@ const seedData = async () => {
     console.log('───────────────────────────────────');
     console.log('Admin:    admin@pawrent.vn  / admin123');
     console.log('User:     sen@example.com   / user123');
-    console.log('Premium:  premium@example.com / premium123 (Seller products)');
+    console.log('Premium:  premium@example.com / premium123');
     console.log('Vet:      vet@example.com   / vet123');
     console.log('Hotel:    hotel@example.com  / hotel123');
     console.log('═══════════════════════════════════\n');

@@ -113,11 +113,6 @@ const ProductSchema = new mongoose.Schema(
         },
       },
     ],
-    seller: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
     status: {
       type: String,
       enum: ['active', 'inactive', 'discontinued'],
