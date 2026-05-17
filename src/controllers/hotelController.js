@@ -1,6 +1,60 @@
 const PetHotel = require('../models/PetHotel');
 const HotelBooking = require('../models/HotelBooking');
 
+// ==================== HELPER FUNCTIONS ====================
+
+// Transform hotel response with renamed ID fields
+const transformHotelResponse = (hotel) => {
+  const hotelObj = hotel.toObject ? hotel.toObject() : hotel;
+  
+  return {
+    hotelId: hotelObj._id,
+    name: hotelObj.name,
+    description: hotelObj.description,
+    owner: hotelObj.owner ? {
+      ownerId: hotelObj.owner._id,
+      fullName: hotelObj.owner.fullName,
+      avatar: hotelObj.owner.avatar,
+    } : null,
+    address: hotelObj.address,
+    phone: hotelObj.phone,
+    email: hotelObj.email,
+    acceptedPets: hotelObj.acceptedPets,
+    services: hotelObj.services ? hotelObj.services.map(s => ({
+      serviceId: s._id,
+      name: s.name,
+      description: s.description,
+      price: s.price,
+      currency: s.currency,
+    })) : [],
+    rooms: hotelObj.rooms ? hotelObj.rooms.map(r => ({
+      roomId: r._id,
+      type: r.type,
+      name: r.name,
+      description: r.description,
+      pricePerNight: r.pricePerNight,
+      capacity: r.capacity,
+      totalRooms: r.totalRooms,
+      availableRooms: r.availableRooms,
+      amenities: r.amenities,
+    })) : [],
+    images: hotelObj.images ? hotelObj.images.map(img => ({
+      imageId: img._id,
+      url: img.url,
+      caption: img.caption,
+    })) : [],
+    rating: hotelObj.rating,
+    operatingHours: hotelObj.operatingHours,
+    policies: hotelObj.policies,
+    commissionRate: hotelObj.commissionRate,
+    slug: hotelObj.slug,
+    isVerified: hotelObj.isVerified,
+    isActive: hotelObj.isActive,
+    createdAt: hotelObj.createdAt,
+    updatedAt: hotelObj.updatedAt,
+  };
+};
+
 // ==================== HOTEL MANAGEMENT ====================
 
 // @desc    Register hotel
@@ -17,10 +71,13 @@ exports.createHotel = async (req, res, next) => {
       await req.user.save({ validateBeforeSave: false });
     }
 
+    // Transform response with renamed ID fields
+    const transformedHotel = transformHotelResponse(hotel);
+
     res.status(201).json({
       success: true,
       message: 'Đăng ký khách sạn thú cưng thành công.',
-      data: hotel,
+      data: transformedHotel,
     });
   } catch (error) {
     next(error);
@@ -62,13 +119,16 @@ exports.getHotels = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
+    // Transform response with renamed ID fields
+    const transformedHotels = hotels.map(hotel => transformHotelResponse(hotel));
+
     res.status(200).json({
       success: true,
-      count: hotels.length,
+      count: transformedHotels.length,
       total,
       page: Number(page),
       totalPages: Math.ceil(total / limit),
-      data: hotels,
+      data: transformedHotels,
     });
   } catch (error) {
     next(error);
@@ -92,12 +152,17 @@ exports.getHotel = async (req, res, next) => {
       });
     }
 
+    // Transform response with renamed ID fields
+    const transformedHotel = transformHotelResponse(hotel);
+
     res.status(200).json({
       success: true,
-      data: hotel,
+      data: transformedHotel,
     });
   } catch (error) {
     next(error);
+  }
+};
   }
 };
 
@@ -136,10 +201,13 @@ exports.updateHotel = async (req, res, next) => {
       runValidators: true,
     });
 
+    // Transform response with renamed ID fields
+    const transformedHotel = transformHotelResponse(hotel);
+
     res.status(200).json({
       success: true,
       message: 'Cập nhật khách sạn thành công.',
-      data: hotel,
+      data: transformedHotel,
     });
   } catch (error) {
     next(error);
