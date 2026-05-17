@@ -772,3 +772,174 @@ paths:
           description: Không có quyền cập nhật khách sạn này
         404:
           description: Không tìm thấy khách sạn
+
+  /hotels/{hotelId}/rooms/occupancy:
+    get:
+      summary: Dashboard xem tình trạng phòng - Chủ khách sạn
+      description: Xem chi tiết tình trạng phòng, ai đang ở phòng nào, giờ check-in/out tiếp theo. Chỉ chủ khách sạn có quyền truy cập.
+      tags: [Hotels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hotelId
+          required: true
+          schema:
+            type: string
+          description: ID khách sạn
+          example: "507f1f77bcf86cd799439011"
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date
+          description: Ngày bắt đầu lọc (YYYY-MM-DD)
+          example: "2026-05-17"
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date
+          description: Ngày kết thúc lọc (YYYY-MM-DD)
+          example: "2026-06-17"
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  hotel:
+                    type: object
+                    properties:
+                      hotelId:
+                        type: string
+                        example: "507f1f77bcf86cd799439011"
+                      name:
+                        type: string
+                        example: "Happy Pet Hotel"
+                  totalOccupancy:
+                    type: object
+                    description: Tổng quan chiếm dụng phòng
+                    properties:
+                      totalRooms:
+                        type: integer
+                        example: 20
+                      occupiedRooms:
+                        type: integer
+                        example: 15
+                      availableRooms:
+                        type: integer
+                        example: 5
+                      occupancyRate:
+                        type: integer
+                        description: Tỉ lệ % phòng đã chiếm dụng
+                        example: 75
+                  dateRange:
+                    type: object
+                    properties:
+                      from:
+                        type: string
+                        example: "2026-05-17"
+                      to:
+                        type: string
+                        example: "2026-06-17"
+                  roomTypes:
+                    type: array
+                    description: Chi tiết phòng theo từng loại
+                    items:
+                      type: object
+                      properties:
+                        roomId:
+                          type: string
+                          example: "507f1f77bcf86cd799439012"
+                        type:
+                          type: string
+                          example: "standard"
+                        name:
+                          type: string
+                          example: "Phòng Standard"
+                        description:
+                          type: string
+                          example: "Phòng tiêu chuẩn cho thú cưng"
+                        pricePerNight:
+                          type: number
+                          example: 300000
+                        capacity:
+                          type: integer
+                          example: 2
+                        totalRooms:
+                          type: integer
+                          example: 10
+                        amenities:
+                          type: array
+                          items:
+                            type: string
+                          example: ["AC", "WiFi", "Pet bed"]
+                        summary:
+                          type: object
+                          description: Tóm tắt tình trạng loại phòng này
+                          properties:
+                            totalRooms:
+                              type: integer
+                              example: 10
+                            occupiedRooms:
+                              type: integer
+                              example: 7
+                            availableRooms:
+                              type: integer
+                              example: 3
+                            occupancyRate:
+                              type: integer
+                              example: 70
+                        bookings:
+                          type: array
+                          description: Danh sách khách hiện tại đang ở
+                          items:
+                            type: object
+                            properties:
+                              bookingId:
+                                type: string
+                                example: "507f1f77bcf86cd799439020"
+                              roomNumber:
+                                type: string
+                                description: Số phòng (VD: 101, 102)
+                                example: "101"
+                              guestName:
+                                type: string
+                                example: "Nguyễn Văn A"
+                              guestPhone:
+                                type: string
+                                example: "0912345678"
+                              guestEmail:
+                                type: string
+                                example: "guest@example.com"
+                              checkIn:
+                                type: string
+                                format: date-time
+                                example: "2026-05-17T15:00:00Z"
+                              checkOut:
+                                type: string
+                                format: date-time
+                                example: "2026-05-20T12:00:00Z"
+                              status:
+                                type: string
+                                enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+                                example: "checked_in"
+                              specialRequests:
+                                type: string
+                                example: "Cần yên tĩnh, thú cưng sợ tiếng ồn"
+                              duration:
+                                type: integer
+                                description: Số đêm ở
+                                example: 3
+        401:
+          description: Chưa đăng nhập
+        403:
+          description: Bạn không phải chủ khách sạn này
+        404:
+          description: Không tìm thấy khách sạn

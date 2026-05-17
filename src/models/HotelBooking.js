@@ -17,6 +17,10 @@ const HotelBookingSchema = new mongoose.Schema(
       enum: ['standard', 'deluxe', 'vip', 'suite'],
       required: [true, 'Vui lòng chọn loại phòng'],
     },
+    roomNumber: {
+      type: String,
+      description: 'Specific room number assigned (e.g., 101, 102)',
+    },
     checkIn: {
       type: Date,
       required: [true, 'Vui lòng chọn ngày check-in'],

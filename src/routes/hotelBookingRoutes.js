@@ -8,6 +8,7 @@ const {
   getHotelBookings,
   updateBookingStatus,
   reviewBooking,
+  getRoomOccupancy,
 } = require('../controllers/hotelController');
 
 const router = express.Router();

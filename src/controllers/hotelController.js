@@ -246,12 +246,55 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
+    // Auto-assign room number
+    // Find occupied rooms during this period
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    const occupiedBookings = await HotelBooking.find({
+      hotel: hotelId,
+      roomType,
+      status: { $in: ['confirmed', 'checked_in'] },
+      checkIn: { $lt: checkOutDate },
+      checkOut: { $gt: checkInDate },
+    }).select('roomNumber');
+
+    const occupiedRoomNumbers = occupiedBookings
+      .filter(b => b.roomNumber)
+      .map(b => parseInt(b.roomNumber));
+
+    // Generate room number (101, 102, 103, etc. based on room type)
+    let roomNumber;
+    const typePrefix = {
+      'standard': 1,
+      'deluxe': 2,
+      'vip': 3,
+      'suite': 4,
+    };
+    const prefix = typePrefix[roomType];
+
+    for (let i = 1; i <= room.totalRooms; i++) {
+      const candidateNumber = prefix * 100 + i;
+      if (!occupiedRoomNumbers.includes(candidateNumber)) {
+        roomNumber = candidateNumber.toString();
+        break;
+      }
+    }
+
+    if (!roomNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không có phòng trống trong khoảng thời gian này.',
+      });
+    }
+
     const booking = await HotelBooking.create({
       user: req.user.id,
       hotel: hotelId,
       roomType,
-      checkIn: new Date(checkIn),
-      checkOut: new Date(checkOut),
+      roomNumber,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
       additionalServices,
       specialRequests,
       pricing: {
@@ -446,6 +489,135 @@ exports.reviewBooking = async (req, res, next) => {
       success: true,
       message: 'Đánh giá thành công!',
       data: booking.review,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== ROOM OCCUPANCY DASHBOARD ====================
+
+// @desc    Get room occupancy status for hotel owner dashboard
+// @route   GET /api/v1/hotels/:hotelId/rooms/occupancy
+// @access  Private (hotel owner)
+exports.getRoomOccupancy = async (req, res, next) => {
+  try {
+    const { hotelId } = req.params;
+    const { dateFrom, dateTo } = req.query;
+
+    // Verify hotel ownership
+    const hotel = await PetHotel.findOne({
+      _id: hotelId,
+      owner: req.user.id,
+    });
+
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy khách sạn hoặc bạn không có quyền.',
+      });
+    }
+
+    // Build occupancy data for each room type
+    const occupancyData = [];
+
+    for (const room of hotel.rooms) {
+      const roomTypeData = {
+        roomId: room._id,
+        type: room.type,
+        name: room.name,
+        description: room.description,
+        pricePerNight: room.pricePerNight,
+        capacity: room.capacity,
+        totalRooms: room.totalRooms,
+        amenities: room.amenities,
+        bookings: [],
+        summary: {
+          totalRooms: room.totalRooms,
+          availableRooms: room.totalRooms,
+          occupiedRooms: 0,
+          occupancyRate: 0,
+        },
+      };
+
+      // Get all bookings for this room type
+      let bookingQuery = {
+        hotel: hotelId,
+        roomType: room.type,
+        status: { $in: ['confirmed', 'checked_in'] },
+      };
+
+      // Filter by date range if provided
+      if (dateFrom || dateTo) {
+        bookingQuery.$or = [];
+        if (dateFrom && dateTo) {
+          // Bookings that overlap with date range
+          bookingQuery.$or.push({
+            checkIn: { $lte: new Date(dateTo) },
+            checkOut: { $gte: new Date(dateFrom) },
+          });
+        } else if (dateFrom) {
+          bookingQuery.$or.push({
+            checkOut: { $gte: new Date(dateFrom) },
+          });
+        } else if (dateTo) {
+          bookingQuery.$or.push({
+            checkIn: { $lte: new Date(dateTo) },
+          });
+        }
+      }
+
+      const bookings = await HotelBooking.find(bookingQuery)
+        .populate('user', 'fullName phone email')
+        .select('roomNumber roomType checkIn checkOut user status specialRequests');
+
+      roomTypeData.bookings = bookings.map(b => ({
+        bookingId: b._id,
+        roomNumber: b.roomNumber || 'TBD',
+        guestName: b.user?.fullName,
+        guestPhone: b.user?.phone,
+        guestEmail: b.user?.email,
+        checkIn: b.checkIn,
+        checkOut: b.checkOut,
+        status: b.status,
+        specialRequests: b.specialRequests,
+        duration: Math.ceil(
+          (new Date(b.checkOut) - new Date(b.checkIn)) / (1000 * 60 * 60 * 24)
+        ),
+      }));
+
+      // Calculate occupancy
+      roomTypeData.summary.occupiedRooms = bookings.length;
+      roomTypeData.summary.availableRooms = room.totalRooms - bookings.length;
+      roomTypeData.summary.occupancyRate = Math.round(
+        (bookings.length / room.totalRooms) * 100
+      );
+
+      occupancyData.push(roomTypeData);
+    }
+
+    // Calculate total occupancy
+    const totalRooms = occupancyData.reduce((sum, r) => sum + r.summary.totalRooms, 0);
+    const totalOccupied = occupancyData.reduce((sum, r) => sum + r.summary.occupiedRooms, 0);
+    const totalAvailable = occupancyData.reduce((sum, r) => sum + r.summary.availableRooms, 0);
+
+    res.status(200).json({
+      success: true,
+      hotel: {
+        hotelId: hotel._id,
+        name: hotel.name,
+      },
+      totalOccupancy: {
+        totalRooms,
+        occupiedRooms: totalOccupied,
+        availableRooms: totalAvailable,
+        occupancyRate: Math.round((totalOccupied / totalRooms) * 100),
+      },
+      dateRange: {
+        from: dateFrom || new Date().toISOString().split('T')[0],
+        to: dateTo || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      },
+      roomTypes: occupancyData,
     });
   } catch (error) {
     next(error);
