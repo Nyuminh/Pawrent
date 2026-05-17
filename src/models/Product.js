@@ -60,7 +60,12 @@ const ProductSchema = new mongoose.Schema(
       },
     },
     images: {
-      type: [String],
+      type: [
+        {
+          url: String,
+          caption: String,
+        },
+      ],
       validate: {
         validator: function (v) {
           return v.length > 0;
