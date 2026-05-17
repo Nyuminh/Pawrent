@@ -163,8 +163,6 @@ exports.getHotel = async (req, res, next) => {
     next(error);
   }
 };
-  }
-};
 
 // @desc    Update hotel
 // @route   PUT /api/v1/hotels/:id
