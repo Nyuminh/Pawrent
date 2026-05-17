@@ -363,12 +363,6 @@ paths:
                           _id: "507f1f77bcf86cd799439001"
                           fullName: "Trần Thị B"
                           phone: "0987654321"
-                        pet:
-                          _id: "507f1f77bcf86cd799439002"
-                          name: "Milu"
-                          species: "dog"
-                          breed: "Golden Retriever"
-                          avatar: "https://res.cloudinary.com/pawrent/image/upload/v123/milu.jpg"
                         hotel:
                           _id: "507f1f77bcf86cd799439011"
                           name: "Happy Pet Hotel"
@@ -396,16 +390,11 @@ paths:
             schema:
               type: object
               required:
-                - pet
                 - hotel
                 - roomType
                 - checkIn
                 - checkOut
               properties:
-                pet:
-                  type: string
-                  description: ID của thú cưng cần đặt phòng (bắt buộc)
-                  example: "507f1f77bcf86cd799439002"
                 hotel:
                   type: string
                   description: ID của khách sạn (bắt buộc)
@@ -430,7 +419,6 @@ paths:
                   description: Ghi chú thêm cho khách sạn
                   example: "Chó hay sủa, cần chỗ yên tĩnh. Thích chơi với chó khác"
             example:
-              pet: "507f1f77bcf86cd799439002"
               hotel: "507f1f77bcf86cd799439011"
               roomType: "vip"
               checkIn: "2024-06-01"
@@ -455,7 +443,6 @@ paths:
                     example:
                       _id: "507f1f77bcf86cd799439020"
                       user: "507f1f77bcf86cd799439001"
-                      pet: "507f1f77bcf86cd799439002"
                       hotel: "507f1f77bcf86cd799439011"
                       roomType: "vip"
                       checkIn: "2024-06-01"
@@ -518,7 +505,6 @@ paths:
                     example:
                       _id: "507f1f77bcf86cd799439020"
                       user: "507f1f77bcf86cd799439001"
-                      pet: "507f1f77bcf86cd799439002"
                       hotel: "507f1f77bcf86cd799439011"
                       roomType: "vip"
                       checkIn: "2024-06-01"

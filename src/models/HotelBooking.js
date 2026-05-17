@@ -7,11 +7,6 @@ const HotelBookingSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    pet: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Pet',
-      required: true,
-    },
     hotel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'PetHotel',

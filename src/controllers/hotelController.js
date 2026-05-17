@@ -1,6 +1,5 @@
 const PetHotel = require('../models/PetHotel');
 const HotelBooking = require('../models/HotelBooking');
-const Pet = require('../models/Pet');
 
 // ==================== HOTEL MANAGEMENT ====================
 
@@ -154,16 +153,7 @@ exports.updateHotel = async (req, res, next) => {
 // @access  Private
 exports.createBooking = async (req, res, next) => {
   try {
-    const { pet: petId, hotel: hotelId, roomType, checkIn, checkOut, additionalServices, specialRequests } = req.body;
-
-    // Verify pet
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
-    if (!pet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy thú cưng.',
-      });
-    }
+    const { hotel: hotelId, roomType, checkIn, checkOut, additionalServices, specialRequests } = req.body;
 
     // Verify hotel
     const hotel = await PetHotel.findById(hotelId);
@@ -171,14 +161,6 @@ exports.createBooking = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy khách sạn.',
-      });
-    }
-
-    // Check pet type accepted
-    if (!hotel.acceptedPets.includes(pet.species)) {
-      return res.status(400).json({
-        success: false,
-        message: `Khách sạn này không nhận ${pet.species}.`,
       });
     }
 
@@ -200,7 +182,6 @@ exports.createBooking = async (req, res, next) => {
 
     const booking = await HotelBooking.create({
       user: req.user.id,
-      pet: petId,
       hotel: hotelId,
       roomType,
       checkIn: new Date(checkIn),

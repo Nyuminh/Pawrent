@@ -49,6 +49,74 @@ paths:
       responses:
         200:
           description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 2
+                  total:
+                    type: integer
+                    example: 12
+                  page:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 6
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      example:
+                        _id: "507f1f77bcf86cd799439011"
+                        name: "Happy Pet Hotel"
+                        description: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
+                        owner:
+                          _id: "507f1f77bcf86cd799439012"
+                          fullName: "Nguyễn Văn A"
+                          avatar: "https://res.cloudinary.com/pawrent/image/upload/v123/avatar.jpg"
+                        address:
+                          street: "123 Đường Nguyễn Hữu Cảnh"
+                          city: "TP. Hồ Chí Minh"
+                          district: "Quận 1"
+                          ward: "Phường Bến Nghé"
+                        phone: "0123456789"
+                        email: "contact@happypethotel.vn"
+                        acceptedPets: [dog, cat]
+                        priceRange:
+                          min: 200000
+                          max: 500000
+                          currency: "VND"
+                        rating:
+                          average: 4.8
+                          count: 25
+                        images:
+                          - url: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel1.jpg"
+                            caption: "Phòng ở"
+                          - url: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel2.jpg"
+                            caption: "Khu chơi"
+                        services:
+                          - name: "Phòng VIP"
+                            description: "Phòng sang trọng với điều hòa"
+                            price: 500000
+                            currency: "VND"
+                          - name: "Tắm gội"
+                            description: "Dịch vụ tắm gội chuyên nghiệp"
+                            price: 150000
+                            currency: "VND"
+                        operatingHours:
+                          checkIn: "14:00"
+                          checkOut: "12:00"
+                          isOpen24h: false
+                        capacity:
+                          total: 50
+                          available: 10
     post:
       summary: Đăng ký khách sạn thú cưng mới
       tags: [Hotels]
@@ -80,19 +148,22 @@ paths:
                       example: "TP. Hồ Chí Minh"
                     district:
                       type: string
+                      example: "Quận 1"
                     ward:
                       type: string
+                      example: "Phường Bến Nghé"
                 phone:
                   type: string
                   example: "0123456789"
                 email:
                   type: string
+                  example: "contact@happypethotel.vn"
                 acceptedPets:
                   type: array
                   items:
                     type: string
                     enum: [dog, cat, bird, hamster, rabbit, other]
-                  default: [dog, cat]
+                  example: [dog, cat]
                 services:
                   type: array
                   items:
@@ -100,16 +171,74 @@ paths:
                     properties:
                       name:
                         type: string
+                        example: "Phòng VIP"
                       description:
                         type: string
+                        example: "Phòng sang trọng với điều hòa"
                       price:
                         type: number
+                        example: 500000
                       currency:
                         type: string
-                        default: VND
+                        example: "VND"
+              example:
+                name: "Happy Pet Hotel"
+                description: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
+                address:
+                  street: "123 Đường Nguyễn Hữu Cảnh"
+                  city: "TP. Hồ Chí Minh"
+                  district: "Quận 1"
+                  ward: "Phường Bến Nghé"
+                phone: "0123456789"
+                email: "contact@happypethotel.vn"
+                acceptedPets: [dog, cat]
+                services:
+                  - name: "Phòng VIP"
+                    description: "Phòng sang trọng với điều hòa"
+                    price: 500000
+                    currency: "VND"
+                  - name: "Tắm gội"
+                    description: "Dịch vụ tắm gội chuyên nghiệp"
+                    price: 150000
+                    currency: "VND"
       responses:
         201:
           description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Đăng ký khách sạn thành công!"
+                  data:
+                    type: object
+                    example:
+                      _id: "507f1f77bcf86cd799439011"
+                      name: "Happy Pet Hotel"
+                      description: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
+                      owner: "507f1f77bcf86cd799439012"
+                      address:
+                        street: "123 Đường Nguyễn Hữu Cảnh"
+                        city: "TP. Hồ Chí Minh"
+                        district: "Quận 1"
+                        ward: "Phường Bến Nghé"
+                      phone: "0123456789"
+                      email: "contact@happypethotel.vn"
+                      acceptedPets: [dog, cat]
+                      services:
+                        - _id: "507f1f77bcf86cd799439013"
+                          name: "Phòng VIP"
+                          description: "Phòng sang trọng với điều hòa"
+                          price: 500000
+                          currency: "VND"
+                      isActive: true
+                      isVerified: false
+                      createdAt: "2024-05-17T10:30:00Z"
 
   /hotels/{id}:
     get:
@@ -121,9 +250,88 @@ paths:
           required: true
           schema:
             type: string
+            example: "507f1f77bcf86cd799439011"
       responses:
         200:
           description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    example:
+                      _id: "507f1f77bcf86cd799439011"
+                      name: "Happy Pet Hotel"
+                      description: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
+                      owner:
+                        _id: "507f1f77bcf86cd799439012"
+                        fullName: "Nguyễn Văn A"
+                        email: "owner@happypethotel.vn"
+                        phone: "0123456789"
+                      address:
+                        street: "123 Đường Nguyễn Hữu Cảnh"
+                        city: "TP. Hồ Chí Minh"
+                        district: "Quận 1"
+                        ward: "Phường Bến Nghé"
+                      phone: "0123456789"
+                      email: "contact@happypethotel.vn"
+                      acceptedPets: [dog, cat]
+                      priceRange:
+                        min: 200000
+                        max: 500000
+                        currency: "VND"
+                      rating:
+                        average: 4.8
+                        count: 25
+                      images:
+                        - url: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel1.jpg"
+                          caption: "Phòng ở"
+                        - url: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel2.jpg"
+                          caption: "Khu chơi"
+                        - url: "https://res.cloudinary.com/pawrent/image/upload/v123/hotel3.jpg"
+                          caption: "Sân chơi ngoài trời"
+                      services:
+                        - _id: "507f1f77bcf86cd799439013"
+                          name: "Phòng VIP"
+                          description: "Phòng sang trọng với điều hòa"
+                          price: 500000
+                          currency: "VND"
+                        - _id: "507f1f77bcf86cd799439014"
+                          name: "Tắm gội"
+                          description: "Dịch vụ tắm gội chuyên nghiệp"
+                          price: 150000
+                          currency: "VND"
+                        - _id: "507f1f77bcf86cd799439015"
+                          name: "Huấn luyện"
+                          description: "Dịch vụ huấn luyện cơ bản"
+                          price: 300000
+                          currency: "VND"
+                      operatingHours:
+                        checkIn: "14:00"
+                        checkOut: "12:00"
+                        isOpen24h: false
+                      capacity:
+                        total: 50
+                        available: 10
+                      reviews:
+                        - _id: "507f1f77bcf86cd799439016"
+                          user:
+                            _id: "507f1f77bcf86cd799439017"
+                            fullName: "Trần Thị B"
+                            avatar: "https://res.cloudinary.com/pawrent/image/upload/v123/user.jpg"
+                          rating: 5
+                          comment: "Dịch vụ rất tốt, chú chó yêu lắm"
+                          createdAt: "2024-05-15T08:00:00Z"
+                      isActive: true
+                      isVerified: true
+                      createdAt: "2024-01-10T10:30:00Z"
+        404:
+          description: Không tìm thấy khách sạn
     put:
       summary: Cập nhật thông tin khách sạn + Upload nhiều ảnh
       description: |
@@ -138,6 +346,7 @@ paths:
           required: true
           schema:
             type: string
+            example: "507f1f77bcf86cd799439011"
       requestBody:
         required: true
         content:
@@ -148,22 +357,27 @@ paths:
                 name:
                   type: string
                   description: Tên khách sạn
+                  example: "Happy Pet Hotel Premium"
                 description:
                   type: string
                   description: Mô tả khách sạn
+                  example: "Khách sạn cao cấp với dịch vụ 5 sao cho thú cưng"
                 address:
                   type: string
                   description: JSON string của address object
-                  example: '{"street":"123 Đường Nguyễn Hữu Cảnh","city":"TP. Hồ Chí Minh","district":"Q1"}'
+                  example: '{"street":"123 Đường Nguyễn Hữu Cảnh","city":"TP. Hồ Chí Minh","district":"Q1","ward":"Phường Bến Nghé"}'
                 phone:
                   type: string
+                  example: "0123456789"
                 email:
                   type: string
+                  example: "contact@happypethotel.vn"
                 acceptedPets:
                   type: array
                   items:
                     type: string
                     enum: [dog, cat, bird, hamster, rabbit, other]
+                  example: [dog, cat, bird]
                 images:
                   type: array
                   items:
@@ -173,11 +387,15 @@ paths:
                 services:
                   type: string
                   description: JSON string của mảng services
-                  example: '[{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]'
+                  example: '[{"name":"Phòng VIP","description":"Phòng sang trọng với điều hòa","price":500000,"currency":"VND"},{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]'
                 operatingHours:
                   type: string
                   description: JSON string của operatingHours object
                   example: '{"checkIn":"14:00","checkOut":"12:00","isOpen24h":false}'
+                capacity:
+                  type: string
+                  description: JSON string của capacity object
+                  example: '{"total":50,"available":10}'
       responses:
         200:
           description: Cập nhật thành công
@@ -194,20 +412,43 @@ paths:
                     example: "Cập nhật khách sạn thành công."
                   data:
                     type: object
-                    properties:
-                      _id:
-                        type: string
-                      name:
-                        type: string
+                    example:
+                      _id: "507f1f77bcf86cd799439011"
+                      name: "Happy Pet Hotel Premium"
+                      description: "Khách sạn cao cấp với dịch vụ 5 sao cho thú cưng"
+                      address:
+                        street: "123 Đường Nguyễn Hữu Cảnh"
+                        city: "TP. Hồ Chí Minh"
+                        district: "Quận 1"
+                        ward: "Phường Bến Nghé"
+                      phone: "0123456789"
+                      email: "contact@happypethotel.vn"
+                      acceptedPets: [dog, cat, bird]
                       images:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            url:
-                              type: string
-                              example: "https://res.cloudinary.com/pawrent/image/upload/..."
-                            caption:
-                              type: string
-                      owner:
-                        type: string
+                        - url: "https://res.cloudinary.com/pawrent/image/upload/v124/hotel1.jpg"
+                          caption: "Phòng ở"
+                        - url: "https://res.cloudinary.com/pawrent/image/upload/v124/hotel2.jpg"
+                          caption: "Khu chơi"
+                      services:
+                        - _id: "507f1f77bcf86cd799439013"
+                          name: "Phòng VIP"
+                          description: "Phòng sang trọng với điều hòa"
+                          price: 500000
+                          currency: "VND"
+                        - _id: "507f1f77bcf86cd799439014"
+                          name: "Tắm gội"
+                          description: "Tắm gội chuyên nghiệp"
+                          price: 150000
+                          currency: "VND"
+                      operatingHours:
+                        checkIn: "14:00"
+                        checkOut: "12:00"
+                        isOpen24h: false
+                      capacity:
+                        total: 50
+                        available: 10
+                      updatedAt: "2024-05-17T14:30:00Z"
+        403:
+          description: Không có quyền cập nhật khách sạn này
+        404:
+          description: Không tìm thấy khách sạn

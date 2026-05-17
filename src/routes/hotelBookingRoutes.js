@@ -14,7 +14,6 @@ const router = express.Router();
 
 // Validation
 const bookingValidation = [
-  body('pet').notEmpty().withMessage('ID thú cưng không được để trống'),
   body('hotel').notEmpty().withMessage('ID khách sạn không được để trống'),
   body('roomType')
     .isIn(['standard', 'deluxe', 'vip', 'suite'])
