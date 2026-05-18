@@ -30,14 +30,14 @@ const appointmentValidation = [
 // All routes require auth
 router.use(protect);
 
-router.get('/all', authorize('admin'), getAllAppointments);
+router.get('/all', getAllAppointments);
 
 router.route('/')
   .get(getMyAppointments)
   .post(appointmentValidation, validate, createAppointment);
 
 router.get('/vet', authorize('vet'), getVetAppointments);
-router.get('/vet/:vetId', authorize('admin'), getVetAppointmentsById);
+router.get('/vet/:vetId', getVetAppointmentsById);
 
 router.put('/:id/status', updateAppointmentStatus);
 router.post('/:id/review', reviewAppointment);
