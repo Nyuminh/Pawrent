@@ -382,6 +382,60 @@ exports.getVetAppointments = async (req, res, next) => {
   }
 };
 
+// @desc    Get appointments for a specific vet ID
+// @route   GET /api/v1/appointments/vet/:vetId
+// @access  Private (admin)
+exports.getVetAppointmentsById = async (req, res, next) => {
+  try {
+    const { status, date, page = 1, limit = 20 } = req.query;
+    const { vetId } = req.params;
+
+    if (!mongoose.isValidObjectId(vetId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID bác sĩ không hợp lệ.',
+      });
+    }
+
+    const vet = await Vet.findById(vetId);
+    if (!vet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bác sĩ thú y.',
+      });
+    }
+
+    const query = { vet: vet._id };
+    if (status) query.status = status;
+    if (date) {
+      const d = new Date(date);
+      query.date = {
+        $gte: d,
+        $lt: new Date(d.getTime() + 86400000),
+      };
+    }
+
+    const total = await Appointment.countDocuments(query);
+    const appointments = await Appointment.find(query)
+      .populate('user', 'fullName phone email')
+      .populate('pet', 'name species breed gender dateOfBirth weight healthStatus allergies')
+      .sort('date timeSlot.startTime')
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.status(200).json({
+      success: true,
+      count: appointments.length,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      data: appointments,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Update appointment status
 // @route   PUT /api/v1/appointments/:id/status
 // @access  Private

@@ -907,7 +907,7 @@ paths:
                                 example: "507f1f77bcf86cd799439020"
                               roomNumber:
                                 type: string
-                                description: Số phòng (VD: 101, 102)
+                                description: 'Số phòng (VD: 101, 102)'
                                 example: "101"
                               guestName:
                                 type: string

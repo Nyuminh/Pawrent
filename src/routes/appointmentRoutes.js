@@ -7,6 +7,7 @@ const {
   getMyAppointments,
   getAllAppointments,
   getVetAppointments,
+  getVetAppointmentsById,
   updateAppointmentStatus,
   reviewAppointment,
   deleteAppointment,
@@ -36,6 +37,7 @@ router.route('/')
   .post(appointmentValidation, validate, createAppointment);
 
 router.get('/vet', authorize('vet'), getVetAppointments);
+router.get('/vet/:vetId', authorize('admin'), getVetAppointmentsById);
 
 router.put('/:id/status', updateAppointmentStatus);
 router.post('/:id/review', reviewAppointment);
