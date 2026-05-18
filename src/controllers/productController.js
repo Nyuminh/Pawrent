@@ -253,6 +253,43 @@ exports.deleteProduct = async (req, res, next) => {
   }
 };
 
+// @desc    Remove product from cart
+// @route   DELETE /api/v1/products/:id/cart
+// @access  Private
+exports.removeFromCart = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const productId = req.params.id;
+
+    const cartItemIndex = user.cart.findIndex(
+      (item) => item.product.toString() === productId
+    );
+
+    if (cartItemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sản phẩm không có trong giỏ hàng.',
+      });
+    }
+
+    user.cart.splice(cartItemIndex, 1);
+    await user.save();
+
+    await user.populate({
+      path: 'cart.product',
+      select: 'name price discount stock images status',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Đã xóa sản phẩm khỏi giỏ hàng.',
+      data: user.cart,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Add review to product
 // @route   POST /api/v1/products/:id/review
 // @access  Private

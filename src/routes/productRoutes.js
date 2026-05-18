@@ -11,6 +11,7 @@ const {
   addReview,
   addToCart,
   getCart,
+  removeFromCart,
 } = require('../controllers/productController');
 
 const router = express.Router();
@@ -42,6 +43,7 @@ router.get('/:id', getProduct);
 
 // Authenticated routes
 router.post('/:id/cart', protect, addToCart);
+router.delete('/:id/cart', protect, removeFromCart);
 router.post('/:id/review', protect, reviewValidation, validate, addReview);
 
 // Protected routes (admin only)
