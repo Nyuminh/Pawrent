@@ -5,6 +5,7 @@ const { protect, authorize } = require('../middleware/auth');
 const {
   createAppointment,
   getMyAppointments,
+  getAllAppointments,
   getVetAppointments,
   updateAppointmentStatus,
   reviewAppointment,
@@ -27,6 +28,8 @@ const appointmentValidation = [
 
 // All routes require auth
 router.use(protect);
+
+router.get('/all', authorize('admin'), getAllAppointments);
 
 router.route('/')
   .get(getMyAppointments)

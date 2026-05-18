@@ -157,6 +157,50 @@ paths:
       responses:
         201:
           description: Đặt lịch thành công
+  /appointments/all:
+    get:
+      summary: Danh sách tất cả lịch hẹn (admin)
+      tags: [Vets & Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, in_progress, completed, cancelled, no_show]
+          description: Lọc theo trạng thái
+        - name: vet
+          in: query
+          schema:
+            type: string
+          description: ID bác sĩ thú y
+        - name: user
+          in: query
+          schema:
+            type: string
+          description: ID người dùng
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Lọc theo ngày (YYYY-MM-DD)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Số trang
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Số lượng trên 1 trang
+      responses:
+        200:
+          description: Thành công
   /appointments/{id}/status:
     put:
       summary: Cập nhật trạng thái lịch hẹn

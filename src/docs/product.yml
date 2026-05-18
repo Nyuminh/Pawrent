@@ -179,6 +179,15 @@ paths:
           description: Tạo sản phẩm thành công
         403:
           description: Không có quyền tạo sản phẩm
+  /products/cart:
+    get:
+      summary: Lấy giỏ hàng của người dùng
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công
   /products/{id}:
     get:
       summary: Chi tiết sản phẩm
@@ -268,6 +277,37 @@ paths:
           description: Không có quyền xóa
         404:
           description: Không tìm thấy sản phẩm
+  /products/{id}/cart:
+    post:
+      summary: Thêm sản phẩm vào giỏ hàng
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID sản phẩm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: Số lượng muốn thêm
+      responses:
+        200:
+          description: Thêm vào giỏ hàng thành công
+        400:
+          description: Số lượng không hợp lệ hoặc sản phẩm hết hàng
+        404:
+          description: Không tìm thấy sản phẩm
   /products/{id}/review:
     post:
       summary: Thêm đánh giá sản phẩm
@@ -287,7 +327,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [rating, comment]
+              required:
+                - rating
+                - comment
               properties:
                 rating:
                   type: integer
@@ -304,19 +346,5 @@ paths:
           description: Bạn đã đánh giá sản phẩm này rồi
         404:
           description: Không tìm thấy sản phẩm
-
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-      responses:
-        200:
-          description: Thành công
         403:
           description: Không có quyền

@@ -78,6 +78,87 @@ exports.getProduct = async (req, res, next) => {
   }
 };
 
+// @desc    Get current user cart
+// @route   GET /api/v1/products/cart
+// @access  Private
+exports.getCart = async (req, res, next) => {
+  try {
+    await req.user.populate({
+      path: 'cart.product',
+      select: 'name price discount stock images status',
+    });
+
+    res.status(200).json({
+      success: true,
+      data: req.user.cart,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Add product to cart
+// @route   POST /api/v1/products/:id/cart
+// @access  Private
+exports.addToCart = async (req, res, next) => {
+  try {
+    const quantity = Number(req.body.quantity) || 1;
+    if (quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Số lượng phải lớn hơn hoặc bằng 1.',
+      });
+    }
+
+    const product = await Product.findById(req.params.id);
+
+    if (!product || product.status === 'inactive') {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy sản phẩm.',
+      });
+    }
+
+    if (product.stock.quantity <= 0 || product.stock.status === 'out_of_stock') {
+      return res.status(400).json({
+        success: false,
+        message: 'Sản phẩm đã hết hàng.',
+      });
+    }
+
+    const maxQuantity = product.stock.quantity;
+    const user = req.user;
+    const existingItem = user.cart.find(
+      (item) => item.product.toString() === product._id.toString()
+    );
+
+    if (existingItem) {
+      const updatedQuantity = Math.min(existingItem.quantity + quantity, maxQuantity);
+      existingItem.quantity = updatedQuantity;
+    } else {
+      user.cart.push({
+        product: product._id,
+        quantity: Math.min(quantity, maxQuantity),
+      });
+    }
+
+    await user.save();
+
+    await user.populate({
+      path: 'cart.product',
+      select: 'name price discount stock images status',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Đã thêm sản phẩm vào giỏ hàng.',
+      data: user.cart,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Create product
 // @route   POST /api/v1/products
 // @access  Private (admin)

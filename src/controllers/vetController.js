@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Vet = require('../models/Vet');
 const Appointment = require('../models/Appointment');
 const Pet = require('../models/Pet');
@@ -247,6 +248,72 @@ exports.getMyAppointments = async (req, res, next) => {
 
     const total = await Appointment.countDocuments(query);
     const appointments = await Appointment.find(query)
+      .populate('pet', 'name species breed avatar')
+      .populate({
+        path: 'vet',
+        select: 'clinic specializations consultationFee',
+        populate: { path: 'user', select: 'fullName avatar' },
+      })
+      .sort('-date')
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.status(200).json({
+      success: true,
+      count: appointments.length,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      data: appointments,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all appointments (admin)
+// @route   GET /api/v1/appointments/all
+// @access  Private (admin)
+exports.getAllAppointments = async (req, res, next) => {
+  try {
+    const {
+      status,
+      vet,
+      user,
+      date,
+      id,
+      appointmentId,
+      page = 1,
+      limit = 20,
+    } = req.query;
+
+    const query = {};
+    if (status) query.status = status;
+    if (vet) query.vet = vet;
+    if (user) query.user = user;
+
+    const appointmentFilterId = id || appointmentId;
+    if (appointmentFilterId) {
+      if (!mongoose.isValidObjectId(appointmentFilterId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID lịch hẹn không hợp lệ.',
+        });
+      }
+      query._id = appointmentFilterId;
+    }
+
+    if (date) {
+      const d = new Date(date);
+      query.date = {
+        $gte: d,
+        $lt: new Date(d.getTime() + 86400000),
+      };
+    }
+
+    const total = await Appointment.countDocuments(query);
+    const appointments = await Appointment.find(query)
+      .populate('user', 'fullName phone email')
       .populate('pet', 'name species breed avatar')
       .populate({
         path: 'vet',
