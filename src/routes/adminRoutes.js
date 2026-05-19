@@ -5,6 +5,7 @@ const {
   getUsers,
   updateUser,
   deleteUser,
+  updateUserSubscription,
   verifyVet,
   verifyHotel,
 } = require('../controllers/adminController');
@@ -19,6 +20,7 @@ router.get('/dashboard', getDashboard);
 router.get('/users', getUsers);
 router.put('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
+router.put('/users/:id/subscription', updateUserSubscription);
 router.put('/vets/:id/verify', verifyVet);
 router.put('/hotels/:id/verify', verifyHotel);
 

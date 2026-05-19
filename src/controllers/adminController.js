@@ -164,6 +164,66 @@ exports.deleteUser = async (req, res, next) => {
   }
 };
 
+// @desc    Update user subscription
+// @route   PUT /api/v1/admin/users/:id/subscription
+// @access  Private (admin)
+exports.updateUserSubscription = async (req, res, next) => {
+  try {
+    const { plan, isActive, maxPets, startDate, endDate } = req.body;
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng.',
+      });
+    }
+
+    // Update subscription fields
+    if (plan !== undefined) {
+      if (!['free', 'premium'].includes(plan)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Gói phải là "free" hoặc "premium".',
+        });
+      }
+      user.subscription.plan = plan;
+    }
+
+    if (isActive !== undefined) {
+      user.subscription.isActive = isActive;
+    }
+
+    if (maxPets !== undefined) {
+      if (typeof maxPets !== 'number' || maxPets < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'maxPets phải là số >= 0.',
+        });
+      }
+      user.subscription.maxPets = maxPets;
+    }
+
+    if (startDate !== undefined) {
+      user.subscription.startDate = new Date(startDate);
+    }
+
+    if (endDate !== undefined) {
+      user.subscription.endDate = new Date(endDate);
+    }
+
+    await user.save({ validateBeforeSave: true });
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật gói subscription thành công.',
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Verify vet
 // @route   PUT /api/v1/admin/vets/:id/verify
 // @access  Private (admin)

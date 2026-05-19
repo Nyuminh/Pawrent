@@ -189,3 +189,103 @@ paths:
           description: Không tìm thấy người dùng
         403:
           description: Không có quyền
+
+  /admin/users/{id}/subscription:
+    put:
+      summary: Cập nhật gói subscription của người dùng
+      description: Cập nhật thông tin gói subscription (plan, trạng thái, hạn ngày, số pet tối đa)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID người dùng
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [free, premium]
+                  description: Gói subscription (free hoặc premium)
+                isActive:
+                  type: boolean
+                  description: Trạng thái hoạt động của gói
+                maxPets:
+                  type: integer
+                  minimum: 0
+                  description: Số thú cưng tối đa cho gói này
+                startDate:
+                  type: string
+                  format: date-time
+                  description: Ngày bắt đầu gói (ISO 8601 format)
+                  example: "2024-01-01T00:00:00Z"
+                endDate:
+                  type: string
+                  format: date-time
+                  description: Ngày kết thúc gói (ISO 8601 format)
+                  example: "2024-12-31T23:59:59Z"
+            examples:
+              update_to_premium:
+                summary: "Nâng cấp lên Premium 1 năm"
+                value:
+                  plan: "premium"
+                  isActive: true
+                  maxPets: 5
+                  startDate: "2024-01-01T00:00:00Z"
+                  endDate: "2024-12-31T23:59:59Z"
+              downgrade_to_free:
+                summary: "Hạ cấp xuống Free"
+                value:
+                  plan: "free"
+                  isActive: true
+                  maxPets: 1
+      responses:
+        200:
+          description: Cập nhật gói subscription thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      fullName:
+                        type: string
+                      email:
+                        type: string
+                      subscription:
+                        type: object
+                        properties:
+                          plan:
+                            type: string
+                          isActive:
+                            type: boolean
+                          maxPets:
+                            type: integer
+                          startDate:
+                            type: string
+                            format: date-time
+                          endDate:
+                            type: string
+                            format: date-time
+        400:
+          description: Dữ liệu không hợp lệ
+        404:
+          description: Không tìm thấy người dùng
+        403:
+          description: Không có quyền
