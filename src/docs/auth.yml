@@ -12,8 +12,8 @@ paths:
         - Chỉ cần: fullName, email, password
         
         **Bác sĩ thú y (role: vet):**
-        - Cung cấp tất cả thông tin chuyên môn cùng lúc (nếu có, bắt buộc: licenseNumber, specializations, yearsOfExperience, clinic.name)
-        - Hồ sơ sẽ chờ admin xác minh
+        - Chỉ cần: fullName, email, password
+        - Vets là người dùng có role 'vet', không cần tài liệu hay thông tin chuyên môn
       tags: [Auth]
       requestBody:
         required: true
@@ -40,68 +40,6 @@ paths:
                   enum: [user, vet]
                   default: user
                   description: "Vai trò: user (người nuôi thú cưng) hoặc vet (bác sĩ thú y)"
-                licenseNumber:
-                  type: string
-                  description: "Bắt buộc nếu role = vet. Số giấy phép hành nghề"
-                  example: "DV-2024-001234"
-                specializations:
-                  type: array
-                  description: "Bắt buộc nếu role = vet. Danh sách chuyên môn"
-                  items:
-                    type: string
-                  example: ["general", "surgery"]
-                yearsOfExperience:
-                  type: number
-                  description: "Bắt buộc nếu role = vet. Số năm kinh nghiệm"
-                  example: 5
-                clinic:
-                  type: object
-                  description: "Bắt buộc nếu role = vet. Thông tin phòng khám"
-                  properties:
-                    name:
-                      type: string
-                      description: "Tên phòng khám (bắt buộc)"
-                      example: "Phòng khám thú cưng Hà Nội"
-                    address:
-                      type: object
-                      description: "Địa chỉ phòng khám (bắt buộc street, city)"
-                      properties:
-                        street:
-                          type: string
-                          description: "Đường/số nhà (bắt buộc)"
-                        city:
-                          type: string
-                          description: "Thành phố (bắt buộc)"
-                        district:
-                          type: string
-                          description: "Quận/Huyện"
-                        ward:
-                          type: string
-                          description: "Phường/Xã"
-                    phone:
-                      type: string
-                      description: "Số điện thoại phòng khám (bắt buộc, khác với phone cá nhân)"
-                      example: "0243456789"
-                speciesExpertise:
-                  type: array
-                  description: "Tùy chọn. Các loài thú cưng chuyên gia"
-                  items:
-                    type: string
-                isAvailableOnline:
-                  type: boolean
-                  description: "Tùy chọn. Có khám tuyến trực tuyến không"
-                  default: false
-                bio:
-                  type: string
-                  description: "Tùy chọn. Tiểu sử/giới thiệu bản thân"
-                consultationFee:
-                  type: object
-                  description: "Tùy chọn. Phí khám chữa"
-                  properties:
-                    inPerson:
-                      type: number
-                    online:
-                      type: number
             examples:
               user_registration:
                 summary: "Đăng ký người dùng thường"
@@ -117,25 +55,13 @@ paths:
                   password: "123456"
                   phone: "0901234567"
                   role: "vet"
-                  licenseNumber: "DV-2024-001234"
-                  specializations: ["general", "surgery"]
-                  yearsOfExperience: 5
-                  clinic:
-                    name: "Phòng khám thú cưng Hà Nội"
-                    address:
-                      street: "123 Đường Tây Sơn"
-                      city: "Hà Nội"
-                      district: "Đống Đa"
-                    phone: "0243456789"
-                  speciesExpertise: ["dog", "cat"]
-                  isAvailableOnline: true
       responses:
         201:
           description: Đăng ký thành công
         400:
           description: Yêu cầu không hợp lệ
         409:
-          description: Email hoặc licenseNumber đã tồn tại
+          description: Email đã tồn tại
 
   /auth/register-hotel-owner:
     post:

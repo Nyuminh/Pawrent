@@ -13,6 +13,8 @@
  *     description: Bán và quản lý sản phẩm cho thú cưng
  *   - name: Chatbot & Premium
  *     description: Dịch vụ AI Chatbot và Đăng ký bản Premium
+ *   - name: Admin
+ *     description: Quản lý hệ thống (yêu cầu role admin)
  * 
  * paths:
  *   /pets:
@@ -41,7 +43,7 @@
  *       responses:
  *         200:
  *           description: Chi tiết thú cưng
- *   /vets:
+ *   /auth/vets:
  *     get:
  *       summary: Xem danh sách bác sĩ thú y
  *       tags: [Vets & Appointments]

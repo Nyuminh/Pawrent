@@ -12,55 +12,14 @@ const {
   getMe,
   updateProfile,
   changePassword,
+  getAllVets,
 } = require('../controllers/authController');
 
 const router = express.Router();
 
 // Custom validator for conditional vet fields
 const validateVetFieldsIfNeeded = (req, res, next) => {
-  const { role } = req.body;
-  
-  if (role === 'vet') {
-    // Vet registration requires these fields
-    const errors = [];
-
-    if (!req.body.licenseNumber || typeof req.body.licenseNumber !== 'string' || req.body.licenseNumber.trim() === '') {
-      errors.push('Số giấy phép hành nghề không được để trống');
-    }
-
-    if (!Array.isArray(req.body.specializations) || req.body.specializations.length === 0) {
-      errors.push('Chuyên môn phải là mảng với ít nhất 1 mục');
-    }
-
-    if (typeof req.body.yearsOfExperience !== 'number' || req.body.yearsOfExperience < 0) {
-      errors.push('Số năm kinh nghiệm phải là số >= 0');
-    }
-
-    if (!req.body.clinic || !req.body.clinic.name || typeof req.body.clinic.name !== 'string' || req.body.clinic.name.trim() === '') {
-      errors.push('Tên phòng khám không được để trống');
-    }
-
-    // Validate clinic phone (required for vet)
-    if (!req.body.clinic || !req.body.clinic.phone || typeof req.body.clinic.phone !== 'string' || req.body.clinic.phone.trim() === '') {
-      errors.push('Số điện thoại phòng khám không được để trống');
-    } else if (!/^(\+84|0)\d{9,10}$/.test(req.body.clinic.phone)) {
-      errors.push('Số điện thoại phòng khám không hợp lệ');
-    }
-
-    // Validate clinic address
-    if (!req.body.clinic || !req.body.clinic.address || !req.body.clinic.address.street || !req.body.clinic.address.city) {
-      errors.push('Địa chỉ phòng khám (street, city) không được để trống');
-    }
-
-    if (errors.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Dữ liệu bác sĩ không hợp lệ',
-        errors,
-      });
-    }
-  }
-
+  // Since vets are now just users with vet role, no special validation needed
   next();
 };
 
@@ -280,6 +239,7 @@ router.post('/register-hotel-owner', hotelOwnerValidation, validate, registerHot
  */
 router.post('/login', loginValidation, validate, login);
 router.post('/refresh-token', refreshToken);
+router.get('/vets', getAllVets);
 
 // Protected routes
 router.post('/logout', protect, logout);

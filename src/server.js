@@ -96,7 +96,6 @@ app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1/pets', require('./routes/petRoutes'));
 app.use('/api/v1/health-records', require('./routes/healthRecordRoutes'));
 app.use('/api/v1/reminders', require('./routes/reminderRoutes'));
-app.use('/api/v1/vets', require('./routes/vetRoutes'));
 app.use('/api/v1/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/v1/products', require('./routes/productRoutes'));
 app.use('/api/v1/hotels', require('./routes/hotelRoutes'));

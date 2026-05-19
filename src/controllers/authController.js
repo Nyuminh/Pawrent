@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const Vet = require('../models/Vet');
 
 // Helper: Send token response
 const sendTokenResponse = async (user, statusCode, res, message) => {
@@ -79,17 +78,6 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    // For vet registration, check for duplicate license number
-    if (assignedRole === 'vet' && vetData.licenseNumber) {
-      const existingVet = await Vet.findOne({ licenseNumber: vetData.licenseNumber });
-      if (existingVet) {
-        return res.status(409).json({
-          success: false,
-          message: 'Số giấy phép hành nghề này đã được đăng ký bởi người khác.',
-        });
-      }
-    }
-
     // Build subscription defaults based on role
     const subscription =
       assignedRole === 'vet'
@@ -104,25 +92,6 @@ exports.register = async (req, res, next) => {
       role: assignedRole,
       subscription,
     });
-
-    // If vet, create vet profile immediately
-    let vetProfile = null;
-    if (assignedRole === 'vet') {
-      vetProfile = await Vet.create({
-        user: user._id,
-        licenseNumber: vetData.licenseNumber,
-        specializations: vetData.specializations,
-        yearsOfExperience: vetData.yearsOfExperience,
-        clinic: vetData.clinic,
-        speciesExpertise: vetData.speciesExpertise,
-        isAvailableOnline: vetData.isAvailableOnline || false,
-        bio: vetData.bio,
-        education: vetData.education,
-        workingHours: vetData.workingHours,
-        consultationFee: vetData.consultationFee,
-        isActive: true,
-      });
-    }
 
     // Generate token response
     const accessToken = user.generateAccessToken();
@@ -139,11 +108,10 @@ exports.register = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: assignedRole === 'vet' 
-        ? 'Đăng ký bác sĩ thú y thành công! Hồ sơ của bạn đang chờ xác minh từ quản trị viên.' 
+        ? 'Đăng ký bác sĩ thú y thành công!' 
         : 'Đăng ký thành công!',
       data: {
         user: userData,
-        ...(vetProfile && { vetProfile }),
         accessToken,
         refreshToken,
         tokenType: 'Bearer',
@@ -490,6 +458,42 @@ exports.changePassword = async (req, res, next) => {
     await user.save();
 
     await sendTokenResponse(user, 200, res, 'Đổi mật khẩu thành công.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all vets (users with vet role)
+// @route   GET /api/v1/auth/vets
+// @access  Public
+exports.getAllVets = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, search } = req.query;
+
+    const query = { role: 'vet' };
+    
+    if (search) {
+      query.$or = [
+        { fullName: new RegExp(search, 'i') },
+        { email: new RegExp(search, 'i') },
+      ];
+    }
+
+    const total = await User.countDocuments(query);
+    const vets = await User.find(query)
+      .select('fullName avatar email phone address subscription')
+      .sort('-createdAt')
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.status(200).json({
+      success: true,
+      count: vets.length,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      data: vets,
+    });
   } catch (error) {
     next(error);
   }

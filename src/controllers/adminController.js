@@ -140,6 +140,30 @@ exports.updateUser = async (req, res, next) => {
   }
 };
 
+// @desc    Delete user (by admin)
+// @route   DELETE /api/v1/admin/users/:id
+// @access  Private (admin)
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Xóa người dùng thành công.',
+      data: {},
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Verify vet
 // @route   PUT /api/v1/admin/vets/:id/verify
 // @access  Private (admin)
