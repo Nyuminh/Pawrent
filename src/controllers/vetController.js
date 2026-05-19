@@ -21,9 +21,9 @@ exports.createAppointment = async (req, res, next) => {
       });
     }
 
-    // Verify vet exists
-    const vet = await Vet.findById(vetId);
-    if (!vet || !vet.isActive) {
+    // Verify vet exists and has vet role
+    const vet = await User.findById(vetId);
+    if (!vet || vet.role !== 'vet' || !vet.isActive) {
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy bác sĩ thú y.',
@@ -45,10 +45,8 @@ exports.createAppointment = async (req, res, next) => {
       });
     }
 
-    // Determine fee
-    const fee = appointmentType === 'online'
-      ? vet.consultationFee.online
-      : vet.consultationFee.inPerson;
+    // Use default consultation fee (no longer using Vet model)
+    const defaultFee = 300000; // 300k VND default
 
     const appointment = await Appointment.create({
       user: req.user.id,
@@ -60,7 +58,7 @@ exports.createAppointment = async (req, res, next) => {
       reason,
       symptoms,
       fee: {
-        amount: fee,
+        amount: defaultFee,
         currency: 'VND',
       },
       commission: {
@@ -91,11 +89,7 @@ exports.getMyAppointments = async (req, res, next) => {
     const total = await Appointment.countDocuments(query);
     const appointments = await Appointment.find(query)
       .populate('pet', 'name species breed avatar')
-      .populate({
-        path: 'vet',
-        select: 'clinic specializations consultationFee',
-        populate: { path: 'user', select: 'fullName avatar' },
-      })
+      .populate('vet', 'fullName avatar email phone')
       .sort('-date')
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -157,11 +151,7 @@ exports.getAllAppointments = async (req, res, next) => {
     const appointments = await Appointment.find(query)
       .populate('user', 'fullName phone email')
       .populate('pet', 'name species breed avatar')
-      .populate({
-        path: 'vet',
-        select: 'clinic specializations consultationFee',
-        populate: { path: 'user', select: 'fullName avatar' },
-      })
+      .populate('vet', 'fullName avatar email phone')
       .sort('-date')
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -184,16 +174,16 @@ exports.getAllAppointments = async (req, res, next) => {
 // @access  Private (vet)
 exports.getVetAppointments = async (req, res, next) => {
   try {
-    const vet = await Vet.findOne({ user: req.user.id });
-    if (!vet) {
-      return res.status(404).json({
+    // Check if user is a vet
+    if (req.user.role !== 'vet') {
+      return res.status(403).json({
         success: false,
-        message: 'Không tìm thấy hồ sơ bác sĩ.',
+        message: 'Chỉ bác sĩ thú y mới có thể xem lịch hẹn của mình.',
       });
     }
 
     const { status, date, page = 1, limit = 20 } = req.query;
-    const query = { vet: vet._id };
+    const query = { vet: req.user.id };
     if (status) query.status = status;
     if (date) {
       const d = new Date(date);
@@ -239,15 +229,16 @@ exports.getVetAppointmentsById = async (req, res, next) => {
       });
     }
 
-    const vet = await Vet.findById(vetId);
-    if (!vet) {
+    // Verify vet exists and has vet role
+    const vet = await User.findById(vetId);
+    if (!vet || vet.role !== 'vet') {
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy bác sĩ thú y.',
       });
     }
 
-    const query = { vet: vet._id };
+    const query = { vet: vetId };
     if (status) query.status = status;
     if (date) {
       const d = new Date(date);
@@ -294,9 +285,8 @@ exports.updateAppointmentStatus = async (req, res, next) => {
     }
 
     // Check permission
-    const vet = await Vet.findOne({ user: req.user.id });
     const isOwner = appointment.user.toString() === req.user.id;
-    const isVet = vet && appointment.vet.toString() === vet._id.toString();
+    const isVet = req.user.role === 'vet' && appointment.vet.toString() === req.user.id;
 
     if (!isOwner && !isVet && req.user.role !== 'admin') {
       return res.status(403).json({
@@ -377,20 +367,6 @@ exports.reviewAppointment = async (req, res, next) => {
       createdAt: new Date(),
     };
     await appointment.save();
-
-    // Update vet rating
-    const allReviews = await Appointment.find({
-      vet: appointment.vet,
-      'review.rating': { $exists: true },
-    }).select('review.rating');
-
-    const avgRating =
-      allReviews.reduce((sum, a) => sum + a.review.rating, 0) / allReviews.length;
-
-    await Vet.findByIdAndUpdate(appointment.vet, {
-      'rating.average': Math.round(avgRating * 10) / 10,
-      'rating.count': allReviews.length,
-    });
 
     res.status(200).json({
       success: true,
