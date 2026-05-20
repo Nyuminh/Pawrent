@@ -289,3 +289,100 @@ paths:
           description: Không tìm thấy người dùng
         403:
           description: Không có quyền
+
+  /admin/pets:
+    get:
+      summary: Danh sách tất cả thú cưng
+      description: Lấy danh sách tất cả thú cưng trong hệ thống (có phân trang, lọc và sắp xếp)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: species
+          in: query
+          schema:
+            type: string
+            enum: [dog, cat, bird, hamster, rabbit, fish, other]
+          description: Lọc theo loài thú cưng
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+          description: Lọc theo trạng thái (active/inactive)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Số trang
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Số lượng thú cưng trên 1 trang
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                    description: Số thú cưng trên trang hiện tại
+                  total:
+                    type: integer
+                    description: Tổng số thú cưng trong hệ thống
+                  page:
+                    type: integer
+                  pages:
+                    type: integer
+                    description: Tổng số trang
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                          description: Tên thú cưng
+                        species:
+                          type: string
+                          enum: [dog, cat, bird, hamster, rabbit, fish, other]
+                        breed:
+                          type: string
+                        gender:
+                          type: string
+                          enum: [male, female, unknown]
+                        age:
+                          type: number
+                        weight:
+                          type: number
+                        avatar:
+                          type: string
+                        isActive:
+                          type: boolean
+                        owner:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            name:
+                              type: string
+                            email:
+                              type: string
+                            phone:
+                              type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+        401:
+          description: Chưa xác thực
+        403:
+          description: Không có quyền (không phải admin)

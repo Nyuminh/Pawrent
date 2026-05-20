@@ -98,14 +98,14 @@ paths:
                     type: array
     post:
       summary: Tạo sản phẩm mới
-      description: Chỉ admin có thể tạo sản phẩm
+      description: Chỉ admin có thể tạo sản phẩm. Upload hình ảnh dưới dạng multipart/form-data
       tags: [Products]
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               required:
@@ -143,11 +143,7 @@ paths:
                   minimum: 0
                 stock:
                   type: object
-                  properties:
-                    quantity:
-                      type: integer
-                      description: Số lượng tồn kho
-                      minimum: 0
+                  description: Thông tin tồn kho (JSON string)
                 petTypes:
                   type: array
                   items:
@@ -158,22 +154,14 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: Danh sách URL hình ảnh
+                    format: binary
+                  description: Danh sách hình ảnh sản phẩm (upload tối đa 5 file)
                 specifications:
                   type: object
-                  description: Thông số kỹ thuật (tuỳ theo loại)
+                  description: Thông số kỹ thuật (tuỳ theo loại, JSON string)
                 discount:
                   type: object
-                  properties:
-                    percentage:
-                      type: number
-                      minimum: 0
-                      maximum: 100
-                    active:
-                      type: boolean
-                    validUntil:
-                      type: string
-                      format: date-time
+                  description: Thông tin giảm giá (JSON string)
       responses:
         201:
           description: Tạo sản phẩm thành công
@@ -206,7 +194,7 @@ paths:
           description: Không tìm thấy sản phẩm
     put:
       summary: Cập nhật sản phẩm
-      description: Chỉ admin có thể cập nhật
+      description: Chỉ admin có thể cập nhật. Hỗ trợ upload hình ảnh mới dưới dạng multipart/form-data
       tags: [Products]
       security:
         - bearerAuth: []
@@ -219,38 +207,43 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
                 name:
                   type: string
+                  description: Tên sản phẩm
                 description:
                   type: string
+                  description: Mô tả chi tiết
                 category:
                   type: string
+                  description: Danh mục sản phẩm
                 price:
                   type: number
+                  description: Giá sản phẩm (VND)
                 stock:
                   type: object
-                  properties:
-                    quantity:
-                      type: integer
-                    status:
-                      type: string
+                  description: Thông tin tồn kho (JSON string)
                 petTypes:
                   type: array
                   items:
                     type: string
+                  description: Loại thú cưng
                 images:
                   type: array
                   items:
                     type: string
+                    format: binary
+                  description: Danh sách hình ảnh mới (upload tối đa 5 file)
                 discount:
                   type: object
+                  description: Thông tin giảm giá (JSON string)
                 status:
                   type: string
                   enum: [active, inactive, discontinued]
+                  description: Trạng thái sản phẩm
       responses:
         200:
           description: Cập nhật thành công

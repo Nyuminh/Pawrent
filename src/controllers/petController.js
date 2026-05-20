@@ -154,3 +154,41 @@ exports.deletePet = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get all pets (Admin only)
+// @route   GET /api/v1/admin/pets
+// @access  Admin
+exports.getAllPets = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Optional filters
+    const filter = {};
+    if (req.query.species) {
+      filter.species = req.query.species;
+    }
+    if (req.query.isActive !== undefined) {
+      filter.isActive = req.query.isActive === 'true';
+    }
+
+    const total = await Pet.countDocuments(filter);
+    const pets = await Pet.find(filter)
+      .populate('owner', 'name email phone')
+      .skip(skip)
+      .limit(limit)
+      .sort('-createdAt');
+
+    res.status(200).json({
+      success: true,
+      count: pets.length,
+      total: total,
+      page: page,
+      pages: Math.ceil(total / limit),
+      data: pets,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

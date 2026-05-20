@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 const { protect, authorize } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');
 const {
   getAllProducts,
   getProduct,
@@ -48,8 +49,8 @@ router.post('/:id/review', protect, reviewValidation, validate, addReview);
 
 // Protected routes (admin only)
 router.use(protect, authorize('admin'));
-router.post('/', createProductValidation, validate, createProduct);
-router.put('/:id', updateProduct);
+router.post('/', upload.array('images'), createProductValidation, validate, createProduct);
+router.put('/:id', upload.array('images'), updateProduct);
 router.delete('/:id', deleteProduct);
 
 module.exports = router;

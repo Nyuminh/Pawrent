@@ -9,6 +9,7 @@ const {
   verifyVet,
   verifyHotel,
 } = require('../controllers/adminController');
+const { getAllPets } = require('../controllers/petController');
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.delete('/users/:id', deleteUser);
 router.put('/users/:id/subscription', updateUserSubscription);
 router.put('/vets/:id/verify', verifyVet);
 router.put('/hotels/:id/verify', verifyHotel);
+router.get('/pets', getAllPets);
 
 module.exports = router;
