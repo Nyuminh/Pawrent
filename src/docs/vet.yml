@@ -294,7 +294,7 @@ paths:
       summary: Xóa lịch hẹn
       description: |
         Xóa lịch hẹn của người dùng.
-        Chỉ có thể xóa lịch hẹn đang ở trạng thái 'pending' hoặc 'confirmed'.
+        Chỉ có thể xóa lịch hẹn đang ở trạng thái 'chờ_xác_nhận' hoặc 'đã_xác_nhận'.
         Chỉ chủ nhân lịch hẹn hoặc admin có thể xóa.
       tags: [Vets & Appointments]
       security:
