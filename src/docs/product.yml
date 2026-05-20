@@ -142,14 +142,19 @@ paths:
                   description: Giá sản phẩm (VND, bắt buộc)
                   minimum: 0
                 stock:
-                  type: object
-                  description: Thông tin tồn kho (JSON string)
+                  type: string
+                  description: |
+                    Thông tin tồn kho (JSON string).
+                    Ví dụ: {"quantity": 10}
+                  example: '{"quantity": 10}'
                 petTypes:
-                  type: array
-                  items:
-                    type: string
-                    enum: [dog, cat, bird, hamster, rabbit, other]
-                  description: Loại thú cưng (bắt buộc)
+                  type: string
+                  description: |
+                    Loại thú cưng (bắt buộc).
+                    Nhập dạng chuỗi ngăn bởi dấu phẩy hoặc JSON array:
+                    - Dạng 1 (nên dùng): dog,cat,bird
+                    - Dạng 2 (JSON): ["dog","cat","bird"]
+                  example: "dog,cat,bird"
                 images:
                   type: array
                   items:
@@ -157,11 +162,17 @@ paths:
                     format: binary
                   description: Danh sách hình ảnh sản phẩm (upload tối đa 5 file)
                 specifications:
-                  type: object
-                  description: Thông số kỹ thuật (tuỳ theo loại, JSON string)
+                  type: string
+                  description: |
+                    Thông số kỹ thuật (JSON string, tuỳ theo loại sản phẩm).
+                    Ví dụ: {"color": "red", "size": "M"}
+                  example: '{}'
                 discount:
-                  type: object
-                  description: Thông tin giảm giá (JSON string)
+                  type: string
+                  description: |
+                    Thông tin giảm giá (JSON string).
+                    Ví dụ: {"percentage": 10, "active": true}
+                  example: '{}'
       responses:
         201:
           description: Tạo sản phẩm thành công
@@ -227,19 +238,37 @@ paths:
                   type: object
                   description: Thông tin tồn kho (JSON string)
                 petTypes:
-                  type: array
-                  items:
-                    type: string
-                  description: Loại thú cưng
+                  type: string
+                  description: |
+                    Loại thú cưng.
+                    Nhập dạng chuỗi ngăn bởi dấu phẩy hoặc JSON array:
+                    - Dạng 1 (nên dùng): dog,cat,bird
+                    - Dạng 2 (JSON): ["dog","cat","bird"]
+                  example: "dog,cat"
+                stock:
+                  type: string
+                  description: |
+                    Thông tin tồn kho (JSON string).
+                    Ví dụ: {"quantity": 10}
+                  example: '{"quantity": 10}'
                 images:
                   type: array
                   items:
                     type: string
                     format: binary
                   description: Danh sách hình ảnh mới (upload tối đa 5 file)
+                specifications:
+                  type: string
+                  description: |
+                    Thông số kỹ thuật (JSON string).
+                    Ví dụ: {"color": "red"}
+                  example: '{}'
                 discount:
-                  type: object
-                  description: Thông tin giảm giá (JSON string)
+                  type: string
+                  description: |
+                    Thông tin giảm giá (JSON string).
+                    Ví dụ: {"percentage": 10}
+                  example: '{}'
                 status:
                   type: string
                   enum: [active, inactive, discontinued]

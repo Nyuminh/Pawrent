@@ -17,6 +17,37 @@ const {
 
 const router = express.Router();
 
+// Middleware để parse petTypes từ string thành array
+const parsePetTypes = (req, res, next) => {
+  if (req.body.petTypes) {
+    if (typeof req.body.petTypes === 'string') {
+      // Nếu là JSON array string: ["dog","cat"]
+      try {
+        req.body.petTypes = JSON.parse(req.body.petTypes);
+      } catch (e) {
+        // Nếu là chuỗi ngăn bởi dấu phẩy: dog,cat,bird
+        req.body.petTypes = req.body.petTypes.split(',').map(s => s.trim());
+      }
+    }
+  }
+  next();
+};
+
+// Middleware để parse JSON fields từ string
+const parseJSONFields = (req, res, next) => {
+  const jsonFields = ['stock', 'specifications', 'discount'];
+  jsonFields.forEach(field => {
+    if (req.body[field] && typeof req.body[field] === 'string') {
+      try {
+        req.body[field] = JSON.parse(req.body[field]);
+      } catch (e) {
+        // Nếu parse lỗi, giữ nguyên string
+      }
+    }
+  });
+  next();
+};
+
 // Validation rules
 const createProductValidation = [
   body('name').notEmpty().withMessage('Tên sản phẩm không được để trống'),
@@ -49,8 +80,8 @@ router.post('/:id/review', protect, reviewValidation, validate, addReview);
 
 // Protected routes (admin only)
 router.use(protect, authorize('admin'));
-router.post('/', upload.array('images'), createProductValidation, validate, createProduct);
-router.put('/:id', upload.array('images'), updateProduct);
+router.post('/', upload.array('images'), parseJSONFields, parsePetTypes, createProductValidation, validate, createProduct);
+router.put('/:id', upload.array('images'), parseJSONFields, parsePetTypes, updateProduct);
 router.delete('/:id', deleteProduct);
 
 module.exports = router;
