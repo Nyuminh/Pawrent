@@ -1,10 +1,12 @@
 const ChatHistory = require('../models/ChatHistory');
 const Pet = require('../models/Pet');
 const { v4: uuidv4 } = require('crypto');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const OpenAI = require('openai');
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+// Initialize OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Helper: Generate session ID
 const generateSessionId = () => {
@@ -36,13 +38,10 @@ const parseAIResponse = (text) => {
   return { severity, recommendation };
 };
 
-// Helper: Get AI response from Gemini
+// Helper: Get AI response from OpenAI
 const getAIResponse = async (messages, petInfo) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    // Prepare system context
-    const systemContext = `Bạn là trợ lý AI chăm sóc thú cưng chuyên nghiệp của PAWRENT. 
+    const systemMessage = `Bạn là trợ lý AI chăm sóc thú cưng chuyên nghiệp của PAWRENT. 
     ${petInfo ? `Thú cưng: ${petInfo.name} (${petInfo.species}, ${petInfo.breed || 'không rõ'}), 
     Tuổi: ${petInfo.age?.years || 0} tuổi ${petInfo.age?.months || 0} tháng,
     Tình trạng sức khỏe: ${petInfo.healthStatus}, 
@@ -57,23 +56,29 @@ const getAIResponse = async (messages, petInfo) => {
     - Trả lời bằng TIẾNG VIỆT
     - Ngắn gọn, rõ ràng, dễ hiểu`;
 
-    // Convert chat history to Gemini format
-    const history = messages
+    // Convert messages to OpenAI format
+    const openaiMessages = messages
       .filter((m) => m.role !== 'system')
       .map((m) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content,
       }));
 
-    // Start chat session
-    const chat = model.startChat({
-      history: history.slice(0, -1),
+    // Add system message at the beginning
+    openaiMessages.unshift({
+      role: 'system',
+      content: systemMessage,
     });
 
-    // Send message and get response
-    const lastUserMessage = messages[messages.length - 1].content;
-    const result = await chat.sendMessage(lastUserMessage);
-    const responseText = result.response.text();
+    // Call OpenAI API
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: openaiMessages,
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    const responseText = response.choices[0].message.content;
 
     // Parse severity and recommendation
     const { severity, recommendation } = parseAIResponse(responseText);
@@ -85,6 +90,7 @@ const getAIResponse = async (messages, petInfo) => {
       symptoms: [],
     };
   } catch (error) {
+    console.error('❌ OpenAI Error:', error.message);
     throw error;
   }
 };
@@ -95,10 +101,10 @@ const getAIResponse = async (messages, petInfo) => {
 exports.sendMessage = async (req, res, next) => {
   try {
     // Check if API key is configured
-    if (!process.env.GOOGLE_API_KEY) {
+    if (!process.env.OPENAI_API_KEY) {
       return res.status(503).json({
         success: false,
-        message: 'AI Chatbot chưa được kích hoạt. Vui lòng liên hệ admin để setup Google API key.',
+        message: 'AI Chatbot chưa được kích hoạt. Vui lòng liên hệ admin để setup OpenAI API key.',
         code: 'AI_SERVICE_UNAVAILABLE',
       });
     }
