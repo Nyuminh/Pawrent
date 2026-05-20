@@ -13,6 +13,7 @@ const {
   addToCart,
   getCart,
   removeFromCart,
+  updateCart,
 } = require('../controllers/productController');
 
 const router = express.Router();
@@ -75,6 +76,7 @@ router.get('/:id', getProduct);
 
 // Authenticated routes
 router.post('/:id/cart', protect, addToCart);
+router.put('/:id/cart', protect, updateCart);
 router.delete('/:id/cart', protect, removeFromCart);
 router.post('/:id/review', protect, reviewValidation, validate, addReview);
 

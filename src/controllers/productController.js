@@ -297,6 +297,71 @@ exports.removeFromCart = async (req, res, next) => {
   }
 };
 
+// @desc    Update product quantity in cart
+// @route   PUT /api/v1/products/:id/cart
+// @access  Private
+exports.updateCart = async (req, res, next) => {
+  try {
+    const quantity = Number(req.body.quantity);
+    
+    if (isNaN(quantity) || quantity < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Số lượng phải là số không âm.',
+      });
+    }
+
+    const user = req.user;
+    const productId = req.params.id;
+
+    const cartItem = user.cart.find(
+      (item) => item.product.toString() === productId
+    );
+
+    if (!cartItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sản phẩm không có trong giỏ hàng.',
+      });
+    }
+
+    // Get product to check stock
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy sản phẩm.',
+      });
+    }
+
+    // If quantity is 0, remove from cart
+    if (quantity === 0) {
+      user.cart = user.cart.filter(
+        (item) => item.product.toString() !== productId
+      );
+    } else {
+      // Update quantity with stock limit
+      const maxQuantity = product.stock.quantity;
+      cartItem.quantity = Math.min(quantity, maxQuantity);
+    }
+
+    await user.save();
+
+    await user.populate({
+      path: 'cart.product',
+      select: 'name price discount stock images status',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật giỏ hàng thành công.',
+      data: user.cart,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Add review to product
 // @route   POST /api/v1/products/:id/review
 // @access  Private
