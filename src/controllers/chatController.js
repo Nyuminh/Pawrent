@@ -3,12 +3,51 @@ const Pet = require('../models/Pet');
 const { v4: uuidv4 } = require('crypto');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+// Initialize Gemini AI (only if API key is provided)
+let genAI = null;
+if (process.env.GOOGLE_API_KEY) {
+  genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+}
 
 // Helper: Generate session ID
 const generateSessionId = () => {
   return `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Helper: Simple keyword-based AI response (fallback)
+const getSimpleAIResponse = (message, petInfo) => {
+  const lastMessage = message.toLowerCase();
+  let severity = 'normal';
+  let recommendation = 'self_care';
+  let response = '';
+
+  // Keyword analysis
+  const emergencyKeywords = ['co giật', 'chảy máu nhiều', 'không thở', 'ngộ độc', 'tai nạn', 'bất tỉnh'];
+  const severeKeywords = ['nôn liên tục', 'tiêu chảy nặng', 'sốt cao', 'bỏ ăn 2 ngày', 'khó thở'];
+  const moderateKeywords = ['nôn', 'tiêu chảy', 'ho', 'sốt', 'bỏ ăn', 'mệt mỏi', 'ngứa'];
+  const mildKeywords = ['hắt hơi', 'gãi', 'ăn ít', 'lười', 'thay đổi lông'];
+
+  if (emergencyKeywords.some((k) => lastMessage.includes(k))) {
+    severity = 'emergency';
+    recommendation = 'emergency';
+    response = `⚠️ **KHẨN CẤP**: Triệu chứng bạn mô tả cần được xử lý NGAY LẬP TỨC. Hãy đưa ${petInfo?.name || 'thú cưng'} đến phòng khám thú y gần nhất. KHÔNG tự ý điều trị tại nhà.\n\n📞 Bạn có muốn tôi tìm bác sĩ thú y gần nhất không?`;
+  } else if (severeKeywords.some((k) => lastMessage.includes(k))) {
+    severity = 'severe';
+    recommendation = 'urgent_vet';
+    response = `🔴 Triệu chứng của ${petInfo?.name || 'thú cưng'} khá nghiêm trọng. Bạn nên đưa đến bác sĩ thú y trong vòng 24 giờ tới.\n\n**Trong khi chờ đợi:**\n- Đảm bảo cung cấp đủ nước\n- Giữ thú cưng ở nơi yên tĩnh\n- Theo dõi sát các triệu chứng`;
+  } else if (moderateKeywords.some((k) => lastMessage.includes(k))) {
+    severity = 'moderate';
+    recommendation = 'schedule_vet';
+    response = `🟡 Triệu chứng của ${petInfo?.name || 'thú cưng'} cần theo dõi. Nếu kéo dài hơn 48 giờ, bạn nên đưa đến bác sĩ thú y.\n\n**Gợi ý chăm sóc:**\n- Cho ăn nhẹ, dễ tiêu hóa\n- Đảm bảo uống đủ nước\n- Ghi lại tần suất triệu chứng`;
+  } else if (mildKeywords.some((k) => lastMessage.includes(k))) {
+    severity = 'mild';
+    recommendation = 'monitor';
+    response = `🟢 Triệu chứng nhẹ, có thể theo dõi tại nhà. Nếu không cải thiện sau 3-5 ngày, hãy liên hệ bác sĩ.\n\n**Mẹo chăm sóc:**\n- Giữ vệ sinh sạch sẽ\n- Đảm bảo dinh dưỡng đầy đủ\n- Theo dõi thay đổi hành vi`;
+  } else {
+    response = `Xin chào! Tôi là trợ lý AI của PAWRENT 🐾\n\nTôi có thể giúp bạn:\n- Tư vấn khi thú cưng có triệu chứng bất thường\n- Gợi ý chăm sóc phù hợp\n- Đề xuất đi khám bác sĩ khi cần\n\nHãy mô tả tình trạng sức khỏe ${petInfo?.name || 'thú cưng'} của bạn.`;
+  }
+
+  return { response, severity, recommendation, symptoms: [] };
 };
 
 // Helper: Extract severity and recommendation from AI response
@@ -38,6 +77,13 @@ const parseAIResponse = (text) => {
 
 // Helper: Get AI response from Gemini
 const getAIResponse = async (messages, petInfo) => {
+  // If API key is not configured, use simple keyword-based AI
+  if (!genAI || !process.env.GOOGLE_API_KEY) {
+    console.warn('⚠️ GOOGLE_API_KEY not configured. Using fallback keyword-based AI.');
+    const lastMessage = messages[messages.length - 1].content;
+    return getSimpleAIResponse(lastMessage, petInfo);
+  }
+
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
@@ -85,14 +131,12 @@ const getAIResponse = async (messages, petInfo) => {
       symptoms: [],
     };
   } catch (error) {
-    console.error('AI Response Error:', error);
-    // Fallback to simple response if API fails
-    return {
-      response: `Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu. Vui lòng thử lại sau. Thông tin: ${error.message}`,
-      severity: 'normal',
-      recommendation: 'self_care',
-      symptoms: [],
-    };
+    console.error('❌ Gemini AI Error:', error.message);
+    console.warn('⚠️ Falling back to keyword-based AI...');
+
+    // Fallback to simple keyword-based AI
+    const lastMessage = messages[messages.length - 1].content;
+    return getSimpleAIResponse(lastMessage, petInfo);
   }
 };
 
