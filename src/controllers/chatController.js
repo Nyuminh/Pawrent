@@ -1,50 +1,99 @@
 const ChatHistory = require('../models/ChatHistory');
 const Pet = require('../models/Pet');
 const { v4: uuidv4 } = require('crypto');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 // Helper: Generate session ID
 const generateSessionId = () => {
   return `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// Helper: Simulate AI response (replace with actual AI API call)
-const getAIResponse = async (messages, petInfo) => {
-  // In production, call your AI API (OpenAI, Gemini, etc.)
-  // This is a structured mock that demonstrates the response format
-  const lastMessage = messages[messages.length - 1].content.toLowerCase();
-
+// Helper: Extract severity and recommendation from AI response
+const parseAIResponse = (text) => {
   let severity = 'normal';
   let recommendation = 'self_care';
-  let symptoms = [];
-  let response = '';
 
-  // Simple keyword-based triage (replace with real AI)
-  const emergencyKeywords = ['co giật', 'chảy máu nhiều', 'không thở', 'ngộ độc', 'tai nạn', 'bất tỉnh'];
-  const severeKeywords = ['nôn liên tục', 'tiêu chảy nặng', 'sốt cao', 'bỏ ăn 2 ngày', 'khó thở'];
-  const moderateKeywords = ['nôn', 'tiêu chảy', 'ho', 'sốt', 'bỏ ăn', 'mệt mỏi', 'ngứa'];
-  const mildKeywords = ['hắt hơi', 'gãi', 'ăn ít', 'lười', 'thay đổi lông'];
+  const lowerText = text.toLowerCase();
 
-  if (emergencyKeywords.some((k) => lastMessage.includes(k))) {
+  // Detect severity keywords
+  if (lowerText.includes('khẩn cấp') || lowerText.includes('ngay lập tức') || lowerText.includes('emergency')) {
     severity = 'emergency';
     recommendation = 'emergency';
-    response = `⚠️ **KHẨN CẤP**: Triệu chứng bạn mô tả cần được xử lý NGAY LẬP TỨC. Hãy đưa ${petInfo?.name || 'thú cưng'} đến phòng khám thú y gần nhất hoặc gọi đường dây nóng thú y. KHÔNG tự ý điều trị tại nhà.\n\n📞 Bạn có muốn tôi tìm bác sĩ thú y gần nhất không?`;
-  } else if (severeKeywords.some((k) => lastMessage.includes(k))) {
+  } else if (lowerText.includes('nghiêm trọng') || lowerText.includes('trong 24 giờ') || lowerText.includes('urgent')) {
     severity = 'severe';
     recommendation = 'urgent_vet';
-    response = `🔴 Triệu chứng của ${petInfo?.name || 'thú cưng'} khá nghiêm trọng. Bạn nên đưa đến bác sĩ thú y trong vòng 24 giờ tới.\n\n**Trong khi chờ đợi:**\n- Đảm bảo cung cấp đủ nước\n- Giữ thú cưng ở nơi yên tĩnh\n- Theo dõi sát các triệu chứng\n\n📋 Bạn có muốn đặt lịch khám ngay không?`;
-  } else if (moderateKeywords.some((k) => lastMessage.includes(k))) {
+  } else if (lowerText.includes('cần theo dõi') || lowerText.includes('schedule') || lowerText.includes('đặt lịch')) {
     severity = 'moderate';
     recommendation = 'schedule_vet';
-    response = `🟡 Triệu chứng của ${petInfo?.name || 'thú cưng'} cần theo dõi. Nếu kéo dài hơn 48 giờ, bạn nên đưa đến bác sĩ thú y.\n\n**Gợi ý chăm sóc:**\n- Cho ăn nhẹ, dễ tiêu hóa\n- Đảm bảo uống đủ nước\n- Ghi lại tần suất triệu chứng\n\nHãy cho tôi biết nếu có thêm triệu chứng khác.`;
-  } else if (mildKeywords.some((k) => lastMessage.includes(k))) {
+  } else if (lowerText.includes('nhẹ') || lowerText.includes('monitor') || lowerText.includes('theo dõi')) {
     severity = 'mild';
     recommendation = 'monitor';
-    response = `🟢 Triệu chứng nhẹ, có thể theo dõi tại nhà. Nếu không cải thiện sau 3-5 ngày, hãy liên hệ bác sĩ.\n\n**Mẹo chăm sóc:**\n- Giữ vệ sinh sạch sẽ\n- Đảm bảo dinh dưỡng đầy đủ\n- Theo dõi thay đổi hành vi`;
-  } else {
-    response = `Xin chào! Tôi là trợ lý AI của PAWRENT 🐾\n\nTôi có thể giúp bạn:\n- Tư vấn khi thú cưng có triệu chứng bất thường\n- Gợi ý chăm sóc phù hợp\n- Đề xuất đi khám bác sĩ khi cần\n\nHãy mô tả tình trạng sức khỏe ${petInfo?.name || 'thú cưng'} của bạn.`;
   }
 
-  return { response, severity, recommendation, symptoms };
+  return { severity, recommendation };
+};
+
+// Helper: Get AI response from Gemini
+const getAIResponse = async (messages, petInfo) => {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+    // Prepare system context
+    const systemContext = `Bạn là trợ lý AI chăm sóc thú cưng chuyên nghiệp của PAWRENT. 
+    ${petInfo ? `Thú cưng: ${petInfo.name} (${petInfo.species}, ${petInfo.breed || 'không rõ'}), 
+    Tuổi: ${petInfo.age?.years || 0} tuổi ${petInfo.age?.months || 0} tháng,
+    Tình trạng sức khỏe: ${petInfo.healthStatus}, 
+    Dị ứng: ${petInfo.allergies?.join(', ') || 'Không'}` : ''}
+
+    HƯỚNG DẪN PHẢN HỒI:
+    - Hãy tư vấn chăm sóc thú cưng một cách chuyên nghiệp
+    - Nếu triệu chứng KHẨN CẤP (co giật, không thở, chảy máu): hãy nói "KHẨN CẤP" và hướng tới bác sĩ ngay
+    - Nếu triệu chứng NGHIÊM TRỌNG (sốt cao, nôn liên tục, bỏ ăn 2 ngày): hãy nói "NGHIÊM TRỌNG" và gợi ý trong 24 giờ
+    - Nếu triệu chứng TRUNG BÌNH (nôn, tiêu chảy, ho): hãy nói "CẦN THEO DÕI" và gợi ý nếu kéo dài 48 giờ
+    - Nếu triệu chứng NHẸ (hắt hơi, gãi, ăn ít): hãy nói "NHẸ" và gợi ý theo dõi tại nhà
+    - Trả lời bằng TIẾNG VIỆT
+    - Ngắn gọn, rõ ràng, dễ hiểu`;
+
+    // Convert chat history to Gemini format
+    const history = messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }));
+
+    // Start chat session
+    const chat = model.startChat({
+      history: history.slice(0, -1), // Remove last user message to add it fresh
+    });
+
+    // Send message and get response
+    const lastUserMessage = messages[messages.length - 1].content;
+    const result = await chat.sendMessage(lastUserMessage);
+    const responseText = result.response.text();
+
+    // Parse severity and recommendation
+    const { severity, recommendation } = parseAIResponse(responseText);
+
+    return {
+      response: responseText,
+      severity,
+      recommendation,
+      symptoms: [],
+    };
+  } catch (error) {
+    console.error('AI Response Error:', error);
+    // Fallback to simple response if API fails
+    return {
+      response: `Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu. Vui lòng thử lại sau. Thông tin: ${error.message}`,
+      severity: 'normal',
+      recommendation: 'self_care',
+      symptoms: [],
+    };
+  }
 };
 
 // @desc    Start chat session / Send message
