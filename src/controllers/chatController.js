@@ -80,7 +80,7 @@ const getAIResponse = async (messages, petInfo) => {
 
     // Call Groq API
     const response = await getGroqClient().chat.completions.create({
-      model: 'mixtral-8x7b-32768', // or 'llama2-70b-4096', 'gemma-7b-it'
+      model: 'llama-3.3-70b-versatile', // or 'llama2-70b-4096', 'gemma-7b-it'
       messages: groqMessages,
       temperature: 0.7,
       max_tokens: 500,
