@@ -3,10 +3,18 @@ const Pet = require('../models/Pet');
 const { v4: uuidv4 } = require('crypto');
 const Groq = require('groq-sdk');
 
-// Initialize Groq
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Initialize Groq lazily (only when needed)
+let groq = null;
+
+const getGroqClient = () => {
+  if (!groq) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY not configured');
+    }
+    groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groq;
+};
 
 // Helper: Generate session ID
 const generateSessionId = () => {
@@ -71,7 +79,7 @@ const getAIResponse = async (messages, petInfo) => {
     });
 
     // Call Groq API
-    const response = await groq.chat.completions.create({
+    const response = await getGroqClient().chat.completions.create({
       model: 'mixtral-8x7b-32768', // or 'llama2-70b-4096', 'gemma-7b-it'
       messages: groqMessages,
       temperature: 0.7,
