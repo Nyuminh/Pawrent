@@ -235,8 +235,11 @@ paths:
                   type: number
                   description: Giá sản phẩm (VND)
                 stock:
-                  type: object
-                  description: Thông tin tồn kho (JSON string)
+                  type: string
+                  description: |
+                    Thông tin tồn kho (JSON string).
+                    Ví dụ: {"quantity": 10}
+                  example: '{"quantity": 10}'
                 petTypes:
                   type: string
                   description: |
@@ -245,12 +248,6 @@ paths:
                     - Dạng 1 (nên dùng): dog,cat,bird
                     - Dạng 2 (JSON): ["dog","cat","bird"]
                   example: "dog,cat"
-                stock:
-                  type: string
-                  description: |
-                    Thông tin tồn kho (JSON string).
-                    Ví dụ: {"quantity": 10}
-                  example: '{"quantity": 10}'
                 images:
                   type: array
                   items:
