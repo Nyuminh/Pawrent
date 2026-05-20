@@ -39,7 +39,7 @@ const parseAIResponse = (text) => {
 // Helper: Get AI response from Gemini
 const getAIResponse = async (messages, petInfo) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Prepare system context
     const systemContext = `Bạn là trợ lý AI chăm sóc thú cưng chuyên nghiệp của PAWRENT. 
