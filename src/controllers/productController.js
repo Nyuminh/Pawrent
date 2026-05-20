@@ -174,8 +174,8 @@ exports.createProduct = async (req, res, next) => {
       specifications,
     } = req.body;
 
-    // Handle image uploads from Cloudinary
-    const images = req.files ? req.files.map(file => file.path) : [];
+    // Handle image uploads from Cloudinary - transform to match schema {url, caption}
+    const images = req.files ? req.files.map(file => ({ url: file.path })) : [];
 
     const product = await Product.create({
       name,
@@ -215,9 +215,9 @@ exports.updateProduct = async (req, res, next) => {
     // Don't allow updating reviews
     delete req.body.reviews;
 
-    // Handle image uploads from Cloudinary
+    // Handle image uploads from Cloudinary - transform to match schema {url, caption}
     if (req.files && req.files.length > 0) {
-      req.body.images = req.files.map(file => file.path);
+      req.body.images = req.files.map(file => ({ url: file.path }));
     }
 
     product = await Product.findByIdAndUpdate(req.params.id, req.body, {
