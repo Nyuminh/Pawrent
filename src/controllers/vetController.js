@@ -35,7 +35,7 @@ exports.createAppointment = async (req, res, next) => {
       vet: vetId,
       date: new Date(date),
       'timeSlot.startTime': timeSlot.startTime,
-      status: { $in: ['pending', 'confirmed'] },
+      status: { $in: ['chờ_xác_nhận', 'đã_xác_nhận'] },
     });
 
     if (conflict) {
@@ -297,9 +297,9 @@ exports.updateAppointmentStatus = async (req, res, next) => {
 
     // Validate status transitions
     const validTransitions = {
-      pending: ['confirmed', 'cancelled'],
-      confirmed: ['in_progress', 'cancelled', 'no_show'],
-      in_progress: ['completed'],
+      'chờ_xác_nhận': ['đã_xác_nhận', 'đã_hủy'],
+      'đã_xác_nhận': ['đang_khám', 'đã_hủy', 'không_đến'],
+      'đang_khám': ['hoàn_thành'],
     };
 
     if (
@@ -314,9 +314,9 @@ exports.updateAppointmentStatus = async (req, res, next) => {
 
     appointment.status = status;
 
-    if (status === 'cancelled') {
+    if (status === 'đã_hủy') {
       appointment.cancellation = {
-        cancelledBy: isVet ? 'vet' : 'user',
+        cancelledBy: isVet ? 'bác_sĩ' : 'người_dùng',
         reason: cancellationReason,
         cancelledAt: new Date(),
       };
@@ -344,7 +344,7 @@ exports.reviewAppointment = async (req, res, next) => {
     const appointment = await Appointment.findOne({
       _id: req.params.id,
       user: req.user.id,
-      status: 'completed',
+      status: 'hoàn_thành',
     });
 
     if (!appointment) {
@@ -403,7 +403,7 @@ exports.deleteAppointment = async (req, res, next) => {
     }
 
     // Only allow deletion for pending or confirmed appointments
-    if (!['pending', 'confirmed'].includes(appointment.status)) {
+    if (!['chờ_xác_nhận', 'đã_xác_nhận'].includes(appointment.status)) {
       return res.status(400).json({
         success: false,
         message: 'Chỉ có thể xóa lịch hẹn đang chờ xác nhận hoặc đã xác nhận.',

@@ -43,19 +43,19 @@ const AppointmentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        'pending',      // Chờ xác nhận
-        'confirmed',    // Đã xác nhận
-        'in_progress',  // Đang khám
-        'completed',    // Hoàn thành
-        'cancelled',    // Đã hủy
-        'no_show',      // Không đến
+        'chờ_xác_nhận',      // Chờ xác nhận
+        'đã_xác_nhận',    // Đã xác nhận
+        'đang_khám',  // Đang khám
+        'hoàn_thành',    // Hoàn thành
+        'đã_hủy',    // Đã hủy
+        'không_đến',      // Không đến
       ],
-      default: 'pending',
+      default: 'chờ_xác_nhận',
     },
     cancellation: {
       cancelledBy: {
         type: String,
-        enum: ['user', 'vet', 'system'],
+        enum: ['người_dùng', 'bác_sĩ', 'hệ_thống'],
       },
       reason: String,
       cancelledAt: Date,
