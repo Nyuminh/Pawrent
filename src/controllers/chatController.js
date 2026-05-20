@@ -1,11 +1,11 @@
 const ChatHistory = require('../models/ChatHistory');
 const Pet = require('../models/Pet');
 const { v4: uuidv4 } = require('crypto');
-const OpenAI = require('openai');
+const Groq = require('groq-sdk');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Initialize Groq
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 // Helper: Generate session ID
@@ -38,7 +38,7 @@ const parseAIResponse = (text) => {
   return { severity, recommendation };
 };
 
-// Helper: Get AI response from OpenAI
+// Helper: Get AI response from Groq
 const getAIResponse = async (messages, petInfo) => {
   try {
     const systemMessage = `Bạn là trợ lý AI chăm sóc thú cưng chuyên nghiệp của PAWRENT. 
@@ -56,8 +56,8 @@ const getAIResponse = async (messages, petInfo) => {
     - Trả lời bằng TIẾNG VIỆT
     - Ngắn gọn, rõ ràng, dễ hiểu`;
 
-    // Convert messages to OpenAI format
-    const openaiMessages = messages
+    // Convert messages to Groq format
+    const groqMessages = messages
       .filter((m) => m.role !== 'system')
       .map((m) => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -65,15 +65,15 @@ const getAIResponse = async (messages, petInfo) => {
       }));
 
     // Add system message at the beginning
-    openaiMessages.unshift({
+    groqMessages.unshift({
       role: 'system',
       content: systemMessage,
     });
 
-    // Call OpenAI API
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: openaiMessages,
+    // Call Groq API
+    const response = await groq.chat.completions.create({
+      model: 'mixtral-8x7b-32768', // or 'llama2-70b-4096', 'gemma-7b-it'
+      messages: groqMessages,
       temperature: 0.7,
       max_tokens: 500,
     });
@@ -90,7 +90,7 @@ const getAIResponse = async (messages, petInfo) => {
       symptoms: [],
     };
   } catch (error) {
-    console.error('❌ OpenAI Error:', error.message);
+    console.error('❌ Groq Error:', error.message);
     throw error;
   }
 };
@@ -101,10 +101,10 @@ const getAIResponse = async (messages, petInfo) => {
 exports.sendMessage = async (req, res, next) => {
   try {
     // Check if API key is configured
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
       return res.status(503).json({
         success: false,
-        message: 'AI Chatbot chưa được kích hoạt. Vui lòng liên hệ admin để setup OpenAI API key.',
+        message: 'AI Chatbot chưa được kích hoạt. Vui lòng liên hệ admin để setup Groq API key.',
         code: 'AI_SERVICE_UNAVAILABLE',
       });
     }
