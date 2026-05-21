@@ -83,10 +83,15 @@ exports.createAppointment = async (req, res, next) => {
       },
     });
 
+    // Populate and return the complete appointment data
+    const populatedAppointment = await Appointment.findById(appointment._id)
+      .populate('pet', 'name species breed avatar')
+      .populate('vet', '_id fullName avatar email phone');
+
     res.status(201).json({
       success: true,
       message: 'Đặt lịch khám thành công!',
-      data: appointment,
+      data: populatedAppointment,
     });
   } catch (error) {
     next(error);
@@ -269,6 +274,7 @@ exports.getVetAppointmentsById = async (req, res, next) => {
     const appointments = await Appointment.find(query)
       .populate('user', 'fullName phone email')
       .populate('pet', 'name species breed gender dateOfBirth weight healthStatus allergies')
+      .populate('vet', '_id fullName avatar email phone')
       .sort('date timeSlot.startTime')
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -341,10 +347,14 @@ exports.updateAppointmentStatus = async (req, res, next) => {
 
     await appointment.save();
 
+    const updatedAppointment = await Appointment.findById(appointment._id)
+      .populate('pet', 'name species breed avatar')
+      .populate('vet', '_id fullName avatar email phone');
+
     res.status(200).json({
       success: true,
       message: 'Cập nhật trạng thái lịch hẹn thành công.',
-      data: appointment,
+      data: updatedAppointment,
     });
   } catch (error) {
     next(error);
@@ -385,10 +395,14 @@ exports.reviewAppointment = async (req, res, next) => {
     };
     await appointment.save();
 
+    const reviewedAppointment = await Appointment.findById(appointment._id)
+      .populate('pet', 'name species breed avatar')
+      .populate('vet', '_id fullName avatar email phone');
+
     res.status(200).json({
       success: true,
       message: 'Đánh giá thành công. Cảm ơn bạn!',
-      data: appointment.review,
+      data: reviewedAppointment,
     });
   } catch (error) {
     next(error);
