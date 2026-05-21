@@ -289,21 +289,9 @@ paths:
                   format: binary
                   description: Ảnh đại diện (JPEG, PNG, GIF, WebP - tối đa 5MB)
                 address:
-                  type: object
-                  description: Địa chỉ
-                  properties:
-                    street:
-                      type: string
-                      description: Đường/số nhà
-                    city:
-                      type: string
-                      description: Thành phố
-                    district:
-                      type: string
-                      description: Quận/Huyện
-                    ward:
-                      type: string
-                      description: Phường/Xã
+                  type: string
+                  description: Địa chỉ (dạng chuỗi văn bản)
+                  example: "123 Đường Trần Hưng Đạo, Quận Hoàn Kiếm, Hà Nội"
       responses:
         200:
           description: Cập nhật thành công
