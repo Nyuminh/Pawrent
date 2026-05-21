@@ -1,7 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const {
   createPet,
@@ -9,6 +9,7 @@ const {
   getPet,
   updatePet,
   deletePet,
+  getAllPetsForVet,
 } = require('../controllers/petController');
 
 const router = express.Router();
@@ -25,6 +26,9 @@ const petValidation = [
 
 // All routes require auth
 router.use(protect);
+
+// Route for vet to get all pets
+router.get('/all', authorize('vet'), getAllPetsForVet);
 
 router.route('/')
   .get(getMyPets)

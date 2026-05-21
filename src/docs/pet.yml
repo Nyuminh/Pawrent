@@ -67,6 +67,90 @@ paths:
       responses:
         201:
           description: Đã tạo thú cưng
+
+  /pets/all:
+    get:
+      summary: Lấy danh sách tất cả thú cưng (Bác sĩ)
+      tags: [Pets]
+      security:
+        - bearerAuth: []
+      description: Cho phép bác sĩ thú y xem danh sách tất cả thú cưng trong hệ thống để chọn khi đặt lịch khám
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Trang (mặc định 1)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Số bản ghi mỗi trang (mặc định 20, tối đa 100)
+        - name: species
+          in: query
+          schema:
+            type: string
+            enum: [dog, cat, bird, hamster, rabbit, fish, other]
+          description: Lọc theo loài thú cưng
+        - name: owner
+          in: query
+          schema:
+            type: string
+          description: Lọc theo ID chủ nhân
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Tìm kiếm theo tên hoặc giống
+      responses:
+        '200':
+          description: Danh sách thú cưng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  pages:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                        species:
+                          type: string
+                        breed:
+                          type: string
+                        owner:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            fullName:
+                              type: string
+                            email:
+                              type: string
+                            phone:
+                              type: string
+        '403':
+          description: Forbidden - Chỉ bác sĩ có thể truy cập
+        '401':
+          description: Unauthorized
+
   /pets/{id}:
     get:
       summary: Xem chi tiết thú cưng

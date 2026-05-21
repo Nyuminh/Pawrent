@@ -192,3 +192,50 @@ exports.getAllPets = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get all pets for vet (to view patient list)
+// @route   GET /api/v1/pets/all
+// @access  Private (vet only)
+exports.getAllPetsForVet = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Build filter
+    const filter = { isActive: true };
+    
+    if (req.query.species) {
+      filter.species = req.query.species;
+    }
+
+    if (req.query.owner) {
+      filter.owner = req.query.owner;
+    }
+
+    if (req.query.search) {
+      filter.$or = [
+        { name: { $regex: req.query.search, $options: 'i' } },
+        { breed: { $regex: req.query.search, $options: 'i' } },
+      ];
+    }
+
+    const total = await Pet.countDocuments(filter);
+    const pets = await Pet.find(filter)
+      .populate('owner', 'fullName email phone avatar')
+      .skip(skip)
+      .limit(limit)
+      .sort('-createdAt');
+
+    res.status(200).json({
+      success: true,
+      count: pets.length,
+      total: total,
+      page: page,
+      pages: Math.ceil(total / limit),
+      data: pets,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
