@@ -106,7 +106,7 @@ exports.getMyAppointments = async (req, res, next) => {
     const total = await Appointment.countDocuments(query);
     const appointments = await Appointment.find(query)
       .populate('pet', 'name species breed avatar')
-      .populate('vet', 'fullName avatar email phone')
+      .populate('vet', '_id fullName avatar email phone')
       .sort('-date')
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -168,7 +168,7 @@ exports.getAllAppointments = async (req, res, next) => {
     const appointments = await Appointment.find(query)
       .populate('user', 'fullName phone email')
       .populate('pet', 'name species breed avatar')
-      .populate('vet', 'fullName avatar email phone')
+      .populate('vet', '_id fullName avatar email phone')
       .sort('-date')
       .skip((page - 1) * limit)
       .limit(Number(limit));
