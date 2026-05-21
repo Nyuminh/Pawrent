@@ -11,6 +11,8 @@ const {
   updateAppointmentStatus,
   reviewAppointment,
   deleteAppointment,
+  getAvailableSlots,
+  getAppointmentSchedule,
 } = require('../controllers/vetController');
 
 const router = express.Router();
@@ -24,13 +26,18 @@ const appointmentValidation = [
     .withMessage('Hình thức khám không hợp lệ'),
   body('date').notEmpty().withMessage('Ngày khám không được để trống'),
   body('timeSlot.startTime').notEmpty().withMessage('Giờ bắt đầu không được để trống'),
+  body('timeSlot.endTime').notEmpty().withMessage('Giờ kết thúc không được để trống'),
   body('reason').notEmpty().withMessage('Lý do khám không được để trống'),
 ];
 
-// All routes require auth
+// Public routes
+router.get('/available-slots', getAvailableSlots);
+
+// All routes after this require auth
 router.use(protect);
 
 router.get('/all', getAllAppointments);
+router.get('/schedule/:vetId', getAppointmentSchedule);
 
 router.route('/')
   .get(getMyAppointments)

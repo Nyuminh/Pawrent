@@ -1,0 +1,588 @@
+tags:
+  - name: Appointments
+    description: Đặt lịch khám thú cưng
+
+paths:
+  /appointments/available-slots:
+    get:
+      summary: Xem danh sách slot khám có sẵn
+      tags: [Appointments]
+      description: Lấy danh sách các slot khám có sẵn cho một bác sĩ. Có thể xem slot cho một ngày cụ thể hoặc N ngày tới.
+      parameters:
+        - name: vetId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ID bác sĩ thú y (để xem số slot đã book)
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Ngày cần xem (YYYY-MM-DD). Nếu không có → xem N ngày
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 7
+            maximum: 30
+          description: Số ngày cần xem (default 7, max 30)
+      responses:
+        '200':
+          description: Danh sách slot có sẵn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  date:
+                    type: string
+                    example: '2026-05-25'
+                  vetId:
+                    type: string
+                  booked:
+                    type: integer
+                    description: Số slot đã đặt trong ngày
+                  daysRequested:
+                    type: integer
+                  maxSlotsPerTime:
+                    type: integer
+                    example: 3
+                  slotDuration:
+                    type: integer
+                    example: 30
+                  slots:
+                    oneOf:
+                      - type: array
+                        items:
+                          type: object
+                          properties:
+                            startTime:
+                              type: string
+                              example: '08:00'
+                            endTime:
+                              type: string
+                              example: '08:30'
+                            available:
+                              type: boolean
+                              description: Còn slot trống?
+                            booked:
+                              type: integer
+                              description: Số người đã book
+                              example: 1
+                            remainingSlots:
+                              type: integer
+                              description: Số slot còn lại
+                              example: 2
+                      - type: object
+                        additionalProperties:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              startTime:
+                                type: string
+                              endTime:
+                                type: string
+                              available:
+                                type: boolean
+                              booked:
+                                type: integer
+                              remainingSlots:
+                                type: integer
+
+  /appointments/schedule/{vetId}:
+    get:
+      summary: Xem lịch khám của bác sĩ (theo tháng)
+      tags: [Appointments]
+      description: Lấy toàn bộ lịch hẹn của bác sĩ trong một tháng ở dạng calendar view
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: vetId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID bác sĩ thú y
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          description: Tháng (1-12, default tháng hiện tại)
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Năm (default năm hiện tại)
+      responses:
+        '200':
+          description: Lịch khám của bác sĩ trong tháng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  vet:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      email:
+                        type: string
+                  month:
+                    type: integer
+                  year:
+                    type: integer
+                  totalAppointments:
+                    type: integer
+                  calendar:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        dayOfWeek:
+                          type: integer
+                          description: '0=Sunday, 1=Monday, ...'
+                        dayOfWeekName:
+                          type: string
+                          example: 'Thứ 2'
+                        slots:
+                          type: object
+                          additionalProperties:
+                            type: object
+                            properties:
+                              startTime:
+                                type: string
+                              endTime:
+                                type: string
+                              booked:
+                                type: integer
+                              appointments:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: string
+                                    user:
+                                      type: string
+                                    pet:
+                                      type: string
+                                    status:
+                                      type: string
+        '401':
+          description: Unauthorized
+        '404':
+          description: Bác sĩ không tìm thấy
+
+  /appointments:
+    post:
+      summary: Đặt lịch khám
+      tags: [Appointments]
+      description: Tạo lịch hẹn khám cho thú cưng. Mỗi khung giờ cho phép tối đa 3 lịch hẹn.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pet, vet, appointmentType, date, timeSlot, reason]
+              properties:
+                pet:
+                  type: string
+                  description: ID thú cưng (bắt buộc)
+                vet:
+                  type: string
+                  description: ID bác sĩ thú y (bắt buộc)
+                appointmentType:
+                  type: string
+                  enum: [in_person, online]
+                  description: Hình thức khám (bắt buộc)
+                date:
+                  type: string
+                  format: date
+                  example: '2026-05-25'
+                  description: Ngày khám (bắt buộc, YYYY-MM-DD)
+                timeSlot:
+                  type: object
+                  required: [startTime, endTime]
+                  description: Khung giờ khám (bắt buộc)
+                  properties:
+                    startTime:
+                      type: string
+                      example: '09:00'
+                      description: Giờ bắt đầu (HH:MM, bắt buộc)
+                    endTime:
+                      type: string
+                      example: '09:30'
+                      description: Giờ kết thúc (HH:MM, bắt buộc)
+                reason:
+                  type: string
+                  example: 'Khám tổng quát'
+                  description: Lý do khám (bắt buộc)
+                symptoms:
+                  type: array
+                  items:
+                    type: string
+                  example: ['ho', 'sốt']
+                  description: Các triệu chứng (tùy chọn)
+                notes:
+                  type: string
+                  description: Ghi chú thêm (tùy chọn)
+      responses:
+        '201':
+          description: Đặt lịch thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: 'Đặt lịch khám thành công!'
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      user:
+                        type: string
+                      pet:
+                        type: string
+                      vet:
+                        type: string
+                      appointmentType:
+                        type: string
+                      date:
+                        type: string
+                        format: date-time
+                      timeSlot:
+                        type: object
+                        properties:
+                          startTime:
+                            type: string
+                          endTime:
+                            type: string
+                      reason:
+                        type: string
+                      symptoms:
+                        type: array
+                      status:
+                        type: string
+                        example: 'chờ_xác_nhận'
+                      fee:
+                        type: object
+                        properties:
+                          amount:
+                            type: number
+                          currency:
+                            type: string
+        '400':
+          description: Slot đã đầy hoặc lỗi validation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'Khung giờ 09:00 - 09:30 đã đầy (3/3). Vui lòng chọn khung giờ khác.'
+                  bookedSlots:
+                    type: integer
+                  maxSlots:
+                    type: integer
+        '401':
+          description: Unauthorized
+        '404':
+          description: Thú cưng hoặc bác sĩ không tìm thấy
+
+    get:
+      summary: Lấy danh sách lịch khám của user
+      tags: [Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [chờ_xác_nhận, đã_xác_nhận, đang_khám, hoàn_thành, đã_hủy]
+          description: Lọc theo trạng thái
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Danh sách lịch khám
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /appointments/{id}/status:
+    put:
+      summary: Cập nhật trạng thái lịch khám
+      tags: [Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID lịch hẹn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [chờ_xác_nhận, đã_xác_nhận, đang_khám, hoàn_thành, đã_hủy, không_đến]
+                  description: Trạng thái mới
+                cancellationReason:
+                  type: string
+                  description: Lý do hủy (bắt buộc nếu status=đã_hủy)
+      responses:
+        '200':
+          description: Cập nhật thành công
+        '400':
+          description: Chuyển đổi trạng thái không hợp lệ
+        '401':
+          description: Unauthorized
+        '404':
+          description: Lịch khám không tìm thấy
+
+  /appointments/{id}/review:
+    post:
+      summary: Đánh giá lịch khám
+      tags: [Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID lịch hẹn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Đánh giá từ 1-5 sao
+                comment:
+                  type: string
+                  description: Bình luận thêm
+      responses:
+        '200':
+          description: Đánh giá thành công
+        '400':
+          description: Không thể đánh giá
+        '401':
+          description: Unauthorized
+
+  /appointments/{id}:
+    delete:
+      summary: Xóa lịch khám
+      tags: [Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID lịch hẹn
+      responses:
+        '200':
+          description: Xóa thành công
+        '400':
+          description: Không thể xóa (không đúng trạng thái)
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Lịch khám không tìm thấy
+
+  /appointments/all:
+    get:
+      summary: Lấy tất cả lịch khám (Admin)
+      tags: [Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: vet
+          in: query
+          schema:
+            type: string
+          description: Lọc theo bác sĩ
+        - name: user
+          in: query
+          schema:
+            type: string
+          description: Lọc theo user
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Lọc theo ngày
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Danh sách tất cả lịch khám
+
+  /appointments/vet:
+    get:
+      summary: Lấy lịch khám của bác sĩ
+      tags: [Appointments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Danh sách lịch khám của bác sĩ
+
+components:
+  schemas:
+    Appointment:
+      type: object
+      properties:
+        _id:
+          type: string
+        user:
+          type: string
+        pet:
+          type: string
+        vet:
+          type: string
+        appointmentType:
+          type: string
+          enum: [in_person, online]
+        date:
+          type: string
+          format: date-time
+        timeSlot:
+          type: object
+          properties:
+            startTime:
+              type: string
+            endTime:
+              type: string
+        reason:
+          type: string
+        symptoms:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [chờ_xác_nhận, đã_xác_nhận, đang_khám, hoàn_thành, đã_hủy, không_đến]
+        fee:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        review:
+          type: object
+        cancellation:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

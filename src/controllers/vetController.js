@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Appointment = require('../models/Appointment');
 const Pet = require('../models/Pet');
 const User = require('../models/User');
+const appointmentSlots = require('../utils/appointmentSlots');
 
 // ==================== APPOINTMENTS ====================
 
@@ -30,18 +31,34 @@ exports.createAppointment = async (req, res, next) => {
       });
     }
 
-    // Check for conflicting appointments
-    const conflict = await Appointment.findOne({
+    // Validate appointment date
+    const appointmentDate = new Date(date);
+    if (appointmentSlots.isPastDate(appointmentDate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không thể đặt lịch cho ngày trong quá khứ.',
+      });
+    }
+
+    // Check for available slots (max 3 slots per time)
+    const bookedAppointments = await Appointment.find({
       vet: vetId,
-      date: new Date(date),
+      date: {
+        $gte: new Date(appointmentDate.toDateString()),
+        $lt: new Date(new Date(appointmentDate.toDateString()).getTime() + 86400000),
+      },
       'timeSlot.startTime': timeSlot.startTime,
       status: { $in: ['chờ_xác_nhận', 'đã_xác_nhận'] },
     });
 
-    if (conflict) {
+    if (
+      bookedAppointments.length >= appointmentSlots.MAX_SLOTS_PER_TIME
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Khung giờ này đã được đặt. Vui lòng chọn giờ khác.',
+        message: `Khung giờ ${timeSlot.startTime} - ${timeSlot.endTime} đã đầy (${appointmentSlots.MAX_SLOTS_PER_TIME}/${appointmentSlots.MAX_SLOTS_PER_TIME}). Vui lòng chọn khung giờ khác.`,
+        bookedSlots: bookedAppointments.length,
+        maxSlots: appointmentSlots.MAX_SLOTS_PER_TIME,
       });
     }
 
@@ -415,6 +432,204 @@ exports.deleteAppointment = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Xóa lịch hẹn thành công.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get available appointment slots for a specific date and vet
+// @route   GET /api/v1/appointments/available-slots
+// @access  Public
+exports.getAvailableSlots = async (req, res, next) => {
+  try {
+    const { vetId, date, days = 7 } = req.query;
+
+    // If specific date is provided
+    if (date) {
+      const appointmentDate = new Date(date);
+      appointmentDate.setHours(0, 0, 0, 0);
+
+      if (appointmentSlots.isPastDate(appointmentDate)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không thể xem lịch cho ngày trong quá khứ.',
+        });
+      }
+
+      // Verify vet exists if provided
+      if (vetId) {
+        const vet = await User.findById(vetId);
+        if (!vet || vet.role !== 'vet') {
+          return res.status(404).json({
+            success: false,
+            message: 'Không tìm thấy bác sĩ thú y.',
+          });
+        }
+
+        // Get all booked appointments for this date and vet
+        const bookedAppointments = await Appointment.find({
+          vet: vetId,
+          date: {
+            $gte: appointmentDate,
+            $lt: new Date(appointmentDate.getTime() + 86400000),
+          },
+          status: { $in: ['chờ_xác_nhận', 'đã_xác_nhận'] },
+        });
+
+        const availableSlots = appointmentSlots.getAvailableSlots(
+          appointmentDate,
+          bookedAppointments
+        );
+
+        return res.status(200).json({
+          success: true,
+          date: date,
+          vetId: vetId,
+          booked: bookedAppointments.length,
+          slots: availableSlots,
+        });
+      }
+    }
+
+    // Get slots for multiple days (default: next 7 days)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const numDays = Math.min(Number(days), 30); // Max 30 days
+
+    const slotsMap = {};
+
+    for (let i = 0; i < numDays; i++) {
+      const currentDate = new Date(today);
+      currentDate.setDate(currentDate.getDate() + i);
+      const dateStr = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      if (vetId) {
+        // Get booked appointments for this date
+        const bookedAppointments = await Appointment.find({
+          vet: vetId,
+          date: {
+            $gte: currentDate,
+            $lt: new Date(currentDate.getTime() + 86400000),
+          },
+          status: { $in: ['chờ_xác_nhận', 'đã_xác_nhận'] },
+        });
+
+        slotsMap[dateStr] = appointmentSlots.getAvailableSlots(
+          currentDate,
+          bookedAppointments
+        );
+      } else {
+        slotsMap[dateStr] = appointmentSlots.generateDaySlots(currentDate);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      vetId: vetId || 'all',
+      daysRequested: numDays,
+      slots: slotsMap,
+      maxSlotsPerTime: appointmentSlots.MAX_SLOTS_PER_TIME,
+      slotDuration: appointmentSlots.SLOT_DURATION,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get appointment schedule calendar view
+// @route   GET /api/v1/appointments/schedule/:vetId
+// @access  Private
+exports.getAppointmentSchedule = async (req, res, next) => {
+  try {
+    const { vetId } = req.params;
+    const { month, year } = req.query;
+
+    // Verify vet exists
+    const vet = await User.findById(vetId);
+    if (!vet || vet.role !== 'vet') {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bác sĩ thú y.',
+      });
+    }
+
+    const now = new Date();
+    const targetMonth = Number(month) || now.getMonth() + 1;
+    const targetYear = Number(year) || now.getFullYear();
+
+    // Get all appointments for the month
+    const monthStart = new Date(targetYear, targetMonth - 1, 1);
+    const monthEnd = new Date(targetYear, targetMonth, 0);
+
+    const appointments = await Appointment.find({
+      vet: vetId,
+      date: {
+        $gte: monthStart,
+        $lte: monthEnd,
+      },
+      status: { $in: ['chờ_xác_nhận', 'đã_xác_nhận', 'đang_khám'] },
+    });
+
+    // Group by date and time slot
+    const schedule = {};
+    appointments.forEach((apt) => {
+      const dateStr = apt.date.toISOString().split('T')[0];
+      if (!schedule[dateStr]) {
+        schedule[dateStr] = {};
+      }
+      const timeSlot = apt.timeSlot.startTime;
+      if (!schedule[dateStr][timeSlot]) {
+        schedule[dateStr][timeSlot] = {
+          startTime: apt.timeSlot.startTime,
+          endTime: apt.timeSlot.endTime,
+          booked: 0,
+          appointments: [],
+        };
+      }
+      schedule[dateStr][timeSlot].booked += 1;
+      schedule[dateStr][timeSlot].appointments.push({
+        id: apt._id,
+        user: apt.user,
+        pet: apt.pet,
+        status: apt.status,
+      });
+    });
+
+    // Convert to calendar format
+    const calendarView = [];
+    for (let day = 1; day <= monthEnd.getDate(); day++) {
+      const date = new Date(targetYear, targetMonth - 1, day);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayOfWeek = date.getDay();
+
+      calendarView.push({
+        date: dateStr,
+        dayOfWeek: dayOfWeek,
+        dayOfWeekName: [
+          'Chủ Nhật',
+          'Thứ 2',
+          'Thứ 3',
+          'Thứ 4',
+          'Thứ 5',
+          'Thứ 6',
+          'Thứ 7',
+        ][dayOfWeek],
+        slots: schedule[dateStr] || {},
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      vet: {
+        id: vet._id,
+        name: vet.fullName,
+        email: vet.email,
+      },
+      month: targetMonth,
+      year: targetYear,
+      calendar: calendarView,
+      totalAppointments: appointments.length,
     });
   } catch (error) {
     next(error);
