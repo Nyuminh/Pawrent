@@ -239,3 +239,27 @@ exports.getAllPetsForVet = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get pet by ID (Public - no permission check)
+// @route   GET /api/v1/pets/info/:id
+// @access  Public
+exports.getPetById = async (req, res, next) => {
+  try {
+    const pet = await Pet.findById(req.params.id)
+      .populate('owner', 'fullName phone email avatar');
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thú cưng.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: pet,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

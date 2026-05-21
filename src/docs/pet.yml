@@ -151,6 +151,75 @@ paths:
         '401':
           description: Unauthorized
 
+  /pets/info/{id}:
+    get:
+      summary: Lấy thông tin thú cưng theo ID (Công khai)
+      tags: [Pets]
+      description: Lấy danh sách tất cả thú cưng (Bác sĩ)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID của thú cưng
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      name:
+                        type: string
+                      species:
+                        type: string
+                      breed:
+                        type: string
+                      gender:
+                        type: string
+                      age:
+                        type: number
+                      weight:
+                        type: number
+                      color:
+                        type: string
+                      avatar:
+                        type: string
+                      isNeutered:
+                        type: boolean
+                      allergies:
+                        type: array
+                        items:
+                          type: string
+                      specialNotes:
+                        type: string
+                      healthStatus:
+                        type: string
+                      owner:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                          fullName:
+                            type: string
+                          phone:
+                            type: string
+                          email:
+                            type: string
+                          avatar:
+                            type: string
+        '404':
+          description: Không tìm thấy thú cưng
+
   /pets/{id}:
     get:
       summary: Xem chi tiết thú cưng

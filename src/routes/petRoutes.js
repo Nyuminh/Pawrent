@@ -10,6 +10,7 @@ const {
   updatePet,
   deletePet,
   getAllPetsForVet,
+  getPetById,
 } = require('../controllers/petController');
 
 const router = express.Router();
@@ -24,7 +25,10 @@ const petValidation = [
     .withMessage('Loại thú cưng không hợp lệ'),
 ];
 
-// All routes require auth
+// Public routes (no auth required)
+router.get('/info/:id', getPetById);
+
+// All routes after this require auth
 router.use(protect);
 
 // Route for vet to get all pets
