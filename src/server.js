@@ -97,6 +97,7 @@ app.use('/api/v1/pets', require('./routes/petRoutes'));
 app.use('/api/v1/reminders', require('./routes/reminderRoutes'));
 app.use('/api/v1/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/v1/products', require('./routes/productRoutes'));
+app.use('/api/v1/services', require('./routes/serviceRoutes'));
 app.use('/api/v1/hotels', require('./routes/hotelRoutes'));
 app.use('/api/v1/hotel-bookings', require('./routes/hotelBookingRoutes'));
 app.use('/api/v1/chat', require('./routes/chatRoutes'));
@@ -126,6 +127,7 @@ app.get('/', (req, res) => {
       vets: '/api/v1/vets',
       appointments: '/api/v1/appointments',
       products: '/api/v1/products',
+      services: '/api/v1/services',
       hotels: '/api/v1/hotels',
       hotelBookings: '/api/v1/hotel-bookings',
       chat: '/api/v1/chat',

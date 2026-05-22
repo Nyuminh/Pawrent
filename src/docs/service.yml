@@ -1,0 +1,310 @@
+tags:
+  - name: Services
+    description: Quản lý dịch vụ cho thú cưng
+
+paths:
+  /services:
+    get:
+      summary: Danh sách dịch vụ
+      description: |
+        Lấy danh sách tất cả dịch vụ.
+        Không cần xác thực - khách hàng vãng lai có thể xem.
+      tags: [Services]
+      parameters:
+        - name: search
+          in: query
+          description: Tìm kiếm theo tên hoặc mô tả
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          description: Sắp xếp theo (-createdAt, price, name, etc)
+          schema:
+            type: string
+            default: '-createdAt'
+        - name: page
+          in: query
+          description: Số trang
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Số dịch vụ trên 1 trang
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+
+    post:
+      summary: Tạo dịch vụ mới
+      description: Chỉ admin có thể tạo dịch vụ. Upload hình ảnh dưới dạng multipart/form-data (có thể upload nhiều ảnh)
+      tags: [Services]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - price
+              properties:
+                name:
+                  type: string
+                  description: Tên dịch vụ (bắt buộc, max 100 ký tự)
+                  maxLength: 100
+                description:
+                  type: string
+                  description: Mô tả chi tiết dịch vụ (bắt buộc, max 2000 ký tự)
+                  maxLength: 2000
+                price:
+                  type: number
+                  description: Giá dịch vụ (VND, bắt buộc)
+                  minimum: 0
+                promotion:
+                  type: number
+                  description: Mức khuyến mãi (%, mặc định 0)
+                  minimum: 0
+                  maximum: 100
+                  default: 0
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Hình ảnh dịch vụ (có thể upload tối đa 10 ảnh)
+      responses:
+        201:
+          description: Tạo dịch vụ thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Service'
+        400:
+          description: Dịch vụ đã tồn tại hoặc dữ liệu không hợp lệ
+        401:
+          description: Không được xác thực
+        403:
+          description: Chỉ admin có thể tạo dịch vụ
+
+  /services/{id}:
+    get:
+      summary: Lấy thông tin dịch vụ
+      description: Lấy chi tiết một dịch vụ. Không cần xác thực.
+      tags: [Services]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của dịch vụ
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Service'
+        404:
+          description: Không tìm thấy dịch vụ
+
+    put:
+      summary: Cập nhật dịch vụ
+      description: Cập nhật thông tin dịch vụ. Chỉ admin. Upload hình ảnh dưới dạng multipart/form-data
+      tags: [Services]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của dịch vụ
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Tên dịch vụ (max 100 ký tự)
+                  maxLength: 100
+                description:
+                  type: string
+                  description: Mô tả chi tiết dịch vụ (max 2000 ký tự)
+                  maxLength: 2000
+                price:
+                  type: number
+                  description: Giá dịch vụ (VND)
+                  minimum: 0
+                promotion:
+                  type: number
+                  description: Mức khuyến mãi (%)
+                  minimum: 0
+                  maximum: 100
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Hình ảnh dịch vụ (có thể upload tối đa 10 ảnh)
+      responses:
+        200:
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Service'
+        404:
+          description: Không tìm thấy dịch vụ
+        403:
+          description: Chỉ admin có thể cập nhật dịch vụ
+
+    delete:
+      summary: Xóa dịch vụ (soft delete)
+      description: Xóa dịch vụ (đánh dấu là không hoạt động). Chỉ admin.
+      tags: [Services]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của dịch vụ
+          schema:
+            type: string
+      responses:
+        200:
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        404:
+          description: Không tìm thấy dịch vụ
+        403:
+          description: Chỉ admin có thể xóa dịch vụ
+
+  /services/{id}/permanent:
+    delete:
+      summary: Xóa vĩnh viễn dịch vụ
+      description: Xóa vĩnh viễn dịch vụ khỏi cơ sở dữ liệu. Chỉ admin.
+      tags: [Services]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của dịch vụ
+          schema:
+            type: string
+      responses:
+        200:
+          description: Xóa vĩnh viễn thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        404:
+          description: Không tìm thấy dịch vụ
+        403:
+          description: Chỉ admin có thể xóa vĩnh viễn dịch vụ
+
+components:
+  schemas:
+    Service:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID của dịch vụ (MongoDB ObjectId)
+        name:
+          type: string
+          description: Tên dịch vụ
+        description:
+          type: string
+          description: Mô tả chi tiết dịch vụ
+        price:
+          type: number
+          description: Giá dịch vụ (VND)
+        promotion:
+          type: number
+          description: Mức khuyến mãi (%)
+        images:
+          type: array
+          items:
+            type: string
+          description: Danh sách URL hình ảnh dịch vụ
+        isActive:
+          type: boolean
+          description: Trạng thái dịch vụ
+        createdBy:
+          type: string
+          description: ID của người tạo dịch vụ
+        createdAt:
+          type: string
+          format: date-time
+          description: Thời gian tạo
+        updatedAt:
+          type: string
+          format: date-time
+          description: Thời gian cập nhật
