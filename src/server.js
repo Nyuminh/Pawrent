@@ -94,8 +94,6 @@ app.use('/api', async (req, res, next) => {
 
 app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1/pets', require('./routes/petRoutes'));
-app.use('/api/v1/health-records', require('./routes/healthRecordRoutes'));
-app.use('/api/v1/vaccines', require('./routes/vaccineRoutes'));
 app.use('/api/v1/reminders', require('./routes/reminderRoutes'));
 app.use('/api/v1/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/v1/products', require('./routes/productRoutes'));
@@ -124,8 +122,6 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/v1/auth',
       pets: '/api/v1/pets',
-      healthRecords: '/api/v1/health-records',
-      vaccines: '/api/v1/vaccines',
       reminders: '/api/v1/reminders',
       vets: '/api/v1/vets',
       appointments: '/api/v1/appointments',
