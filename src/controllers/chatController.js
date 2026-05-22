@@ -214,7 +214,7 @@ exports.getChatHistory = async (req, res, next) => {
       .limit(Number(limit))
       .select('sessionId pet severity recommendation messages createdAt updatedAt');
 
-    // Map response to only include first message and message count
+    // Map response to only include last message and message count
     const formattedChats = chats.map((chat) => ({
       _id: chat._id,
       sessionId: chat.sessionId,
@@ -222,7 +222,7 @@ exports.getChatHistory = async (req, res, next) => {
       severity: chat.severity,
       recommendation: chat.recommendation,
       messageCount: chat.messages.length,
-      firstMessage: chat.messages[0] || null,
+      lastMessage: chat.messages[chat.messages.length - 1] || null,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
     }));
