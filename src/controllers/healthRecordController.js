@@ -137,7 +137,9 @@ exports.updateRecord = async (req, res, next) => {
         success: false,
         message: 'Không tìm thấy hồ sơ sức khỏe.',
       });
-    }/recordNumber
+    }
+
+    // Prevent changing pet/owner/recordNumber
     delete req.body.pet;
     delete req.body.owner;
     delete req.body.recordNumber;
@@ -146,9 +148,7 @@ exports.updateRecord = async (req, res, next) => {
       new: true,
       runValidators: true,
     })
-      .populate('vet', 'fullName email clinic' new: true,
-      runValidators: true,
-    });
+      .populate('vet', 'fullName email clinic');
 
     res.status(200).json({
       success: true,
