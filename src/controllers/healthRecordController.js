@@ -189,11 +189,11 @@ exports.createHealthRecord = async (req, res, next) => {
       });
     }
 
-    const result = await healthRecord
+    // Populate the created record
+    const result = await HealthRecord.findById(healthRecord._id)
       .populate('pet', 'name species')
       .populate('vet', 'name specialization')
-      .populate('service', 'name price')
-      .execPopulate();
+      .populate('service', 'name price');
 
     res.status(201).json({
       success: true,
@@ -258,11 +258,11 @@ exports.updateHealthRecord = async (req, res, next) => {
 
     healthRecord = await healthRecord.save();
 
-    const result = await healthRecord
+    // Populate after update
+    const result = await HealthRecord.findById(healthRecord._id)
       .populate('pet', 'name species')
       .populate('vet', 'name specialization')
-      .populate('service', 'name price')
-      .execPopulate();
+      .populate('service', 'name price');
 
     res.status(200).json({
       success: true,
