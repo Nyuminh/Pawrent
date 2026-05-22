@@ -98,6 +98,7 @@ app.use('/api/v1/reminders', require('./routes/reminderRoutes'));
 app.use('/api/v1/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/v1/products', require('./routes/productRoutes'));
 app.use('/api/v1/services', require('./routes/serviceRoutes'));
+app.use('/api/v1/health-records', require('./routes/healthRecordRoutes'));
 app.use('/api/v1/hotels', require('./routes/hotelRoutes'));
 app.use('/api/v1/hotel-bookings', require('./routes/hotelBookingRoutes'));
 app.use('/api/v1/chat', require('./routes/chatRoutes'));
@@ -128,6 +129,7 @@ app.get('/', (req, res) => {
       appointments: '/api/v1/appointments',
       products: '/api/v1/products',
       services: '/api/v1/services',
+      healthRecords: '/api/v1/health-records',
       hotels: '/api/v1/hotels',
       hotelBookings: '/api/v1/hotel-bookings',
       chat: '/api/v1/chat',

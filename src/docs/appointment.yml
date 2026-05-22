@@ -214,6 +214,9 @@ paths:
                 vet:
                   type: string
                   description: ID bác sĩ thú y (bắt buộc)
+                service:
+                  type: string
+                  description: ID dịch vụ (tùy chọn)
                 appointmentType:
                   type: string
                   enum: [in_person, online]
@@ -545,6 +548,16 @@ components:
           type: string
         vet:
           type: string
+        service:
+          type: object
+          description: Thông tin dịch vụ
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            price:
+              type: number
         appointmentType:
           type: string
           enum: [in_person, online]

@@ -1,0 +1,393 @@
+tags:
+  - name: Health Records
+    description: Quản lý kết quả khám sức khỏe thú cưng
+
+paths:
+  /health-records:
+    get:
+      summary: Danh sách kết quả khám của người dùng
+      description: Lấy tất cả kết quả khám của các thú cưng của người dùng hiện tại
+      tags: [Health Records]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Số trang
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Số bản ghi trên 1 trang
+          schema:
+            type: integer
+            default: 20
+        - name: sortBy
+          in: query
+          description: Sắp xếp theo trường (ví dụ -createdAt, examinationDate, etc)
+          schema:
+            type: string
+            default: '-createdAt'
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HealthRecord'
+        401:
+          description: Không được xác thực
+
+    post:
+      summary: Tạo kết quả khám mới
+      description: Tạo bản ghi kết quả khám. Upload hình ảnh dưới dạng multipart/form-data
+      tags: [Health Records]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - pet
+                - vet
+                - service
+                - examinationDate
+              properties:
+                pet:
+                  type: string
+                  description: ID của thú cưng (bắt buộc)
+                vet:
+                  type: string
+                  description: ID của bác sĩ thú y (bắt buộc)
+                service:
+                  type: string
+                  description: ID của dịch vụ (bắt buộc)
+                appointment:
+                  type: string
+                  description: ID của buổi khám (tùy chọn)
+                examinationDate:
+                  type: string
+                  format: date-time
+                  description: Ngày khám (bắt buộc, ISO8601)
+                weight:
+                  type: number
+                  description: Cân nặng (kg)
+                temperature:
+                  type: number
+                  description: Nhiệt độ (°C)
+                generalAssessment:
+                  type: string
+                  description: Đánh giá sức khỏe cơ bản
+                  maxLength: 2000
+                consultation:
+                  type: string
+                  description: Tư vấn từ bác sĩ
+                  maxLength: 2000
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Hình ảnh kết quả khám (có thể upload tối đa 10 ảnh)
+      responses:
+        201:
+          description: Tạo thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/HealthRecord'
+        400:
+          description: Dữ liệu không hợp lệ
+        401:
+          description: Không được xác thực
+        404:
+          description: Không tìm thấy thú cưng
+
+  /health-records/pet/{petId}:
+    get:
+      summary: Danh sách kết quả khám theo ID thú cưng
+      description: Lấy tất cả kết quả khám của một thú cưng cụ thể
+      tags: [Health Records]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          description: ID của thú cưng
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Số trang
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Số bản ghi trên 1 trang
+          schema:
+            type: integer
+            default: 20
+        - name: sortBy
+          in: query
+          description: Sắp xếp theo trường
+          schema:
+            type: string
+            default: '-createdAt'
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HealthRecord'
+        401:
+          description: Không được xác thực
+        404:
+          description: Không tìm thấy thú cưng
+
+  /health-records/{id}:
+    get:
+      summary: Lấy thông tin chi tiết kết quả khám
+      description: Lấy chi tiết một bản ghi kết quả khám
+      tags: [Health Records]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của kết quả khám
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/HealthRecord'
+        401:
+          description: Không được xác thực
+        403:
+          description: Không có quyền truy cập
+        404:
+          description: Không tìm thấy kết quả khám
+
+    put:
+      summary: Cập nhật kết quả khám
+      description: Cập nhật thông tin kết quả khám. Upload hình ảnh dưới dạng multipart/form-data
+      tags: [Health Records]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của kết quả khám
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                examinationDate:
+                  type: string
+                  format: date-time
+                  description: Ngày khám (ISO8601)
+                weight:
+                  type: number
+                  description: Cân nặng (kg)
+                temperature:
+                  type: number
+                  description: Nhiệt độ (°C)
+                generalAssessment:
+                  type: string
+                  description: Đánh giá sức khỏe cơ bản
+                  maxLength: 2000
+                consultation:
+                  type: string
+                  description: Tư vấn từ bác sĩ
+                  maxLength: 2000
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Hình ảnh kết quả khám (có thể upload tối đa 10 ảnh)
+      responses:
+        200:
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/HealthRecord'
+        401:
+          description: Không được xác thực
+        403:
+          description: Không có quyền truy cập
+        404:
+          description: Không tìm thấy kết quả khám
+
+    delete:
+      summary: Xóa kết quả khám
+      description: Xóa bản ghi kết quả khám (soft delete)
+      tags: [Health Records]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của kết quả khám
+          schema:
+            type: string
+      responses:
+        200:
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        401:
+          description: Không được xác thực
+        403:
+          description: Không có quyền truy cập
+        404:
+          description: Không tìm thấy kết quả khám
+
+components:
+  schemas:
+    HealthRecord:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: ID của kết quả khám (MongoDB ObjectId)
+        pet:
+          type: object
+          description: Thông tin thú cưng
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            species:
+              type: string
+        vet:
+          type: object
+          description: Thông tin bác sĩ thú y
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            specialization:
+              type: string
+        service:
+          type: object
+          description: Thông tin dịch vụ
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            price:
+              type: number
+        appointment:
+          type: string
+          description: ID của buổi khám (nếu có)
+        examinationDate:
+          type: string
+          format: date-time
+          description: Ngày khám
+        weight:
+          type: number
+          description: Cân nặng (kg)
+        temperature:
+          type: number
+          description: Nhiệt độ (°C)
+        generalAssessment:
+          type: string
+          description: Đánh giá sức khỏe cơ bản
+        consultation:
+          type: string
+          description: Tư vấn từ bác sĩ
+        images:
+          type: array
+          items:
+            type: string
+          description: Danh sách URL hình ảnh kết quả khám
+        isActive:
+          type: boolean
+          description: Trạng thái kết quả khám
+        createdAt:
+          type: string
+          format: date-time
+          description: Thời gian tạo
+        updatedAt:
+          type: string
+          format: date-time
+          description: Thời gian cập nhật

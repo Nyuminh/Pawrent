@@ -17,6 +17,10 @@ const AppointmentSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    service: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service',
+    },
     appointmentType: {
       type: String,
       enum: ['in_person', 'online'],
