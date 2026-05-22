@@ -51,7 +51,7 @@ const getAIResponse = async (messages, petInfo) => {
   try {
     const systemMessage = `Bạn là trợ lý AI chăm sóc thú cưng chuyên nghiệp của PAWRENT. 
     ${petInfo ? `Thú cưng: ${petInfo.name} (${petInfo.species}, ${petInfo.breed || 'không rõ'}), 
-    Tuổi: ${petInfo.age?.years || 0} tuổi ${petInfo.age?.months || 0} tháng,
+    Tuổi: ${petInfo.age || 'không rõ'} tuổi,
     Tình trạng sức khỏe: ${petInfo.healthStatus}, 
     Dị ứng: ${petInfo.allergies?.join(', ') || 'Không'}` : ''}
 
@@ -157,7 +157,7 @@ exports.sendMessage = async (req, res, next) => {
         role: 'system',
         content: `Bạn là trợ lý AI chăm sóc thú cưng PAWRENT. 
         ${petInfo ? `Thông tin thú cưng: ${petInfo.name}, ${petInfo.species}, ${petInfo.breed || ''}, 
-        ${petInfo.age ? `${petInfo.age.years} tuổi ${petInfo.age.months} tháng` : ''}, 
+        Tuổi: ${petInfo.age || 'không rõ'} tuổi, 
         Tình trạng: ${petInfo.healthStatus}, Dị ứng: ${petInfo.allergies?.join(', ') || 'Không'}` : ''}`,
       });
     }
