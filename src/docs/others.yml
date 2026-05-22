@@ -527,6 +527,13 @@ paths:
       tags: [AI Chatbot & Activity]
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: sessionId
+          required: false
+          schema:
+            type: string
+          description: ID phiên chat (để tiếp tục cuộc trò chuyện cũ, nếu không có thì tạo session mới)
       requestBody:
         required: true
         content:
@@ -540,10 +547,7 @@ paths:
                   description: Nội dung tin nhắn (bắt buộc)
                 petId:
                   type: string
-                  description: ID thú cưng
-                sessionId:
-                  type: string
-                  description: ID phiên chat (nếu tiếp tục)
+                  description: ID thú cưng (tùy chọn, để AI có context về thú cưng)
       responses:
         200:
           description: Phản hồi từ AI

@@ -117,7 +117,8 @@ exports.sendMessage = async (req, res, next) => {
       });
     }
 
-    const { message, sessionId, petId } = req.body;
+    const { message, petId } = req.body;
+    const { sessionId } = req.query; // Get sessionId from query params for session continuation
 
     if (!message) {
       return res.status(400).json({
