@@ -5,8 +5,10 @@
  *     description: Quản lý thú cưng
  *   - name: Vets & Appointments
  *     description: Hệ thống khám chữa bệnh
- *   - name: Health Records & Reminders
- *     description: Sổ y tế điện tử
+ *   - name: Health Records
+ *     description: Sổ y tế - Hồ sơ khám chữa bệnh
+ *   - name: Vaccines
+ *     description: Quản lý hồ sơ tiêm phòng (tách riêng)
  *   - name: Hotels & Bookings
  *     description: Đặt phòng khách sạn
  *   - name: Products
@@ -60,20 +62,53 @@
  *   /health-records:
  *     get:
  *       summary: Lịch sử bệnh án điện tử
- *       tags: [Health Records & Reminders]
+ *       tags: [Health Records]
  *       responses:
  *         200:
  *           description: OK
  *     post:
- *       summary: Cập nhật sổ sức khoẻ
- *       tags: [Health Records & Reminders]
+ *       summary: Tạo hồ sơ sức khỏe (khám chữa bệnh)
+ *       tags: [Health Records]
  *       responses:
  *         201:
+ *           description: OK
+ *   /vaccines:
+ *     get:
+ *       summary: Danh sách hồ sơ tiêm phòng
+ *       tags: [Vaccines]
+ *       responses:
+ *         200:
+ *           description: OK
+ *     post:
+ *       summary: Tạo hồ sơ tiêm phòng (hỗ trợ mảng)
+ *       tags: [Vaccines]
+ *       responses:
+ *         201:
+ *           description: OK
+ *   /vaccines/all:
+ *     get:
+ *       summary: Lấy tất cả vaccine (Vet only)
+ *       tags: [Vaccines]
+ *       responses:
+ *         200:
+ *           description: OK
+ *   /vaccines/pet/{petId}:
+ *     get:
+ *       summary: Vaccine của thú cưng
+ *       tags: [Vaccines]
+ *       parameters:
+ *         - in: path
+ *           name: petId
+ *           required: true
+ *           schema:
+ *             type: string
+ *       responses:
+ *         200:
  *           description: OK
  *   /reminders:
  *     get:
  *       summary: Nhắc nhở chăm sóc định kỳ
- *       tags: [Health Records & Reminders]
+ *       tags: [Health Records]
  *       responses:
  *         200:
  *           description: Lấy danh sách thành công

@@ -2,84 +2,72 @@ const mongoose = require('mongoose');
 
 const HealthRecordSchema = new mongoose.Schema(
   {
+    // Auto-generated medical record number
+    recordNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     pet: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Pet',
-      required: true,
+      required: [true, 'Vui lòng chọn thú cưng'],
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    recordType: {
+    serviceType: {
       type: String,
-      required: [true, 'Vui lòng chọn loại hồ sơ'],
       enum: [
-        'vaccination',       // Tiêm phòng
+        'general_exam',       // Khám tổng quát
+        'vaccination',        // Tiêm phòng
         'deworming',         // Tẩy giun
-        'medical_exam',      // Khám bệnh
         'surgery',           // Phẫu thuật
         'treatment',         // Điều trị
         'lab_result',        // Kết quả xét nghiệm
-        'weight_check',      // Cân nặng
         'dental',            // Nha khoa
         'other',
       ],
+      required: [true, 'Vui lòng chọn loại dịch vụ'],
     },
-    title: {
-      type: String,
-      required: [true, 'Vui lòng nhập tiêu đề'],
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    date: {
+    examinationDate: {
       type: Date,
-      required: [true, 'Vui lòng nhập ngày'],
-      default: Date.now,
+      required: [true, 'Vui lòng chọn ngày khám'],
     },
-    // Vaccination details
-    vaccination: {
-      vaccineName: String,
-      batchNumber: String,
-      nextDueDate: Date,
-      manufacturer: String,
+    weight: {
+      type: Number,
+      description: 'Cân nặng (kg)',
     },
-    // Deworming details
-    deworming: {
-      medicineName: String,
-      dosage: String,
-      nextDueDate: Date,
+    temperature: {
+      type: Number,
+      description: 'Thân nhiệt (°C)',
     },
-    // Medical exam / Treatment
-    medical: {
-      diagnosis: String,
-      symptoms: [String],
-      treatment: String,
-      prescriptions: [
-        {
-          medicineName: String,
-          dosage: String,
-          frequency: String, // e.g., "2 times/day"
-          duration: String,  // e.g., "7 days"
-          notes: String,
-        },
-      ],
+    diagnosis: {
+      type: String,
+      required: [true, 'Vui lòng nhập chẩn đoán'],
+      trim: true,
     },
-    // Weight check
-    weightRecord: {
-      weight: Number,
-      unit: { type: String, default: 'kg' },
+    treatment: {
+      type: String,
+      required: [true, 'Vui lòng mô tả phương pháp điều trị'],
+      trim: true,
     },
-    // Vet information
+    prescription: {
+      type: String,
+      description: 'Liệt kê thuốc, liều lượng, cách dùng',
+      trim: true,
+    },
+    nextCheckupDate: {
+      type: Date,
+      description: 'Ngày tái khám',
+    },
     vet: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Vet',
+      required: [true, 'Vui lòng chọn bác sĩ điều trị'],
     },
-    vetName: String,
     clinicName: String,
     // Attachments (images, documents)
     attachments: [
@@ -93,15 +81,31 @@ const HealthRecordSchema = new mongoose.Schema(
       amount: Number,
       currency: { type: String, default: 'VND' },
     },
-    notes: String,
+    notes: {
+      type: String,
+      trim: true,
+      description: 'Ghi chú thêm',
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// Pre-save hook to generate recordNumber
+HealthRecordSchema.pre('save', async function (next) {
+  if (!this.recordNumber) {
+    const count = await mongoose.model('HealthRecord').countDocuments();
+    const timestamp = Date.now().toString().slice(-6);
+    this.recordNumber = `HRD-${timestamp}-${count + 1}`;
+  }
+  next();
+});
+
 // Indexes
-HealthRecordSchema.index({ pet: 1, recordType: 1, date: -1 });
+HealthRecordSchema.index({ pet: 1, examinationDate: -1 });
 HealthRecordSchema.index({ owner: 1 });
+HealthRecordSchema.index({ vet: 1 });
+HealthRecordSchema.index({ recordNumber: 1 });
 
 module.exports = mongoose.model('HealthRecord', HealthRecordSchema);

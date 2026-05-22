@@ -3,7 +3,7 @@ const Pet = require('../models/Pet');
 
 // @desc    Create health record
 // @route   POST /api/v1/health-records
-// @access  Private
+// @access  Private (user & vet)
 exports.createRecord = async (req, res, next) => {
   try {
     // Verify pet ownership
@@ -21,6 +21,10 @@ exports.createRecord = async (req, res, next) => {
     }
 
     req.body.owner = req.user.id;
+    
+    // Don't allow setting recordNumber
+    delete req.body.recordNumber;
+
     const record = await HealthRecord.create(req.body);
 
     res.status(201).json({
@@ -39,10 +43,21 @@ exports.createRecord = async (req, res, next) => {
 exports.getRecordsByPet = async (req, res, next) => {
   try {
     const { petId } = req.params;
-    const { recordType, startDate, endDate, page = 1, limit = 20 } = req.query;
+    const {
+      serviceType,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 20,
+    } = req.query;
 
     // Verify ownership
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
+    const pet = await Pet.findOne({
+      _id: petId,
+      owner: req.user.id,
+      isActive: true,
+    });
+
     if (!pet) {
       return res.status(404).json({
         success: false,
@@ -52,17 +67,17 @@ exports.getRecordsByPet = async (req, res, next) => {
 
     const query = { pet: petId, owner: req.user.id };
 
-    if (recordType) query.recordType = recordType;
+    if (serviceType) query.serviceType = serviceType;
     if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) query.date.$lte = new Date(endDate);
+      query.examinationDate = {};
+      if (startDate) query.examinationDate.$gte = new Date(startDate);
+      if (endDate) query.examinationDate.$lte = new Date(endDate);
     }
 
     const total = await HealthRecord.countDocuments(query);
     const records = await HealthRecord.find(query)
-      .populate('vet', 'user clinic')
-      .sort('-date')
+      .populate('vet', 'fullName email clinic')
+      .sort('-examinationDate')
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
@@ -87,7 +102,9 @@ exports.getRecord = async (req, res, next) => {
     const record = await HealthRecord.findOne({
       _id: req.params.id,
       owner: req.user.id,
-    }).populate('vet');
+    })
+      .populate('pet', 'name species breed age healthStatus')
+      .populate('vet', 'fullName email clinic');
 
     if (!record) {
       return res.status(404).json({
@@ -120,14 +137,16 @@ exports.updateRecord = async (req, res, next) => {
         success: false,
         message: 'Không tìm thấy hồ sơ sức khỏe.',
       });
-    }
-
-    // Prevent changing pet/owner
+    }/recordNumber
     delete req.body.pet;
     delete req.body.owner;
+    delete req.body.recordNumber;
 
     record = await HealthRecord.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
+      runValidators: true,
+    })
+      .populate('vet', 'fullName email clinic' new: true,
       runValidators: true,
     });
 
@@ -169,54 +188,19 @@ exports.deleteRecord = async (req, res, next) => {
   }
 };
 
-// @desc    Get vaccination history for a pet
-// @route   GET /api/v1/health-records/pet/:petId/vaccinations
-// @access  Private
-exports.getVaccinations = async (req, res, next) => {
-  try {
-    const { petId } = req.params;
-
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
-    if (!pet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy thú cưng.',
-      });
-    }
-
-    const records = await HealthRecord.find({
-      pet: petId,
-      recordType: 'vaccination',
-    }).sort('-date');
-
-    // Find upcoming vaccinations
-    const upcoming = records.filter(
-      (r) => r.vaccination?.nextDueDate && new Date(r.vaccination.nextDueDate) > new Date()
-    );
-
-    res.status(200).json({
-      success: true,
-      data: {
-        history: records,
-        upcomingVaccinations: upcoming.map((r) => ({
-          vaccineName: r.vaccination.vaccineName,
-          nextDueDate: r.vaccination.nextDueDate,
-        })),
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 // @desc    Get health summary for a pet
 // @route   GET /api/v1/health-records/pet/:petId/summary
-// @access  Private (Premium)
+// @access  Private
 exports.getHealthSummary = async (req, res, next) => {
   try {
     const { petId } = req.params;
 
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
+    const pet = await Pet.findOne({
+      _id: petId,
+      owner: req.user.id,
+      isActive: true,
+    });
+
     if (!pet) {
       return res.status(404).json({
         success: false,
@@ -225,37 +209,84 @@ exports.getHealthSummary = async (req, res, next) => {
     }
 
     // Aggregate health data
-    const [recordCounts, weightHistory, recentRecords] = await Promise.all([
+    const [recordCounts, recentRecords, latestCheckup] = await Promise.all([
       HealthRecord.aggregate([
         { $match: { pet: pet._id } },
-        { $group: { _id: '$recordType', count: { $sum: 1 } } },
+        { $group: { _id: '$serviceType', count: { $sum: 1 } } },
       ]),
-      HealthRecord.find({
-        pet: petId,
-        recordType: 'weight_check',
-      })
-        .sort('date')
-        .select('date weightRecord'),
       HealthRecord.find({ pet: petId })
-        .sort('-date')
+        .sort('-examinationDate')
         .limit(5)
-        .select('recordType title date'),
+        .select('recordNumber serviceType diagnosis examinationDate'),
+      HealthRecord.findOne({ pet: petId })
+        .sort('-examinationDate')
+        .select(
+          'recordNumber examinationDate weight temperature diagnosis vet'
+        )
+        .populate('vet', 'fullName email'),
     ]);
 
     res.status(200).json({
       success: true,
       data: {
         pet: {
+          id: pet._id,
           name: pet.name,
           species: pet.species,
           breed: pet.breed,
           age: pet.age,
           healthStatus: pet.healthStatus,
         },
-        recordCounts,
-        weightHistory,
+        stats: {
+          totalRecords: recordCounts.reduce((sum, r) => sum + r.count, 0),
+          byType: recordCounts,
+        },
+        latestCheckup,
         recentRecords,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get health records by date range
+// @route   GET /api/v1/health-records/pet/:petId/reports
+// @access  Private
+exports.getRecordsReport = async (req, res, next) => {
+  try {
+    const { petId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    // Verify ownership
+    const pet = await Pet.findOne({
+      _id: petId,
+      owner: req.user.id,
+      isActive: true,
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thú cưng.',
+      });
+    }
+
+    const query = { pet: petId };
+    if (startDate || endDate) {
+      query.examinationDate = {};
+      if (startDate) query.examinationDate.$gte = new Date(startDate);
+      if (endDate) query.examinationDate.$lte = new Date(endDate);
+    }
+
+    const records = await HealthRecord.find(query)
+      .populate('vet', 'fullName email clinic')
+      .sort('-examinationDate');
+
+    res.status(200).json({
+      success: true,
+      count: records.length,
+      data: records,
     });
   } catch (error) {
     next(error);
