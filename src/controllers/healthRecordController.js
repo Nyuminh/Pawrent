@@ -26,7 +26,7 @@ exports.getAllHealthRecords = async (req, res, next) => {
       .skip(startIndex)
       .limit(limitNum)
       .populate('pet', 'name species')
-      .populate('vet', 'name specialization')
+      .populate('vet', 'name specialization email')
       .populate('service', 'name price');
 
     res.status(200).json({
@@ -75,7 +75,7 @@ exports.getHealthRecordsByPetId = async (req, res, next) => {
       .sort(sortBy)
       .skip(startIndex)
       .limit(limitNum)
-      .populate('vet', 'name specialization')
+      .populate('vet', 'name specialization email')
       .populate('service', 'name price');
 
     res.status(200).json({
@@ -98,7 +98,7 @@ exports.getHealthRecordById = async (req, res, next) => {
   try {
     const healthRecord = await HealthRecord.findById(req.params.id)
       .populate('pet', 'name species owner')
-      .populate('vet', 'name specialization')
+      .populate('vet', 'name specialization email')
       .populate('service', 'name price')
       .populate('appointment');
 
@@ -192,7 +192,7 @@ exports.createHealthRecord = async (req, res, next) => {
     // Populate the created record
     const result = await HealthRecord.findById(healthRecord._id)
       .populate('pet', 'name species')
-      .populate('vet', 'name specialization')
+      .populate('vet', 'name specialization email')
       .populate('service', 'name price');
 
     res.status(201).json({
@@ -261,7 +261,7 @@ exports.updateHealthRecord = async (req, res, next) => {
     // Populate after update
     const result = await HealthRecord.findById(healthRecord._id)
       .populate('pet', 'name species')
-      .populate('vet', 'name specialization')
+      .populate('vet', 'name specialization email')
       .populate('service', 'name price');
 
     res.status(200).json({

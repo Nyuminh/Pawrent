@@ -344,7 +344,7 @@ components:
               type: string
             name:
               type: string
-            specialization:
+            email:
               type: string
         service:
           type: object

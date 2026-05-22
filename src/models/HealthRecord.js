@@ -9,7 +9,7 @@ const HealthRecordSchema = new mongoose.Schema(
     },
     vet: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Vet',
+      ref: 'User',
       required: true,
     },
     appointment: {
