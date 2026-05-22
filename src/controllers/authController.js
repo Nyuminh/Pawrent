@@ -378,7 +378,10 @@ exports.logout = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('pets');
+    const user = await User.findById(req.user.id).populate({
+      path: 'pets',
+      match: { isActive: true }
+    });
 
     res.status(200).json({
       success: true,

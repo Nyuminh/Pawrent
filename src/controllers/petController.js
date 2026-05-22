@@ -68,6 +68,7 @@ exports.getPet = async (req, res, next) => {
     const pet = await Pet.findOne({
       _id: req.params.id,
       owner: req.user.id,
+      isActive: true,
     }).populate('healthRecords reminders');
 
     if (!pet) {
@@ -94,6 +95,7 @@ exports.updatePet = async (req, res, next) => {
     let pet = await Pet.findOne({
       _id: req.params.id,
       owner: req.user.id,
+      isActive: true,
     });
 
     if (!pet) {

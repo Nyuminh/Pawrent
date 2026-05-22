@@ -8,7 +8,7 @@ exports.logActivity = async (req, res, next) => {
   try {
     const { petId, locations, activity, date } = req.body;
 
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
       return res.status(404).json({
         success: false,
@@ -72,7 +72,7 @@ exports.getActivityLogs = async (req, res, next) => {
     const { petId } = req.params;
     const { startDate, endDate, page = 1, limit = 30 } = req.query;
 
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
       return res.status(404).json({
         success: false,
@@ -112,7 +112,7 @@ exports.getActivityLogs = async (req, res, next) => {
 exports.getWeeklyReport = async (req, res, next) => {
   try {
     const { petId } = req.params;
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
       return res.status(404).json({
         success: false,
@@ -184,7 +184,7 @@ exports.getWeeklyReport = async (req, res, next) => {
 exports.getMonthlyReport = async (req, res, next) => {
   try {
     const { petId } = req.params;
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
       return res.status(404).json({
         success: false,

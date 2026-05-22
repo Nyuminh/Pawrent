@@ -128,7 +128,7 @@ exports.sendMessage = async (req, res, next) => {
 
     let petInfo = null;
     if (petId) {
-      petInfo = await Pet.findOne({ _id: petId, owner: req.user.id });
+      petInfo = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     }
 
     let chat;

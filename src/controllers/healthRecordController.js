@@ -42,7 +42,7 @@ exports.getRecordsByPet = async (req, res, next) => {
     const { recordType, startDate, endDate, page = 1, limit = 20 } = req.query;
 
     // Verify ownership
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
       return res.status(404).json({
         success: false,
@@ -176,7 +176,7 @@ exports.getVaccinations = async (req, res, next) => {
   try {
     const { petId } = req.params;
 
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
       return res.status(404).json({
         success: false,
@@ -216,7 +216,7 @@ exports.getHealthSummary = async (req, res, next) => {
   try {
     const { petId } = req.params;
 
-    const pet = await Pet.findOne({ _id: petId, owner: req.user.id });
+    const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
       return res.status(404).json({
         success: false,

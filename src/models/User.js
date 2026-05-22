@@ -37,14 +37,8 @@ const UserSchema = new mongoose.Schema(
       default: 'user',
     },
     address: {
-      street: String,
-      city: String,
-      district: String,
-      ward: String,
-      coordinates: {
-        lat: Number,
-        lng: Number,
-      },
+      type: String,
+      trim: true,
     },
     subscription: {
       plan: {

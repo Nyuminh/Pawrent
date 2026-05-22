@@ -13,6 +13,14 @@ exports.createAppointment = async (req, res, next) => {
   try {
     const { pet: petId, vet: vetId, date, timeSlot, appointmentType, reason, symptoms } = req.body;
 
+    // Validate required fields
+    if (!vetId || !petId) {
+      return res.status(400).json({
+        success: false,
+        message: vetId ? 'ID thú cưng không được để trống' : 'ID bác sĩ không được để trống',
+      });
+    }
+
     // Verify pet ownership
     const pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     if (!pet) {
