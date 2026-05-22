@@ -212,15 +212,28 @@ exports.getChatHistory = async (req, res, next) => {
       .sort('-updatedAt')
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .select('sessionId pet severity recommendation messages.0 createdAt updatedAt');
+      .select('sessionId pet severity recommendation messages createdAt updatedAt');
+
+    // Map response to only include first message and message count
+    const formattedChats = chats.map((chat) => ({
+      _id: chat._id,
+      sessionId: chat.sessionId,
+      pet: chat.pet,
+      severity: chat.severity,
+      recommendation: chat.recommendation,
+      messageCount: chat.messages.length,
+      firstMessage: chat.messages[0] || null,
+      createdAt: chat.createdAt,
+      updatedAt: chat.updatedAt,
+    }));
 
     res.status(200).json({
       success: true,
-      count: chats.length,
+      count: formattedChats.length,
       total,
       page: Number(page),
       totalPages: Math.ceil(total / limit),
-      data: chats,
+      data: formattedChats,
     });
   } catch (error) {
     next(error);
