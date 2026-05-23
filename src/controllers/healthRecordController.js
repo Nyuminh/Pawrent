@@ -107,8 +107,8 @@ exports.getHealthRecordsByAppointmentId = async (req, res, next) => {
     const { appointmentId } = req.params;
     const { page = 1, limit = 20, sortBy = '-createdAt' } = req.query;
 
-    // Find appointment
-    const appointment = await Appointment.findOne({ _id: appointmentId, isActive: true }).populate('pet');
+    // Find appointment (don't require isActive so vets/admins can view records linked to past/inactive appointments)
+    const appointment = await Appointment.findById(appointmentId).populate('pet');
     if (!appointment) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy buổi khám.' });
     }
