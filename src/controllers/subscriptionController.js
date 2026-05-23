@@ -64,7 +64,7 @@ async function getUserOrFail(userId) {
 
 async function upgradeSubscription(req, res, next, targetPlanSlug) {
   try {
-    const { userId, additionalPets = 0, paymentMethod } = req.body;
+    const { userId } = req.body;
     const targetUserResult = getTargetUserId(req, userId);
 
     if (targetUserResult.error) {
@@ -84,19 +84,11 @@ async function upgradeSubscription(req, res, next, targetPlanSlug) {
 
     const user = userResult.user;
     const planConfig = getPlanConfig(targetPlanSlug);
-    const additionalPetCount = Number(additionalPets);
 
     if (!planConfig || targetPlanSlug === 'free') {
       return res.status(400).json({
         success: false,
         message: 'Gói nâng cấp không hợp lệ.',
-      });
-    }
-
-    if (Number.isNaN(additionalPetCount) || additionalPetCount < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'additionalPets không được nhỏ hơn 0.',
       });
     }
 
@@ -135,11 +127,6 @@ async function upgradeSubscription(req, res, next, targetPlanSlug) {
       ? planConfig.pricePerMonth
       : planConfig.pricePerYear;
 
-    let totalPrice = basePrice;
-    for (let i = 0; i < additionalPetCount; i++) {
-      totalPrice += basePrice * planConfig.additionalPetMultiplier;
-    }
-
     const startDate = new Date();
     const endDate = new Date(startDate);
     const durationMonths = targetPlanSlug === 'plus'
@@ -150,7 +137,6 @@ async function upgradeSubscription(req, res, next, targetPlanSlug) {
     endDate.setTime(endDate.getTime() + calculateCarryoverMs(user.subscription, targetPlanSlug));
 
     const normalizedPlan = normalizePlanSlug(planConfig.name);
-    const maxPets = planConfig.maxPets + additionalPetCount;
 
     user.subscription = {
       plan: normalizedPlan,
@@ -159,7 +145,7 @@ async function upgradeSubscription(req, res, next, targetPlanSlug) {
       startDate,
       endDate,
       isActive: true,
-      maxPets,
+      maxPets: planConfig.maxPets,
     };
 
     await user.save({ validateBeforeSave: false });
@@ -172,10 +158,7 @@ async function upgradeSubscription(req, res, next, targetPlanSlug) {
         pricing: {
           basePrice,
           durationUnit: targetPlanSlug === 'plus' ? 'month' : 'year',
-          additionalPets: additionalPetCount,
-          totalPrice,
           currency: 'VND',
-          paymentMethod: paymentMethod || 'pending',
         },
       },
     });

@@ -622,19 +622,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [paymentMethod]
+              required: [userId]
               properties:
                 userId:
                   type: string
                   description: ID user cần nâng gói. Nếu bỏ trống thì áp dụng cho chính tài khoản đang đăng nhập.
-                additionalPets:
-                  type: number
-                  description: Số thú cưng bổ sung (0-5)
-                  default: 0
-                paymentMethod:
-                  type: string
-                  enum: [credit_card, bank_transfer, momo, zalopay]
-                  description: Phương thức thanh toán (bắt buộc)
       responses:
         200:
           description: Nâng cấp thành công
@@ -650,19 +642,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [paymentMethod]
+              required: [userId]
               properties:
                 userId:
                   type: string
                   description: ID user cần nâng gói. Nếu bỏ trống thì áp dụng cho chính tài khoản đang đăng nhập.
-                additionalPets:
-                  type: number
-                  description: Số thú cưng bổ sung (0-5)
-                  default: 0
-                paymentMethod:
-                  type: string
-                  enum: [credit_card, bank_transfer, momo, zalopay]
-                  description: Phương thức thanh toán (bắt buộc)
       responses:
         200:
           description: Nâng cấp thành công
@@ -679,16 +663,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [paymentMethod]
+              required: [userId]
               properties:
                 userId:
                   type: string
-                additionalPets:
-                  type: number
-                  default: 0
-                paymentMethod:
-                  type: string
-                  enum: [credit_card, bank_transfer, momo, zalopay]
       responses:
         200:
           description: Nâng cấp thành công
