@@ -94,10 +94,17 @@ paths:
         200:
           description: Thành công
     delete:
-      summary: Xóa (soft) bản ghi tiêm
+      summary: Xóa bản ghi tiêm
       tags: [Vaccinations]
       security:
         - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID bản ghi tiêm
       responses:
         200:
           description: Thành công
