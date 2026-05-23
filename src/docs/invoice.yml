@@ -99,6 +99,87 @@ paths:
         401:
           description: Không được xác thực
 
+  /invoices/subscription:
+    post:
+      summary: Tạo hóa đơn cho gói subscription
+      description: Tạo hóa đơn cho subscription plan (ví dụ: PLUS, VUP)
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - subscriptionPlan
+              properties:
+                subscriptionPlan:
+                  type: string
+                  description: Mã gói subscription (PLUS, VUP...)
+                currency:
+                  type: string
+      responses:
+        201:
+          description: Hóa đơn subscription được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+
+  /invoices/booking:
+    post:
+      summary: Tạo hóa đơn cho booking
+      description: Tạo hóa đơn cho booking khách sạn thú cưng
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+              properties:
+                bookingId:
+                  type: string
+                currency:
+                  type: string
+      responses:
+        201:
+          description: Hóa đơn booking được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+
+  /invoices/cart:
+    post:
+      summary: Tạo hóa đơn từ giỏ hàng người dùng
+      description: Tạo hóa đơn dựa trên giỏ hàng hiện tại của người dùng (không tự động xóa giỏ hàng)
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currency:
+                  type: string
+      responses:
+        201:
+          description: Hóa đơn cart được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+
   /invoices/{id}:
     get:
       summary: Lấy thông tin chi tiết hóa đơn

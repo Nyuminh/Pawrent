@@ -76,6 +76,115 @@ exports.createInvoice = async (req, res, next) => {
   }
 };
 
+// POST /api/v1/invoices/subscription
+exports.createInvoiceForSubscription = async (req, res, next) => {
+  try {
+    const { subscriptionPlan, currency = 'VND', dueDate } = req.body;
+    if (!subscriptionPlan) return res.status(400).json({ success: false, message: 'subscriptionPlan is required' });
+    const planKey = String(subscriptionPlan).toUpperCase();
+    const plan = plans[planKey];
+    if (!plan) return res.status(400).json({ success: false, message: 'Unknown subscription plan' });
+
+    const price = plan.pricePerMonth || plan.pricePerYear || plan.price || 0;
+    const invoiceItems = [{ type: 'subscription', name: `${plan.name} plan`, price, quantity: 1 }];
+    const subtotal = price;
+    const tax = 0;
+    const discount = 0;
+    const total = subtotal - discount + tax;
+
+    const invoice = await Invoice.create({
+      invoiceNumber: makeInvoiceNumber(),
+      user: req.user ? req.user.id : undefined,
+      items: invoiceItems,
+      subtotal,
+      tax,
+      discount,
+      total,
+      currency,
+      subscriptionPlan: subscriptionPlan,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+    });
+
+    return res.status(201).json({ success: true, data: invoice });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/v1/invoices/booking
+exports.createInvoiceForBooking = async (req, res, next) => {
+  try {
+    const { bookingId, currency = 'VND', dueDate } = req.body;
+    if (!bookingId) return res.status(400).json({ success: false, message: 'bookingId is required' });
+    const booking = await HotelBooking.findById(bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    const price = (booking.pricing && booking.pricing.total) || 0;
+    const invoiceItems = [{ type: 'booking', refId: booking._id, name: `Hotel booking ${booking._id}`, price, quantity: 1 }];
+    const subtotal = price;
+    const tax = 0;
+    const discount = 0;
+    const total = subtotal - discount + tax;
+
+    const invoice = await Invoice.create({
+      invoiceNumber: makeInvoiceNumber(),
+      user: req.user ? req.user.id : undefined,
+      items: invoiceItems,
+      subtotal,
+      tax,
+      discount,
+      total,
+      currency,
+      booking: booking._id,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+    });
+
+    return res.status(201).json({ success: true, data: invoice });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/v1/invoices/cart
+exports.createInvoiceFromCart = async (req, res, next) => {
+  try {
+    // load user's cart
+    await req.user.populate({ path: 'cart.product', select: 'name price' });
+    const cart = req.user.cart || [];
+    if (!cart.length) return res.status(400).json({ success: false, message: 'Cart is empty' });
+
+    const invoiceItems = [];
+    let subtotal = 0;
+    cart.forEach((it) => {
+      const product = it.product;
+      const price = (product && product.price) ? Number(product.price) : 0;
+      const qty = Number(it.quantity || 1);
+      invoiceItems.push({ type: 'product', refId: product ? product._id : undefined, name: product ? product.name : 'Product', price, quantity: qty });
+      subtotal += price * qty;
+    });
+
+    const tax = 0;
+    const discount = 0;
+    const total = subtotal - discount + tax;
+
+    const invoice = await Invoice.create({
+      invoiceNumber: makeInvoiceNumber(),
+      user: req.user ? req.user.id : undefined,
+      items: invoiceItems,
+      subtotal,
+      tax,
+      discount,
+      total,
+      currency: req.body.currency || 'VND',
+      cart: req.user._id,
+    });
+
+    return res.status(201).json({ success: true, data: invoice });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/v1/invoices
 exports.getInvoices = async (req, res, next) => {
   try {
