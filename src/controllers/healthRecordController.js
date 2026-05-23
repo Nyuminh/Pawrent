@@ -14,12 +14,12 @@ exports.getAllHealthRecords = async (req, res, next) => {
     const startIndex = (pageNum - 1) * limitNum;
 
     let query;
-    if (req.user.role === 'admin') {
-      // admin sees all active health records
-      query = HealthRecord.find({ isActive: true });
-    } else if (req.user.role === 'vet') {
-      // vet sees records where they are the treating vet
-      query = HealthRecord.find({ vet: req.user.id, isActive: true });
+    const { petId } = req.query;
+    if (req.user.role === 'admin' || req.user.role === 'vet') {
+      // admin and vet see all active health records; allow optional petId filter
+      query = { isActive: true };
+      if (petId) query.pet = petId;
+      query = HealthRecord.find(query);
     } else {
       // regular owner: only records for their pets
       const userPets = await Pet.find({ owner: req.user.id, isActive: true });
