@@ -59,19 +59,6 @@ const AppointmentSchema = new mongoose.Schema(
       reason: String,
       cancelledAt: Date,
     },
-    // Payment
-    fee: {
-      amount: Number,
-      currency: { type: String, default: 'VND' },
-      isPaid: { type: Boolean, default: false },
-      paidAt: Date,
-      paymentMethod: String,
-    },
-    // Commission for platform
-    commission: {
-      rate: { type: Number, default: 0.10 }, // 10%
-      amount: Number,
-    },
     // Review after appointment
     review: {
       rating: { type: Number, min: 1, max: 5 },
@@ -93,13 +80,5 @@ const AppointmentSchema = new mongoose.Schema(
 AppointmentSchema.index({ user: 1, status: 1, date: -1 });
 AppointmentSchema.index({ vet: 1, date: 1, status: 1 });
 AppointmentSchema.index({ pet: 1 });
-
-// Calculate commission before save
-AppointmentSchema.pre('save', function (next) {
-  if (this.fee && this.fee.amount && this.commission) {
-    this.commission.amount = Math.round(this.fee.amount * this.commission.rate);
-  }
-  next();
-});
 
 module.exports = mongoose.model('Appointment', AppointmentSchema);

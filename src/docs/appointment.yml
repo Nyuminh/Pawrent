@@ -289,13 +289,6 @@ paths:
                       status:
                         type: string
                         example: 'chờ_xác_nhận'
-                      fee:
-                        type: object
-                        properties:
-                          amount:
-                            type: number
-                          currency:
-                            type: string
         '400':
           description: Slot đã đầy hoặc lỗi validation
           content:
@@ -574,13 +567,6 @@ components:
         status:
           type: string
           enum: [chờ_xác_nhận, đã_xác_nhận, đang_khám, hoàn_thành, đã_hủy, không_đến]
-        fee:
-          type: object
-          properties:
-            amount:
-              type: number
-            currency:
-              type: string
         review:
           type: object
         cancellation:

@@ -70,9 +70,6 @@ exports.createAppointment = async (req, res, next) => {
       });
     }
 
-    // Use default consultation fee (no longer using Vet model)
-    const defaultFee = 300000; // 300k VND default
-
     const appointment = await Appointment.create({
       user: req.user.id,
       pet: petId,
@@ -83,13 +80,6 @@ exports.createAppointment = async (req, res, next) => {
       timeSlot,
       symptoms,
       notes,
-      fee: {
-        amount: defaultFee,
-        currency: 'VND',
-      },
-      commission: {
-        rate: Number(process.env.VET_BOOKING_COMMISSION_RATE) || 0.10,
-      },
     });
 
     // Populate and return the complete appointment data
