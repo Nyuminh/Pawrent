@@ -8,24 +8,31 @@ const Appointment = require('../models/Appointment');
 exports.getAllHealthRecords = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, sortBy = '-createdAt' } = req.query;
-
-    // Get all pets of current user
-    const userPets = await Pet.find({ owner: req.user.id, isActive: true });
-    const petIds = userPets.map(pet => pet._id);
-
-    // Find health records for these pets
+    // Build query depending on role
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const startIndex = (pageNum - 1) * limitNum;
 
-    let query = HealthRecord.find({ pet: { $in: petIds }, isActive: true });
+    let query;
+    if (req.user.role === 'admin') {
+      // admin sees all active health records
+      query = HealthRecord.find({ isActive: true });
+    } else if (req.user.role === 'vet') {
+      // vet sees records where they are the treating vet
+      query = HealthRecord.find({ vet: req.user.id, isActive: true });
+    } else {
+      // regular owner: only records for their pets
+      const userPets = await Pet.find({ owner: req.user.id, isActive: true });
+      const petIds = userPets.map(pet => pet._id);
+      query = HealthRecord.find({ pet: { $in: petIds }, isActive: true });
+    }
     
     const total = await HealthRecord.countDocuments(query);
     const healthRecords = await query
       .sort(sortBy)
       .skip(startIndex)
       .limit(limitNum)
-      .populate('pet', 'name species')
+      .populate('pet', 'name species owner')
       .populate('vet', 'name specialization email')
       .populate('service', 'name price');
 
@@ -109,8 +116,13 @@ exports.getHealthRecordById = async (req, res, next) => {
       });
     }
 
-    // Check if user is pet owner
-    if (healthRecord.pet.owner.toString() !== req.user.id) {
+    // Permission: owner OR vet assigned OR admin
+    const petOwnerId = healthRecord.pet.owner ? healthRecord.pet.owner.toString() : null;
+    const isOwner = petOwnerId && petOwnerId === req.user.id;
+    const isVet = healthRecord.vet && String(healthRecord.vet) === String(req.user.id);
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isVet && !isAdmin) {
       return res.status(403).json({
         success: false,
         message: 'Bạn không có quyền truy cập kết quả khám này.',
