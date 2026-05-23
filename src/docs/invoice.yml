@@ -102,7 +102,7 @@ paths:
   /invoices/subscription:
     post:
       summary: Tạo hóa đơn cho gói subscription
-      description: Tạo hóa đơn cho subscription plan (ví dụ: PLUS, VUP)
+      description: "Tạo hóa đơn cho subscription plan (ví dụ: PLUS, VUP)"
       tags: [Invoices]
       security:
         - bearerAuth: []
