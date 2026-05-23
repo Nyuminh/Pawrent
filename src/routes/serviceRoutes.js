@@ -27,6 +27,10 @@ const serviceValidation = [
     .optional()
     .isFloat({ min: 0, max: 100 })
     .withMessage('Khuyến mãi phải từ 0 đến 100%'),
+  body('type')
+    .optional()
+    .isIn(['grooming', 'vaccination', 'boarding', 'consultation', 'other'])
+    .withMessage('Loại dịch vụ không hợp lệ'),
 ];
 
 // Public routes (no auth required)
@@ -39,7 +43,7 @@ router.use(protect);
 // Admin routes
 router.post('/', authorize('admin'), upload.array('images', 10), serviceValidation, validate, createService);
 
-router.put('/:id', authorize('admin'), upload.array('images', 10), updateService);
+router.put('/:id', authorize('admin'), upload.array('images', 10), serviceValidation, validate, updateService);
 
 router.delete('/:id', authorize('admin'), deleteService);
 

@@ -5,9 +5,12 @@ const Service = require('../models/Service');
 // @access  Public
 exports.getAllServices = async (req, res, next) => {
   try {
-    const { search, sortBy = '-createdAt', page = 1, limit = 20 } = req.query;
+    const { search, type, sortBy = '-createdAt', page = 1, limit = 20 } = req.query;
 
-    let query = Service.find({ isActive: true });
+    const baseFilter = { isActive: true };
+    if (type) baseFilter.type = type;
+
+    let query = Service.find(baseFilter);
 
     // Search by name or description
     if (search) {
@@ -72,7 +75,7 @@ exports.getServiceById = async (req, res, next) => {
 // @access  Private/Admin
 exports.createService = async (req, res, next) => {
   try {
-    const { name, description, price, promotion } = req.body;
+    const { name, description, price, promotion, type } = req.body;
 
     // Check if service already exists
     const existingService = await Service.findOne({ name });
@@ -96,6 +99,7 @@ exports.createService = async (req, res, next) => {
       description,
       price,
       promotion: promotion || 0,
+      type: type || undefined,
       images,
       createdBy: req.user.id,
       isActive: true,
@@ -127,7 +131,7 @@ exports.updateService = async (req, res, next) => {
       });
     }
 
-    const { name, description, price, promotion } = req.body;
+    const { name, description, price, promotion, type } = req.body;
 
     // Check if name is unique (if being updated)
     if (name && name !== service.name) {
@@ -145,6 +149,7 @@ exports.updateService = async (req, res, next) => {
     if (description) service.description = description;
     if (price !== undefined) service.price = price;
     if (promotion !== undefined) service.promotion = promotion;
+    if (type !== undefined) service.type = type;
 
     // Handle image updates
     if (req.files && Array.isArray(req.files) && req.files.length > 0) {

@@ -26,6 +26,13 @@ const ServiceSchema = new mongoose.Schema(
       max: [100, 'Khuyến mãi không quá 100%'],
       default: 0,
     },
+    // Loại dịch vụ (ví dụ: grooming, vaccination, boarding, consultation, other)
+    type: {
+      type: String,
+      enum: ['grooming', 'vaccination', 'boarding', 'consultation', 'other'],
+      default: 'other',
+      trim: true,
+    },
     images: [
       {
         type: String,
