@@ -1,0 +1,126 @@
+tags:
+  - name: Vaccinations
+    description: Quản lý hồ sơ tiêm chủng
+
+paths:
+  /vaccinations:
+    get:
+      summary: Lấy tất cả bản ghi tiêm của người dùng
+      tags: [Vaccinations]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công
+    post:
+      summary: Tạo bản ghi tiêm
+      tags: [Vaccinations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pet, vaccineName, dateAdministered]
+              properties:
+                pet:
+                  type: string
+                  description: ID thú cưng
+                appointment:
+                  type: string
+                  description: ID buổi khám (tùy chọn)
+                vaccineName:
+                  type: string
+                  description: Tên vắc-xin
+                dateAdministered:
+                  type: string
+                  format: date-time
+                  description: Ngày tiêm
+      responses:
+        201:
+          description: Tạo thành công
+  /vaccinations/pet/{petId}:
+    get:
+      summary: Lấy bản ghi tiêm theo thú cưng
+      tags: [Vaccinations]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+  /vaccinations/{id}:
+    get:
+      summary: Lấy thông tin 1 bản ghi tiêm
+      tags: [Vaccinations]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+    put:
+      summary: Cập nhật bản ghi tiêm
+      tags: [Vaccinations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vaccineName:
+                  type: string
+                dateAdministered:
+                  type: string
+                  format: date-time
+                appointment:
+                  type: string
+      responses:
+        200:
+          description: Thành công
+    delete:
+      summary: Xóa (soft) bản ghi tiêm
+      tags: [Vaccinations]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công
+
+components:
+  schemas:
+    Vaccination:
+      type: object
+      properties:
+        _id:
+          type: string
+        pet:
+          type: string
+        appointment:
+          type: string
+        vaccineName:
+          type: string
+        dateAdministered:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
