@@ -131,9 +131,8 @@ exports.getHealthRecordById = async (req, res, next) => {
 // @access  Private
 exports.createHealthRecord = async (req, res, next) => {
   try {
-    const {
+    let {
       pet,
-      vet,
       appointment,
       service,
       examinationDate,
@@ -142,6 +141,7 @@ exports.createHealthRecord = async (req, res, next) => {
       generalAssessment,
       consultation,
     } = req.body;
+    let vet = req.body.vet;
 
     // Handle multiple image uploads
     const images = [];
@@ -151,12 +151,26 @@ exports.createHealthRecord = async (req, res, next) => {
       });
     }
 
-    // Verify pet exists and belongs to current user
-    const petData = await Pet.findOne({
-      _id: pet,
-      owner: req.user.id,
-      isActive: true,
-    });
+    // Determine pet existence/ownership based on role
+    let petData;
+    if (req.user.role === 'admin') {
+      // admin can create for any pet
+      petData = await Pet.findOne({ _id: pet, isActive: true });
+    } else if (req.user.role === 'vet') {
+      // vet may create for any pet but must be the acting vet
+      const vetIdStr = String(vet || req.user.id);
+      if (String(req.user.id) !== vetIdStr) {
+        return res.status(403).json({
+          success: false,
+          message: 'Vet phải là người thực hiện thao tác.',
+        });
+      }
+      vet = vetIdStr;
+      petData = await Pet.findOne({ _id: pet, isActive: true });
+    } else {
+      // regular owner: pet must belong to current user
+      petData = await Pet.findOne({ _id: pet, owner: req.user.id, isActive: true });
+    }
 
     if (!petData) {
       return res.status(404).json({
@@ -219,17 +233,28 @@ exports.updateHealthRecord = async (req, res, next) => {
       });
     }
 
-    // Verify ownership through pet
-    const pet = await Pet.findOne({
-      _id: healthRecord.pet,
-      owner: req.user.id,
-    });
-
-    if (!pet) {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền cập nhật kết quả khám này.',
-      });
+    // Permission check:
+    // - admin: allowed
+    // - vet: allowed if they are the vet on the record
+    // - owner: allowed if they own the pet
+    if (req.user.role === 'admin') {
+      // allowed
+    } else if (req.user.role === 'vet') {
+      if (!healthRecord.vet || String(healthRecord.vet) !== String(req.user.id)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền cập nhật kết quả khám này.',
+        });
+      }
+    } else {
+      // regular owner
+      const pet = await Pet.findOne({ _id: healthRecord.pet, owner: req.user.id });
+      if (!pet) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền cập nhật kết quả khám này.',
+        });
+      }
     }
 
     const {
@@ -288,17 +313,24 @@ exports.deleteHealthRecord = async (req, res, next) => {
       });
     }
 
-    // Verify ownership through pet
-    const pet = await Pet.findOne({
-      _id: healthRecord.pet,
-      owner: req.user.id,
-    });
-
-    if (!pet) {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền xóa kết quả khám này.',
-      });
+    // Permission check for delete (mirror update rules)
+    if (req.user.role === 'admin') {
+      // allowed
+    } else if (req.user.role === 'vet') {
+      if (!healthRecord.vet || String(healthRecord.vet) !== String(req.user.id)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền xóa kết quả khám này.',
+        });
+      }
+    } else {
+      const pet = await Pet.findOne({ _id: healthRecord.pet, owner: req.user.id });
+      if (!pet) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền xóa kết quả khám này.',
+        });
+      }
     }
 
     healthRecord.isActive = false;
