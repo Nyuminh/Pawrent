@@ -117,13 +117,13 @@ exports.getHealthRecordById = async (req, res, next) => {
       });
     }
 
-    // Permission: owner OR vet assigned OR admin
+    // Permission: owner OR any vet role OR admin
     const petOwnerId = healthRecord.pet.owner ? healthRecord.pet.owner.toString() : null;
     const isOwner = petOwnerId && petOwnerId === req.user.id;
-    const isVet = healthRecord.vet && String(healthRecord.vet) === String(req.user.id);
+    const isVetRole = req.user.role === 'vet';
     const isAdmin = req.user.role === 'admin';
 
-    if (!isOwner && !isVet && !isAdmin) {
+    if (!isOwner && !isVetRole && !isAdmin) {
       return res.status(403).json({
         success: false,
         message: 'Bạn không có quyền truy cập kết quả khám này.',
