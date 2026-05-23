@@ -6,6 +6,7 @@ module.exports = {
     features: [
       'basic_reminders',
       'basic_health_record',
+      'ai_chatbot',
     ],
     price: 0,
     durationMonths: null, // unlimited
