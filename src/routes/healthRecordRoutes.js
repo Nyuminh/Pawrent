@@ -6,6 +6,7 @@ const { upload } = require('../middleware/upload');
 const {
   getAllHealthRecords,
   getHealthRecordsByPetId,
+  getHealthRecordsByAppointmentId,
   getHealthRecordById,
   createHealthRecord,
   updateHealthRecord,
@@ -43,6 +44,9 @@ router.route('/')
 
 router.route('/pet/:petId')
   .get(getHealthRecordsByPetId);
+
+router.route('/appointment/:appointmentId')
+  .get(getHealthRecordsByAppointmentId);
 
 router.route('/:id')
   .get(getHealthRecordById)

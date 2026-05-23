@@ -99,6 +99,55 @@ exports.getHealthRecordsByPetId = async (req, res, next) => {
   }
 };
 
+// @desc    Get health records by appointment ID
+// @route   GET /api/v1/health-records/appointment/:appointmentId
+// @access  Private
+exports.getHealthRecordsByAppointmentId = async (req, res, next) => {
+  try {
+    const { appointmentId } = req.params;
+    const { page = 1, limit = 20, sortBy = '-createdAt' } = req.query;
+
+    // Find appointment
+    const appointment = await Appointment.findOne({ _id: appointmentId, isActive: true }).populate('pet');
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy buổi khám.' });
+    }
+
+    // Permission: admin or vet role can view any appointment records; owner only if they own the pet
+    if (req.user.role !== 'admin' && req.user.role !== 'vet') {
+      const petOwnerId = appointment.pet && appointment.pet.owner ? appointment.pet.owner.toString() : null;
+      if (!petOwnerId || petOwnerId !== req.user.id) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền truy cập kết quả khám này.' });
+      }
+    }
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const startIndex = (pageNum - 1) * limitNum;
+
+    const query = HealthRecord.find({ appointment: appointmentId, isActive: true });
+    const total = await HealthRecord.countDocuments(query);
+    const healthRecords = await query
+      .sort(sortBy)
+      .skip(startIndex)
+      .limit(limitNum)
+      .populate('pet', 'name species owner')
+      .populate('vet', 'name specialization email')
+      .populate('service', 'name price');
+
+    res.status(200).json({
+      success: true,
+      count: healthRecords.length,
+      total,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      data: healthRecords,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get single health record
 // @route   GET /api/v1/health-records/:id
 // @access  Private
