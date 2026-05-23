@@ -323,6 +323,11 @@ paths:
             type: string
             enum: [chờ_xác_nhận, đã_xác_nhận, đang_khám, hoàn_thành, đã_hủy]
           description: Lọc theo trạng thái
+        - name: petId
+          in: query
+          schema:
+            type: string
+          description: Lọc theo ID thú cưng
         - name: page
           in: query
           schema:
@@ -477,6 +482,11 @@ paths:
           schema:
             type: string
           description: Lọc theo user
+        - name: petId
+          in: query
+          schema:
+            type: string
+          description: Lọc theo thú cưng
         - name: date
           in: query
           schema:

@@ -103,10 +103,21 @@ exports.createAppointment = async (req, res, next) => {
 // @access  Private
 exports.getMyAppointments = async (req, res, next) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query;
+    const { status, petId, pet, page = 1, limit = 20 } = req.query;
 
     const query = { user: req.user.id };
     if (status) query.status = status;
+
+    const petFilterId = petId || pet;
+    if (petFilterId) {
+      if (!mongoose.isValidObjectId(petFilterId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID thú cưng không hợp lệ.',
+        });
+      }
+      query.pet = petFilterId;
+    }
 
     const total = await Appointment.countDocuments(query);
     const appointments = await Appointment.find(query)
@@ -139,6 +150,8 @@ exports.getAllAppointments = async (req, res, next) => {
       status,
       vet,
       user,
+      petId,
+      pet,
       date,
       id,
       appointmentId,
@@ -150,6 +163,17 @@ exports.getAllAppointments = async (req, res, next) => {
     if (status) query.status = status;
     if (vet) query.vet = vet;
     if (user) query.user = user;
+
+    const petFilterId = petId || pet;
+    if (petFilterId) {
+      if (!mongoose.isValidObjectId(petFilterId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID thú cưng không hợp lệ.',
+        });
+      }
+      query.pet = petFilterId;
+    }
 
     const appointmentFilterId = id || appointmentId;
     if (appointmentFilterId) {
