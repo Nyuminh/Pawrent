@@ -57,18 +57,19 @@ exports.getHealthRecordsByPetId = async (req, res, next) => {
     const { petId } = req.params;
     const { page = 1, limit = 20, sortBy = '-createdAt' } = req.query;
 
-    // Check if pet belongs to current user
-    const pet = await Pet.findOne({
-      _id: petId,
-      owner: req.user.id,
-      isActive: true,
-    });
+    // Fetch pet depending on role:
+    // - admin: can view any pet
+    // - vet: can view any pet (so they can access records for their patients)
+    // - owner: pet must belong to current user
+    let pet;
+    if (req.user.role === 'admin' || req.user.role === 'vet') {
+      pet = await Pet.findOne({ _id: petId, isActive: true });
+    } else {
+      pet = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
+    }
 
     if (!pet) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy thú cưng.',
-      });
+      return res.status(404).json({ success: false, message: 'Không tìm thấy thú cưng.' });
     }
 
     const pageNum = parseInt(page, 10);
