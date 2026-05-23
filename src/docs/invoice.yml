@@ -1,0 +1,220 @@
+tags:
+  - name: Invoices
+    description: Quản lý hóa đơn (Invoices)
+
+paths:
+  /invoices:
+    post:
+      summary: Tạo hóa đơn mới
+      description: Tạo một hóa đơn cho booking/appointment/subscription trước khi thực hiện thanh toán
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                user:
+                  type: string
+                  description: ID người dùng (nếu không truyền sẽ dùng user đang đăng nhập)
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: Loại item (appointment|booking|subscription|product)
+                      refId:
+                        type: string
+                        description: ID tham chiếu (ví dụ appointmentId)
+                      description:
+                        type: string
+                      price:
+                        type: number
+                currency:
+                  type: string
+                  description: Mã tiền tệ (mặc định VND)
+      responses:
+        201:
+          description: Hóa đơn được tạo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Invoice'
+        400:
+          description: Dữ liệu không hợp lệ
+        401:
+          description: Không được xác thực
+
+    get:
+      summary: Lấy danh sách hóa đơn của người dùng
+      description: Lấy danh sách hóa đơn; admin có thể xem tất cả
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Invoice'
+        401:
+          description: Không được xác thực
+
+  /invoices/{id}:
+    get:
+      summary: Lấy thông tin chi tiết hóa đơn
+      description: Lấy chi tiết một hóa đơn theo ID
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Invoice'
+        401:
+          description: Không được xác thực
+        403:
+          description: Không có quyền truy cập
+        404:
+          description: Không tìm thấy hóa đơn
+
+  /invoices/{id}/status:
+    get:
+      summary: Lấy trạng thái hóa đơn
+      description: Trả về trạng thái hiện tại của hóa đơn và thông tin payment liên quan (nếu có). Dùng để polling từ frontend.
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      payment:
+                        type: object
+        401:
+          description: Không được xác thực
+        403:
+          description: Không có quyền truy cập
+        404:
+          description: Không tìm thấy hóa đơn
+
+components:
+  schemas:
+    InvoiceItem:
+      type: object
+      properties:
+        type:
+          type: string
+        refId:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+
+    Invoice:
+      type: object
+      properties:
+        _id:
+          type: string
+        invoiceNumber:
+          type: string
+        user:
+          type: object
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+        subtotal:
+          type: number
+        total:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+        payment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

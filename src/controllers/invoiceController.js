@@ -107,3 +107,19 @@ exports.getInvoiceById = async (req, res, next) => {
     next(err);
   }
 };
+
+// GET /api/v1/invoices/:id/status
+exports.getInvoiceStatus = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id).populate('payment');
+    if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
+
+    if (req.user.role !== 'admin' && String(invoice.user) !== String(req.user.id)) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    return res.status(200).json({ success: true, data: { status: invoice.status, payment: invoice.payment } });
+  } catch (err) {
+    next(err);
+  }
+};

@@ -7,5 +7,6 @@ router.use(protect);
 
 router.route('/').post(createInvoice).get(getInvoices);
 router.route('/:id').get(getInvoiceById);
+router.route('/:id/status').get(require('../controllers/invoiceController').getInvoiceStatus);
 
 module.exports = router;
