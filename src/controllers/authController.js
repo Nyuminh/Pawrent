@@ -81,8 +81,8 @@ exports.register = async (req, res, next) => {
     // Build subscription defaults based on role
     const subscription =
       assignedRole === 'vet'
-        ? { plan: 'free', isActive: true, maxPets: 0 }
-        : { plan: 'free', isActive: true, maxPets: 1 };
+        ? { plan: 'free', name: 'Miễn phí', durationUnit: 'year', isActive: true, maxPets: 0 }
+        : { plan: 'free', name: 'Miễn phí', durationUnit: 'year', isActive: true, maxPets: 1 };
 
     const user = await User.create({
       fullName,
@@ -197,7 +197,7 @@ exports.registerHotelOwner = async (req, res, next) => {
       phone,
       password,
       role: 'hotel_owner',
-      subscription: { plan: 'free', isActive: true, maxPets: 1 },
+      subscription: { plan: 'free', name: 'Miễn phí', durationUnit: 'year', isActive: true, maxPets: 1 },
     });
 
     // Create initial hotel

@@ -8,7 +8,7 @@ exports.getSubscription = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
 
-    const currentPlan = user.subscription.plan === 'premium' && user.hasActiveSubscription()
+    const currentPlan = user.subscription.plan !== 'free' && user.hasActiveSubscription()
       ? plans.PREMIUM
       : plans.FREE;
 
@@ -54,35 +54,62 @@ exports.getPlans = async (req, res, next) => {
 // @access  Private
 exports.upgradePlan = async (req, res, next) => {
   try {
-    const { additionalPets = 0, paymentMethod } = req.body;
+    const { name, durationUnit = 'year', additionalPets = 0, paymentMethod } = req.body;
 
     const user = await User.findById(req.user.id);
 
-    if (user.subscription.plan === 'premium' && user.hasActiveSubscription()) {
+    if (user.subscription.plan !== 'free' && user.hasActiveSubscription()) {
       return res.status(400).json({
         success: false,
-        message: 'Bạn đã có gói Premium đang hoạt động.',
+        message: 'Bạn đã có gói trả phí đang hoạt động.',
+      });
+    }
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập tên gói (name).',
+      });
+    }
+
+    if (!['month', 'year'].includes(durationUnit)) {
+      return res.status(400).json({
+        success: false,
+        message: 'durationUnit chỉ nhận month hoặc year.',
+      });
+    }
+
+    if (Number(additionalPets) < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'additionalPets không được nhỏ hơn 0.',
       });
     }
 
     // Calculate pricing
-    let totalPrice = plans.PREMIUM.pricePerYear;
-    const maxPets = 1 + additionalPets;
+    const basePrice = durationUnit === 'month'
+      ? plans.PREMIUM.pricePerMonth
+      : plans.PREMIUM.pricePerYear;
+    let totalPrice = basePrice;
+    const maxPets = 1 + Number(additionalPets);
 
     // Additional pets: 150% for each extra pet
-    for (let i = 0; i < additionalPets; i++) {
-      totalPrice += plans.PREMIUM.pricePerYear * plans.PREMIUM.additionalPetMultiplier;
+    for (let i = 0; i < Number(additionalPets); i++) {
+      totalPrice += basePrice * plans.PREMIUM.additionalPetMultiplier;
     }
 
     // In real app, process payment here
     // For now, simulate success
 
+    const normalizedPlan = name.trim().toLowerCase().replace(/\s+/g, '_');
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + plans.PREMIUM.durationMonths);
+    endDate.setMonth(endDate.getMonth() + plans.PREMIUM.durationMonths[durationUnit]);
 
     user.subscription = {
-      plan: 'premium',
+      plan: normalizedPlan,
+      name: name.trim(),
+      durationUnit,
       startDate,
       endDate,
       isActive: true,
@@ -93,11 +120,12 @@ exports.upgradePlan = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Nâng cấp Premium thành công! 🎉',
+      message: `Nâng cấp gói ${name.trim()} thành công! 🎉`,
       data: {
         subscription: user.subscription,
         pricing: {
-          basePricePerYear: plans.PREMIUM.pricePerYear,
+          basePrice,
+          durationUnit,
           additionalPets,
           totalPrice,
           currency: 'VND',

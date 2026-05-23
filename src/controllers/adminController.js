@@ -26,7 +26,10 @@ exports.getDashboard = async (req, res, next) => {
       PetHotel.countDocuments({ isActive: true }),
       Appointment.countDocuments(),
       HotelBooking.countDocuments(),
-      User.countDocuments({ 'subscription.plan': 'premium', 'subscription.isActive': true }),
+      User.countDocuments({
+        'subscription.plan': { $ne: 'free' },
+        'subscription.isActive': true,
+      }),
       User.find().sort('-createdAt').limit(10).select('fullName email role createdAt'),
     ]);
 

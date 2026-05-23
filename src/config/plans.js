@@ -26,8 +26,12 @@ module.exports = {
       'activity_history_6months',
       'health_charts',
     ],
+    pricePerMonth: 49000, // VND
     pricePerYear: 499000, // VND
     additionalPetMultiplier: 1.5, // 150% for 2nd pet
-    durationMonths: 12,
+    durationMonths: {
+      month: 1,
+      year: 12,
+    },
   },
 };

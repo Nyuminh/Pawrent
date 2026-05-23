@@ -613,7 +613,7 @@ paths:
           
   /subscription/upgrade:
     post:
-      summary: Nâng cấp lên Premium
+      summary: Nâng cấp gói trả phí
       tags: [AI Chatbot & Activity]
       security:
         - bearerAuth: []
@@ -623,8 +623,17 @@ paths:
           application/json:
             schema:
               type: object
-              required: [paymentMethod]
+              required: [name, durationUnit, paymentMethod]
               properties:
+                name:
+                  type: string
+                  description: Tên gói muốn nâng cấp (ví dụ Pawrent Plus, Pawrent Vip)
+                  example: Pawrent Plus
+                durationUnit:
+                  type: string
+                  enum: [month, year]
+                  description: Chu kỳ sử dụng của gói
+                  example: month
                 additionalPets:
                   type: number
                   description: Số thú cưng bổ sung (0-5)

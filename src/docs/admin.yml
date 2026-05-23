@@ -213,8 +213,14 @@ paths:
               properties:
                 plan:
                   type: string
-                  enum: [free, premium]
-                  description: Gói subscription (free hoặc premium)
+                  description: Mã gói subscription (ví dụ free, pawrent_plus, pawrent_vip)
+                name:
+                  type: string
+                  description: Tên hiển thị gói subscription
+                durationUnit:
+                  type: string
+                  enum: [month, year]
+                  description: Chu kỳ sử dụng của gói
                 isActive:
                   type: boolean
                   description: Trạng thái hoạt động của gói

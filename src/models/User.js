@@ -43,8 +43,17 @@ const UserSchema = new mongoose.Schema(
     subscription: {
       plan: {
         type: String,
-        enum: ['free', 'premium'],
         default: 'free',
+      },
+      name: {
+        type: String,
+        default: 'Miễn phí',
+        trim: true,
+      },
+      durationUnit: {
+        type: String,
+        enum: ['month', 'year'],
+        default: 'year',
       },
       startDate: Date,
       endDate: Date,
@@ -145,7 +154,7 @@ UserSchema.methods.hasActiveSubscription = function () {
 // Check feature access
 UserSchema.methods.canAccessFeature = function (feature) {
   const plans = require('../config/plans');
-  const currentPlan = this.subscription.plan === 'premium' && this.hasActiveSubscription()
+  const currentPlan = this.subscription.plan !== 'free' && this.hasActiveSubscription()
     ? plans.PREMIUM
     : plans.FREE;
   return currentPlan.features.includes(feature);
