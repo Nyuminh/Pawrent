@@ -7,7 +7,18 @@ const Payment = require('../models/Payment');
 // Requires env: MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY, MOMO_ENDPOINT, BACKEND_URL, FRONTEND_URL
 exports.createMomoPayment = async (req, res, next) => {
   try {
-    const { amount, orderInfo = 'Thanh toán PAWRENT', metadata = {} } = req.body;
+    let { amount, orderInfo = 'Thanh toán PAWRENT', metadata = {}, invoiceId } = req.body;
+
+    // If invoiceId provided, use invoice total
+    if (invoiceId) {
+      const Invoice = require('../models/Invoice');
+      const invoice = await Invoice.findById(invoiceId);
+      if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
+      if (invoice.status !== 'pending') return res.status(400).json({ success: false, message: 'Invoice is not pending' });
+      amount = invoice.total;
+      metadata.invoiceId = invoice._id;
+    }
+
     if (!amount || Number(amount) <= 0) {
       return res.status(400).json({ success: false, message: 'Số tiền không hợp lệ.' });
     }
@@ -68,6 +79,16 @@ exports.createMomoPayment = async (req, res, next) => {
     payment.qrUrl = qrDataUrl;
     await payment.save();
 
+    // link payment -> invoice if present
+    if (metadata && metadata.invoiceId) {
+      const Invoice = require('../models/Invoice');
+      const inv = await Invoice.findById(metadata.invoiceId);
+      if (inv) {
+        inv.payment = payment._id;
+        await inv.save();
+      }
+    }
+
     return res.status(201).json({ success: true, paymentId: payment._id, payUrl, qrDataUrl });
   } catch (err) {
     next(err);
@@ -99,6 +120,30 @@ exports.momoWebhook = async (req, res, next) => {
 
     if (Number(resultCode) === 0) payment.status = 'paid'; else payment.status = 'failed';
     await payment.save();
+
+    // If payment linked to invoice, mark invoice paid
+    try {
+      const Invoice = require('../models/Invoice');
+      let invoice = null;
+      if (payment.metadata && payment.metadata.invoiceId) {
+        invoice = await Invoice.findById(payment.metadata.invoiceId);
+      }
+      // fallback: if orderId format pawrent_<paymentId> and invoice linked
+      if (!invoice && orderId && orderId.startsWith('pawrent_')) {
+        const pid = orderId.replace('pawrent_', '');
+        const p = await Payment.findById(pid);
+        if (p && p.metadata && p.metadata.invoiceId) invoice = await Invoice.findById(p.metadata.invoiceId);
+      }
+
+      if (invoice) {
+        invoice.status = Number(resultCode) === 0 ? 'paid' : 'cancelled';
+        invoice.payment = payment._id;
+        await invoice.save();
+      }
+    } catch (e) {
+      // ignore invoice update errors
+      console.error('Invoice update error', e.message);
+    }
 
     return res.json({ success: true });
   } catch (err) {
