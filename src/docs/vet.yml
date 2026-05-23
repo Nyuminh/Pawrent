@@ -165,6 +165,11 @@ paths:
           schema:
             type: string
           description: ID người dùng
+        - name: petId
+          in: query
+          schema:
+            type: string
+          description: ID thú cưng
         - name: date
           in: query
           schema:

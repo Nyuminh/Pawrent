@@ -4,6 +4,8 @@ const {
   getSubscription,
   getPlans,
   upgradePlan,
+  upgradePlusPlan,
+  upgradeVipPlan,
   cancelSubscription,
 } = require('../controllers/subscriptionController');
 
@@ -16,6 +18,8 @@ router.get('/plans', getPlans);
 router.use(protect);
 router.get('/', getSubscription);
 router.post('/upgrade', upgradePlan);
+router.post('/upgrade/plus', upgradePlusPlan);
+router.post('/upgrade/vip', upgradeVipPlan);
 router.post('/cancel', cancelSubscription);
 
 module.exports = router;

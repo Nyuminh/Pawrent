@@ -184,10 +184,10 @@ exports.updateUserSubscription = async (req, res, next) => {
 
     // Update subscription fields
     if (plan !== undefined) {
-      if (!['free', 'premium'].includes(plan)) {
+      if (!['free', 'plus', 'vip'].includes(plan)) {
         return res.status(400).json({
           success: false,
-          message: 'Gói phải là "free" hoặc "premium".',
+          message: 'Gói phải là "free", "plus" hoặc "vip".',
         });
       }
       user.subscription.plan = plan;

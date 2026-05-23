@@ -1,6 +1,18 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const plans = require('../config/plans');
+
+function getPlanBySlug(planSlug) {
+  if (!planSlug || planSlug === 'free') return plans.FREE;
+
+  const normalizedPlan = String(planSlug).trim().toLowerCase();
+
+  if (normalizedPlan.includes('plus')) return plans.PLUS;
+  if (normalizedPlan.includes('vip') || normalizedPlan.includes('premium')) return plans.VIP || plans.PREMIUM;
+
+  return plans[normalizedPlan.toUpperCase()] || plans.VIP || plans.PREMIUM || plans.FREE;
+}
 
 const UserSchema = new mongoose.Schema(
   {
@@ -153,9 +165,8 @@ UserSchema.methods.hasActiveSubscription = function () {
 
 // Check feature access
 UserSchema.methods.canAccessFeature = function (feature) {
-  const plans = require('../config/plans');
   const currentPlan = this.subscription.plan !== 'free' && this.hasActiveSubscription()
-    ? plans.PREMIUM
+    ? getPlanBySlug(this.subscription.plan)
     : plans.FREE;
   return currentPlan.features.includes(feature);
 };

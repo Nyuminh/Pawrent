@@ -605,15 +605,14 @@ paths:
           
   /subscription/plans:
     get:
-      summary: Xem các gói cước Subscription (Free / Premium)
+      summary: Xem các gói cước Subscription (Free / Plus / Vip)
       tags: [AI Chatbot & Activity]
       responses:
         200:
           description: Thông tin các gói
-          
-  /subscription/upgrade:
+  /subscription/upgrade/plus:
     post:
-      summary: Nâng cấp gói trả phí
+      summary: Nâng cấp lên gói Plus
       tags: [AI Chatbot & Activity]
       security:
         - bearerAuth: []
@@ -623,17 +622,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, durationUnit, paymentMethod]
+              required: [paymentMethod]
               properties:
-                name:
+                userId:
                   type: string
-                  description: Tên gói muốn nâng cấp (ví dụ Pawrent Plus, Pawrent Vip)
-                  example: Pawrent Plus
-                durationUnit:
-                  type: string
-                  enum: [month, year]
-                  description: Chu kỳ sử dụng của gói
-                  example: month
+                  description: ID user cần nâng gói. Nếu bỏ trống thì áp dụng cho chính tài khoản đang đăng nhập.
                 additionalPets:
                   type: number
                   description: Số thú cưng bổ sung (0-5)
@@ -645,7 +638,61 @@ paths:
       responses:
         200:
           description: Nâng cấp thành công
-          
+  /subscription/upgrade/vip:
+    post:
+      summary: Nâng cấp lên gói Vip
+      tags: [AI Chatbot & Activity]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentMethod]
+              properties:
+                userId:
+                  type: string
+                  description: ID user cần nâng gói. Nếu bỏ trống thì áp dụng cho chính tài khoản đang đăng nhập.
+                additionalPets:
+                  type: number
+                  description: Số thú cưng bổ sung (0-5)
+                  default: 0
+                paymentMethod:
+                  type: string
+                  enum: [credit_card, bank_transfer, momo, zalopay]
+                  description: Phương thức thanh toán (bắt buộc)
+      responses:
+        200:
+          description: Nâng cấp thành công
+
+  /subscription/upgrade:
+    post:
+      summary: Nâng cấp lên gói Plus (backward compatible)
+      tags: [AI Chatbot & Activity]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentMethod]
+              properties:
+                userId:
+                  type: string
+                additionalPets:
+                  type: number
+                  default: 0
+                paymentMethod:
+                  type: string
+                  enum: [credit_card, bank_transfer, momo, zalopay]
+      responses:
+        200:
+          description: Nâng cấp thành công
+
   /subscription/cancel:
     post:
       summary: Hủy gói Premium

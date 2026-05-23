@@ -213,7 +213,8 @@ paths:
               properties:
                 plan:
                   type: string
-                  description: Mã gói subscription (ví dụ free, pawrent_plus, pawrent_vip)
+                  enum: [free, plus, vip]
+                  description: Mã gói subscription
                 name:
                   type: string
                   description: Tên hiển thị gói subscription
@@ -239,10 +240,10 @@ paths:
                   description: Ngày kết thúc gói (ISO 8601 format)
                   example: "2024-12-31T23:59:59Z"
             examples:
-              update_to_premium:
-                summary: "Nâng cấp lên Premium 1 năm"
+              update_to_vip:
+                summary: "Nâng cấp lên Vip 1 năm"
                 value:
-                  plan: "premium"
+                  plan: "vip"
                   isActive: true
                   maxPets: 5
                   startDate: "2024-01-01T00:00:00Z"
