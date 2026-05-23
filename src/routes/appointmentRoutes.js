@@ -27,7 +27,6 @@ const appointmentValidation = [
   body('date').notEmpty().withMessage('Ngày khám không được để trống'),
   body('timeSlot.startTime').notEmpty().withMessage('Giờ bắt đầu không được để trống'),
   body('timeSlot.endTime').notEmpty().withMessage('Giờ kết thúc không được để trống'),
-  body('reason').notEmpty().withMessage('Lý do khám không được để trống'),
 ];
 
 // Public routes

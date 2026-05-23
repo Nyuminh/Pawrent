@@ -37,11 +37,6 @@ const AppointmentSchema = new mongoose.Schema(
       },
       endTime: String,
     },
-    reason: {
-      type: String,
-      required: [true, 'Vui lòng nhập lý do khám'],
-      trim: true,
-    },
     symptoms: [String],
     notes: String,
     status: {

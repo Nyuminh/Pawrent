@@ -11,7 +11,7 @@ const appointmentSlots = require('../utils/appointmentSlots');
 // @access  Private
 exports.createAppointment = async (req, res, next) => {
   try {
-    const { pet: petId, vet: vetId, date, timeSlot, appointmentType, reason, symptoms } = req.body;
+    const { pet: petId, vet: vetId, service, date, timeSlot, appointmentType, symptoms, notes } = req.body;
 
     // Validate required fields
     if (!vetId || !petId) {
@@ -77,11 +77,12 @@ exports.createAppointment = async (req, res, next) => {
       user: req.user.id,
       pet: petId,
       vet: vetId,
+      service,
       appointmentType,
       date: new Date(date),
       timeSlot,
-      reason,
       symptoms,
+      notes,
       fee: {
         amount: defaultFee,
         currency: 'VND',
@@ -94,6 +95,7 @@ exports.createAppointment = async (req, res, next) => {
     // Populate and return the complete appointment data
     const populatedAppointment = await Appointment.findById(appointment._id)
       .populate('pet', 'name species breed avatar')
+      .populate('service', 'name price')
       .populate('vet', '_id fullName avatar email phone');
 
     res.status(201).json({
@@ -119,6 +121,7 @@ exports.getMyAppointments = async (req, res, next) => {
     const total = await Appointment.countDocuments(query);
     const appointments = await Appointment.find(query)
       .populate('pet', 'name species breed avatar')
+      .populate('service', 'name price')
       .populate('vet', '_id fullName avatar email phone')
       .sort('-date')
       .skip((page - 1) * limit)
@@ -181,6 +184,7 @@ exports.getAllAppointments = async (req, res, next) => {
     const appointments = await Appointment.find(query)
       .populate('user', 'fullName phone email')
       .populate('pet', 'name species breed avatar')
+      .populate('service', 'name price')
       .populate('vet', '_id fullName avatar email phone')
       .sort('-date')
       .skip((page - 1) * limit)
@@ -282,6 +286,8 @@ exports.getVetAppointmentsById = async (req, res, next) => {
     const appointments = await Appointment.find(query)
       .populate('user', 'fullName phone email')
       .populate('pet', 'name species breed gender dateOfBirth weight healthStatus allergies')
+      .populate('service', 'name price')
+      .populate('service', 'name price')
       .populate('vet', '_id fullName avatar email phone')
       .sort('date timeSlot.startTime')
       .skip((page - 1) * limit)
@@ -357,6 +363,7 @@ exports.updateAppointmentStatus = async (req, res, next) => {
 
     const updatedAppointment = await Appointment.findById(appointment._id)
       .populate('pet', 'name species breed avatar')
+      .populate('service', 'name price')
       .populate('vet', '_id fullName avatar email phone');
 
     res.status(200).json({
@@ -405,6 +412,7 @@ exports.reviewAppointment = async (req, res, next) => {
 
     const reviewedAppointment = await Appointment.findById(appointment._id)
       .populate('pet', 'name species breed avatar')
+      .populate('service', 'name price')
       .populate('vet', '_id fullName avatar email phone');
 
     res.status(200).json({

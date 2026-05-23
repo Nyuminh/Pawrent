@@ -1,6 +1,5 @@
 const Vaccination = require('../models/Vaccination');
 const Pet = require('../models/Pet');
-const Appointment = require('../models/Appointment');
 
 // @desc Get all vaccinations for current user (all pets)
 // @route GET /api/v1/vaccinations
@@ -113,7 +112,7 @@ exports.updateVaccination = async (req, res, next) => {
   }
 };
 
-// @desc Delete vaccination (soft)
+// @desc Delete vaccination
 // @route DELETE /api/v1/vaccinations/:id
 // @access Private
 exports.deleteVaccination = async (req, res, next) => {
@@ -124,8 +123,7 @@ exports.deleteVaccination = async (req, res, next) => {
     const petOwner = await Pet.findOne({ _id: vac.pet, owner: req.user.id });
     if (!petOwner) return res.status(403).json({ success: false, message: 'Không có quyền truy cập.' });
 
-    vac.isActive = false;
-    await vac.save();
+    await Vaccination.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ success: true, message: 'Xóa bản ghi tiêm thành công.' });
   } catch (error) {

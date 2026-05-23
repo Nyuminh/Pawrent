@@ -206,7 +206,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [pet, vet, appointmentType, date, timeSlot, reason]
+              required: [pet, vet, appointmentType, date, timeSlot]
               properties:
                 pet:
                   type: string
@@ -239,10 +239,6 @@ paths:
                       type: string
                       example: '09:30'
                       description: Giờ kết thúc (HH:MM, bắt buộc)
-                reason:
-                  type: string
-                  example: 'Khám tổng quát'
-                  description: Lý do khám (bắt buộc)
                 symptoms:
                   type: array
                   items:
@@ -288,8 +284,6 @@ paths:
                             type: string
                           endTime:
                             type: string
-                      reason:
-                        type: string
                       symptoms:
                         type: array
                       status:
@@ -571,8 +565,6 @@ components:
               type: string
             endTime:
               type: string
-        reason:
-          type: string
         symptoms:
           type: array
           items:
