@@ -48,8 +48,8 @@ exports.createAppointment = async (req, res, next) => {
       });
     }
 
-    // Check for available slots (max 3 slots per time)
-    const bookedAppointments = await Appointment.find({
+    // Ensure the selected vet is not already booked at this time
+    const vetExistingAppointment = await Appointment.findOne({
       vet: vetId,
       date: {
         $gte: new Date(appointmentDate.toDateString()),
@@ -59,13 +59,28 @@ exports.createAppointment = async (req, res, next) => {
       status: { $in: ['chờ_xác_nhận', 'đã_xác_nhận'] },
     });
 
-    if (
-      bookedAppointments.length >= appointmentSlots.MAX_SLOTS_PER_TIME
-    ) {
+    if (vetExistingAppointment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bác sĩ đã có lịch hẹn tại khung giờ này. Vui lòng chọn bác sĩ khác hoặc khung giờ khác.',
+      });
+    }
+
+    // Check total booked slots across all vets for this time (max slots per time)
+    const totalBookedAppointments = await Appointment.find({
+      date: {
+        $gte: new Date(appointmentDate.toDateString()),
+        $lt: new Date(new Date(appointmentDate.toDateString()).getTime() + 86400000),
+      },
+      'timeSlot.startTime': timeSlot.startTime,
+      status: { $in: ['chờ_xác_nhận', 'đã_xác_nhận'] },
+    });
+
+    if (totalBookedAppointments.length >= appointmentSlots.MAX_SLOTS_PER_TIME) {
       return res.status(400).json({
         success: false,
         message: `Khung giờ ${timeSlot.startTime} - ${timeSlot.endTime} đã đầy (${appointmentSlots.MAX_SLOTS_PER_TIME}/${appointmentSlots.MAX_SLOTS_PER_TIME}). Vui lòng chọn khung giờ khác.`,
-        bookedSlots: bookedAppointments.length,
+        bookedSlots: totalBookedAppointments.length,
         maxSlots: appointmentSlots.MAX_SLOTS_PER_TIME,
       });
     }
