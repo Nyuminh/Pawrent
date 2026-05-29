@@ -8,10 +8,16 @@ function getBaseUrl() {
 }
 
 function getSePayConfig() {
-  const isProduction = String(process.env.SEPAY_ENV || '').toLowerCase() === 'production';
+  const sePayEnv = String(process.env.SEPAY_ENV || '').toLowerCase();
+  const merchantId = process.env.SEPAY_MERCHANT_ID || '';
+  const secretKey = process.env.SEPAY_SECRET_KEY || '';
+  const looksLikeLiveKeys = /^SP-LIVE-/i.test(merchantId) || /^spsk_live_/i.test(secretKey);
+  const isProduction =
+    sePayEnv === 'production' ||
+    (sePayEnv === '' && (looksLikeLiveKeys || String(process.env.NODE_ENV || '').toLowerCase() === 'production'));
   return {
-    merchantId: process.env.SEPAY_MERCHANT_ID || '',
-    secretKey: process.env.SEPAY_SECRET_KEY || '',
+    merchantId,
+    secretKey,
     checkoutEndpoint:
       process.env.SEPAY_CHECKOUT_URL ||
       (isProduction ? 'https://pay.sepay.vn/v1/checkout/init' : 'https://pay-sandbox.sepay.vn/v1/checkout/init'),
