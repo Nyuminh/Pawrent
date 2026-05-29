@@ -6,6 +6,7 @@ const PaymentSchema = new mongoose.Schema({
   currency: { type: String, default: 'VND' },
   provider: { type: String, required: true },
   providerPaymentId: { type: String },
+  checkoutUrl: { type: String },
   qrUrl: { type: String },
   status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
   metadata: { type: mongoose.Schema.Types.Mixed },

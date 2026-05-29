@@ -1,0 +1,218 @@
+tags:
+  - name: Payments
+    description: Thanh toán và cổng thanh toán SePay
+
+paths:
+  /payments/sepay/checkout/init:
+    post:
+      summary: Tạo đơn thanh toán SePay
+      description: Tạo payment pending, sinh QR và trang trung gian để chuyển sang SePay checkout. Nếu truyền invoiceId thì hệ thống tự lấy số tiền từ hóa đơn.
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - invoiceId
+              properties:
+                invoiceId:
+                  type: string
+                  description: ID hóa đơn cần thanh toán
+                  example: 6630f1b6f6d4e8a1c2b3d4e5
+                amount:
+                  type: number
+                  description: Tùy chọn nếu không dùng invoiceId
+                  example: 100000
+                orderDescription:
+                  type: string
+                  description: Tùy chọn, hệ thống sẽ tự đặt nếu không truyền
+                  example: Thanh toan don hang #123
+                paymentMethod:
+                  type: string
+                  description: Tùy chọn, mặc định BANK_TRANSFER
+                  example: BANK_TRANSFER
+                operation:
+                  type: string
+                  description: Tùy chọn, mặc định PURCHASE
+                  example: PURCHASE
+                customerId:
+                  type: string
+                  description: Tùy chọn
+                  example: CUST_001
+                successUrl:
+                  type: string
+                  description: Tùy chọn, nếu không truyền backend sẽ tạo mặc định
+                  example: https://your-domain.com/pay/success
+                errorUrl:
+                  type: string
+                  description: Tùy chọn, nếu không truyền backend sẽ tạo mặc định
+                  example: https://your-domain.com/pay/error
+                cancelUrl:
+                  type: string
+                  description: Tùy chọn, nếu không truyền backend sẽ tạo mặc định
+                  example: https://your-domain.com/pay/cancel
+      responses:
+        201:
+          description: Tạo payment thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  paymentId:
+                    type: string
+                  provider:
+                    type: string
+                  amount:
+                    type: number
+                  checkoutPageUrl:
+                    type: string
+                  qrDataUrl:
+                    type: string
+                  statusUrl:
+                    type: string
+        400:
+          description: Dữ liệu không hợp lệ
+        401:
+          description: Không được xác thực
+        500:
+          description: Thiếu cấu hình SePay
+
+  /payments/sepay/checkout/{paymentId}:
+    get:
+      summary: Mở trang trung gian chuyển hướng sang SePay
+      description: Trang HTML tự submit form sang SePay checkout endpoint.
+      tags: [Payments]
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: HTML auto-submit form
+          content:
+            text/html:
+              schema:
+                type: string
+        404:
+          description: Không tìm thấy payment
+        500:
+          description: SePay chưa được cấu hình
+
+  /payments/sepay/status/{paymentId}:
+    get:
+      summary: Kiểm tra trạng thái payment SePay
+      description: Endpoint polling để frontend kiểm tra payment đã paid/failed hay chưa.
+      tags: [Payments]
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Trạng thái payment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      provider:
+                        type: string
+                      status:
+                        type: string
+                        example: pending
+                      amount:
+                        type: number
+                      currency:
+                        type: string
+                      checkoutUrl:
+                        type: string
+                      qrDataUrl:
+                        type: string
+                      invoiceId:
+                        type: string
+                      updatedAt:
+                        type: string
+                        format: date-time
+        404:
+          description: Không tìm thấy payment
+
+  /payments/sepay/return/{result}:
+    get:
+      summary: Trang callback trả về cho khách hàng
+      description: Trang hiển thị kết quả và tự polling trạng thái payment.
+      tags: [Payments]
+      parameters:
+        - name: result
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [success, error, cancel]
+        - name: paymentId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: HTML trang kết quả thanh toán
+          content:
+            text/html:
+              schema:
+                type: string
+        400:
+          description: Thiếu paymentId
+
+  /payments/sepay/webhook:
+    post:
+      summary: IPN webhook từ SePay
+      description: SePay gọi vào endpoint này để thông báo giao dịch và cập nhật trạng thái payment/hóa đơn.
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: integer
+                notification_type:
+                  type: string
+                  example: ORDER_PAID
+                order:
+                  type: object
+                transaction:
+                  type: object
+                customer:
+                  type: object
+                agreement:
+                  type: object
+      responses:
+        200:
+          description: Đã ghi nhận IPN
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean

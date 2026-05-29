@@ -11,6 +11,8 @@
  *     description: Bán và quản lý sản phẩm cho thú cưng
  *   - name: Chatbot & Premium
  *     description: Dịch vụ AI Chatbot và Đăng ký bản Premium
+ *   - name: Payments
+ *     description: Thanh toán và cổng SePay/MoMo
  *   - name: Admin
  *     description: Quản lý hệ thống (yêu cầu role admin)
  * 
