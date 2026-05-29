@@ -6,7 +6,7 @@ paths:
   /payments/sepay/checkout/init:
     post:
       summary: Tạo đơn thanh toán SePay
-      description: Tạo payment pending, sinh QR và trang trung gian để chuyển sang SePay checkout. Nếu truyền invoiceId thì hệ thống tự lấy số tiền từ hóa đơn.
+      description: Tạo payment pending, sinh QR và trang trung gian để chuyển sang SePay checkout. Chỉ cần truyền `invoiceId`; hệ thống sẽ tự lấy số tiền từ hóa đơn và bỏ qua các field khác nếu có gửi kèm.
       tags: [Payments]
       security:
         - bearerAuth: []
@@ -23,38 +23,8 @@ paths:
                   type: string
                   description: ID hóa đơn cần thanh toán
                   example: 6630f1b6f6d4e8a1c2b3d4e5
-                amount:
-                  type: number
-                  description: Tùy chọn nếu không dùng invoiceId
-                  example: 100000
-                orderDescription:
-                  type: string
-                  description: Tùy chọn, hệ thống sẽ tự đặt nếu không truyền
-                  example: Thanh toan don hang #123
-                paymentMethod:
-                  type: string
-                  description: Tùy chọn, mặc định BANK_TRANSFER
-                  example: BANK_TRANSFER
-                operation:
-                  type: string
-                  description: Tùy chọn, mặc định PURCHASE
-                  example: PURCHASE
-                customerId:
-                  type: string
-                  description: Tùy chọn
-                  example: CUST_001
-                successUrl:
-                  type: string
-                  description: Tùy chọn, nếu không truyền backend sẽ tạo mặc định
-                  example: https://your-domain.com/pay/success
-                errorUrl:
-                  type: string
-                  description: Tùy chọn, nếu không truyền backend sẽ tạo mặc định
-                  example: https://your-domain.com/pay/error
-                cancelUrl:
-                  type: string
-                  description: Tùy chọn, nếu không truyền backend sẽ tạo mặc định
-                  example: https://your-domain.com/pay/cancel
+              example:
+                invoiceId: 6630f1b6f6d4e8a1c2b3d4e5
       responses:
         201:
           description: Tạo payment thành công
