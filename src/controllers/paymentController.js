@@ -566,6 +566,34 @@ exports.renderSePayReturnPage = async (req, res, next) => {
     setSePayHtmlHeaders(res);
 
     const result = String(req.params.result || 'success');
+    const payment = await Payment.findById(paymentId);
+    if (payment && payment.provider === 'sepay' && ['error', 'cancel'].includes(result)) {
+      payment.status = 'failed';
+      payment.metadata = {
+        ...(payment.metadata || {}),
+        sepay: {
+          ...((payment.metadata && payment.metadata.sepay) || {}),
+          lastReturnResult: result,
+        },
+      };
+      await payment.save();
+
+      try {
+        const Invoice = require('../models/Invoice');
+        const invoiceId = payment.metadata && payment.metadata.invoiceId;
+        if (invoiceId) {
+          const invoice = await Invoice.findById(invoiceId);
+          if (invoice) {
+            invoice.status = 'cancelled';
+            invoice.payment = payment._id;
+            await invoice.save();
+          }
+        }
+      } catch (invoiceErr) {
+        console.error('SePay return invoice update error:', invoiceErr.message);
+      }
+    }
+
     const title = result === 'success' ? 'Thanh toan dang duoc xac nhan' : 'Ket qua thanh toan SePay';
     const message =
       result === 'success'
