@@ -159,6 +159,14 @@ function normalizeMetadata(metadata) {
   return { ...metadata };
 }
 
+function setSePayHtmlHeaders(res) {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self' https://pay.sepay.vn https://pay-sandbox.sepay.vn; connect-src 'self';"
+  );
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+}
+
 // POST /api/v1/payments/momo/create
 // Requires env: MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY, MOMO_ENDPOINT, BACKEND_URL, FRONTEND_URL
 exports.createMomoPayment = async (req, res, next) => {
@@ -363,6 +371,8 @@ exports.renderSePayCheckoutPage = async (req, res, next) => {
       return res.status(404).send('Payment not found');
     }
 
+    setSePayHtmlHeaders(res);
+
     const sePayConfig = getSePayConfig();
     if (!sePayConfig.merchantId || !sePayConfig.secretKey) {
       return res.status(500).send('SePay is not configured');
@@ -439,6 +449,8 @@ exports.renderSePayReturnPage = async (req, res, next) => {
     if (!paymentId) {
       return res.status(400).send('Missing paymentId');
     }
+
+    setSePayHtmlHeaders(res);
 
     const result = String(req.params.result || 'success');
     const title = result === 'success' ? 'Thanh toan dang duoc xac nhan' : 'Ket qua thanh toan SePay';
