@@ -1,5 +1,9 @@
 const Pet = require('../models/Pet');
 const User = require('../models/User');
+const Appointment = require('../models/Appointment');
+const Vaccination = require('../models/Vaccination');
+const Reminder = require('../models/Reminder');
+const HealthRecord = require('../models/HealthRecord');
 
 // @desc    Create a pet
 // @route   POST /api/v1/pets
@@ -145,12 +149,35 @@ exports.deletePet = async (req, res, next) => {
       });
     }
 
+    const [appointmentResult, vaccinationResult, reminderResult, healthRecordResult] = await Promise.all([
+      Appointment.updateMany(
+        { pet: pet._id },
+        {
+          $set: {
+            status: 'đã_hủy',
+            'cancellation.cancelledBy': 'hệ_thống',
+            'cancellation.reason': 'Thú cưng đã bị xóa',
+            'cancellation.cancelledAt': new Date(),
+          },
+        }
+      ),
+      Vaccination.updateMany({ pet: pet._id }, { $set: { isActive: false } }),
+      Reminder.updateMany({ pet: pet._id }, { $set: { status: 'cancelled' } }),
+      HealthRecord.updateMany({ pet: pet._id }, { $set: { isActive: false } }),
+    ]);
+
     pet.isActive = false;
     await pet.save();
 
     res.status(200).json({
       success: true,
       message: 'Xóa thú cưng thành công.',
+      data: {
+        appointmentsCancelled: appointmentResult.modifiedCount || 0,
+        vaccinationsDisabled: vaccinationResult.modifiedCount || 0,
+        remindersCancelled: reminderResult.modifiedCount || 0,
+        healthRecordsDisabled: healthRecordResult.modifiedCount || 0,
+      },
     });
   } catch (error) {
     next(error);
