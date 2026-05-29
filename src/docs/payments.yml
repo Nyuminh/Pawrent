@@ -43,8 +43,13 @@ paths:
                     type: number
                   checkoutPageUrl:
                     type: string
+                    description: URL trang trung gian SePay checkout, QR này chỉ dẫn tới trang thanh toán.
                   qrDataUrl:
                     type: string
+                    description: QR code của checkoutPageUrl, không phải QR chuyển khoản ngân hàng trực tiếp.
+                  qrImageUrl:
+                    type: string
+                    description: Ảnh PNG của QR checkoutPageUrl.
                   statusUrl:
                     type: string
         400:
