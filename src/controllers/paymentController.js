@@ -112,6 +112,32 @@ function renderAutoSubmitPage({ title, message, action, fields }) {
 </html>`;
 }
 
+function renderDebugPage({ action, fields }) {
+  const inputs = Object.entries(fields)
+    .map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}" />`)
+    .join('');
+
+  return `<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SePay Debug Checkout</title>
+  <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f3f4f6}pre{background:#fff;padding:16px;border-radius:8px;overflow:auto}</style>
+</head>
+<body>
+  <h1>SePay Debug Checkout</h1>
+  <p>Action: <strong>${escapeHtml(action)}</strong></p>
+  <h2>Fields</h2>
+  <pre>${escapeHtml(JSON.stringify(fields, null, 2))}</pre>
+  <form method="POST" action="${escapeHtml(action)}">
+    ${inputs}
+    <button type="submit">Gửi thử đến SePay</button>
+  </form>
+</body>
+</html>`;
+}
+
 function renderStatusPage({ title, paymentId, initialMessage }) {
   const statusUrl = `/api/v1/payments/sepay/status/${encodeURIComponent(paymentId)}`;
 
@@ -424,6 +450,16 @@ exports.renderSePayCheckoutPage = async (req, res, next) => {
     }
 
     fields.signature = buildSePaySignature(fields, sePayConfig.secretKey);
+
+    // Debug logging for SePay integration problems (do not log secret keys)
+    try {
+      console.log('[SePay] checkoutEndpoint=', sePayConfig.checkoutEndpoint);
+      console.log('[SePay] merchant=', sePayConfig.merchantId);
+      console.log('[SePay] fields=', JSON.stringify(fields));
+      console.log('[SePay] signature=', fields.signature);
+    } catch (e) {
+      /* ignore logging errors */
+    }
 
     return res
       .status(200)
