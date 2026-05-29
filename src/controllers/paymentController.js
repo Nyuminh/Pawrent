@@ -7,6 +7,25 @@ function getBaseUrl() {
   return (process.env.BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
 }
 
+function getPublicBaseUrl(req) {
+  const explicitFrontend = String(process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+  if (explicitFrontend) return explicitFrontend;
+
+  const explicitBackend = String(process.env.BACKEND_URL || '').trim().replace(/\/$/, '');
+  if (explicitBackend) return explicitBackend;
+
+  if (req) {
+    const forwardedProto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    const host = String(req.headers['x-forwarded-host'] || req.get('host') || '').split(',')[0].trim();
+    if (host) return `${forwardedProto || 'https'}://${host}`.replace(/\/$/, '');
+  }
+
+  const vercelUrl = String(process.env.VERCEL_URL || '').trim().replace(/\/$/, '');
+  if (vercelUrl) return `https://${vercelUrl}`;
+
+  return 'https://example.com';
+}
+
 function getSePayConfig() {
   const sePayEnv = String(process.env.SEPAY_ENV || '').toLowerCase();
   const merchantId = process.env.SEPAY_MERCHANT_ID || '';
@@ -322,10 +341,11 @@ exports.createSePayPayment = async (req, res, next) => {
     const paymentId = String(payment._id);
     const orderInvoiceNumber = `SP-${paymentId}`;
     const baseUrl = getBaseUrl();
+    const publicBaseUrl = getPublicBaseUrl(req);
     const checkoutPageUrl = `${baseUrl}/api/v1/payments/sepay/checkout/${paymentId}`;
-    const defaultSuccessUrl = `${baseUrl}/api/v1/payments/sepay/return/success?paymentId=${paymentId}`;
-    const defaultErrorUrl = `${baseUrl}/api/v1/payments/sepay/return/error?paymentId=${paymentId}`;
-    const defaultCancelUrl = `${baseUrl}/api/v1/payments/sepay/return/cancel?paymentId=${paymentId}`;
+    const defaultSuccessUrl = `${publicBaseUrl}/api/v1/payments/sepay/return/success?paymentId=${paymentId}`;
+    const defaultErrorUrl = `${publicBaseUrl}/api/v1/payments/sepay/return/error?paymentId=${paymentId}`;
+    const defaultCancelUrl = `${publicBaseUrl}/api/v1/payments/sepay/return/cancel?paymentId=${paymentId}`;
 
     payment.providerPaymentId = orderInvoiceNumber;
     payment.checkoutUrl = checkoutPageUrl;
@@ -385,6 +405,7 @@ exports.renderSePayCheckoutPage = async (req, res, next) => {
     }
 
     const sepayMetadata = (payment.metadata && payment.metadata.sepay) || {};
+    const publicBaseUrl = getPublicBaseUrl(req);
     const fields = {
       merchant: sePayConfig.merchantId,
       operation: sepayMetadata.operation || 'PURCHASE',
@@ -393,9 +414,9 @@ exports.renderSePayCheckoutPage = async (req, res, next) => {
       currency: payment.currency || 'VND',
       order_invoice_number: sepayMetadata.orderInvoiceNumber || `SP-${payment._id}`,
       order_description: sepayMetadata.orderDescription || 'Thanh toan PAWRENT',
-      success_url: sepayMetadata.successUrl || `${getBaseUrl()}/api/v1/payments/sepay/return/success?paymentId=${payment._id}`,
-      error_url: sepayMetadata.errorUrl || `${getBaseUrl()}/api/v1/payments/sepay/return/error?paymentId=${payment._id}`,
-      cancel_url: sepayMetadata.cancelUrl || `${getBaseUrl()}/api/v1/payments/sepay/return/cancel?paymentId=${payment._id}`,
+      success_url: sepayMetadata.successUrl || `${publicBaseUrl}/api/v1/payments/sepay/return/success?paymentId=${payment._id}`,
+      error_url: sepayMetadata.errorUrl || `${publicBaseUrl}/api/v1/payments/sepay/return/error?paymentId=${payment._id}`,
+      cancel_url: sepayMetadata.cancelUrl || `${publicBaseUrl}/api/v1/payments/sepay/return/cancel?paymentId=${payment._id}`,
     };
 
     if (sepayMetadata.customerId) {
