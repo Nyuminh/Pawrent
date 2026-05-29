@@ -6,6 +6,7 @@ const {
 	momoWebhook,
 	createSePayPayment,
 	renderSePayCheckoutPage,
+	renderSePayQrImage,
 	getSePayPaymentStatus,
 	renderSePayReturnPage,
 	sepayWebhook,
@@ -20,6 +21,7 @@ router.post('/momo/webhook', momoWebhook);
 // SePay payment flow
 router.post('/sepay/checkout/init', protect, createSePayPayment);
 router.get('/sepay/checkout/:paymentId', renderSePayCheckoutPage);
+router.get('/sepay/qr/:paymentId.png', renderSePayQrImage);
 router.get('/sepay/status/:paymentId', getSePayPaymentStatus);
 router.get('/sepay/return/:result', renderSePayReturnPage);
 router.post('/sepay/webhook', sepayWebhook);

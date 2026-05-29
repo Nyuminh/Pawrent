@@ -62,6 +62,18 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function buildQrOptions() {
+  return {
+    errorCorrectionLevel: 'H',
+    margin: 2,
+    width: 512,
+    color: {
+      dark: '#000000',
+      light: '#FFFFFF',
+    },
+  };
+}
+
 function buildSePaySignature(fields, secretKey) {
   const signedFieldOrder = [
     'merchant',
@@ -385,7 +397,7 @@ exports.createSePayPayment = async (req, res, next) => {
 
     payment.providerPaymentId = orderInvoiceNumber;
     payment.checkoutUrl = checkoutPageUrl;
-    payment.qrUrl = await QRCode.toDataURL(checkoutPageUrl);
+    payment.qrUrl = await QRCode.toDataURL(checkoutPageUrl, buildQrOptions());
     payment.metadata = {
       ...normalizedMetadata,
       sepay: {
@@ -417,8 +429,27 @@ exports.createSePayPayment = async (req, res, next) => {
       amount: payment.amount,
       checkoutPageUrl,
       qrDataUrl: payment.qrUrl,
+      qrImageUrl: `${baseUrl}/api/v1/payments/sepay/qr/${payment._id}.png`,
       statusUrl: `${baseUrl}/api/v1/payments/sepay/status/${payment._id}`,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/v1/payments/sepay/qr/:paymentId.png
+// Returns a direct PNG QR image so clients can render/print it without data URL handling.
+exports.renderSePayQrImage = async (req, res, next) => {
+  try {
+    const payment = await Payment.findById(req.params.paymentId);
+    if (!payment || payment.provider !== 'sepay') {
+      return res.status(404).send('Payment not found');
+    }
+
+    const qrBuffer = await QRCode.toBuffer(payment.checkoutUrl || `${getBaseUrl()}/api/v1/payments/sepay/checkout/${payment._id}`, buildQrOptions());
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).send(qrBuffer);
   } catch (err) {
     next(err);
   }
