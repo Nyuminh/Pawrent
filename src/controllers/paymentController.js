@@ -26,6 +26,16 @@ function getPublicBaseUrl(req) {
   return 'https://example.com';
 }
 
+function isPlaceholderUrl(value) {
+  if (!value) return false;
+  return /your-domain\.com/i.test(String(value)) || /example\.com/i.test(String(value));
+}
+
+function resolveCallbackUrl(candidate, fallback) {
+  if (!candidate || isPlaceholderUrl(candidate)) return fallback;
+  return candidate;
+}
+
 function getSePayConfig() {
   const sePayEnv = String(process.env.SEPAY_ENV || '').toLowerCase();
   const merchantId = process.env.SEPAY_MERCHANT_ID || '';
@@ -57,9 +67,9 @@ function buildSePaySignature(fields, secretKey) {
     'merchant',
     'operation',
     'payment_method',
+    'order_invoice_number',
     'order_amount',
     'currency',
-    'order_invoice_number',
     'order_description',
     'customer_id',
     'success_url',
@@ -436,13 +446,22 @@ exports.renderSePayCheckoutPage = async (req, res, next) => {
       merchant: sePayConfig.merchantId,
       operation: sepayMetadata.operation || 'PURCHASE',
       payment_method: sepayMetadata.paymentMethod || 'BANK_TRANSFER',
+      order_invoice_number: sepayMetadata.orderInvoiceNumber || `SP-${payment._id}`,
       order_amount: String(payment.amount),
       currency: payment.currency || 'VND',
-      order_invoice_number: sepayMetadata.orderInvoiceNumber || `SP-${payment._id}`,
       order_description: sepayMetadata.orderDescription || 'Thanh toan PAWRENT',
-      success_url: sepayMetadata.successUrl || `${publicBaseUrl}/api/v1/payments/sepay/return/success?paymentId=${payment._id}`,
-      error_url: sepayMetadata.errorUrl || `${publicBaseUrl}/api/v1/payments/sepay/return/error?paymentId=${payment._id}`,
-      cancel_url: sepayMetadata.cancelUrl || `${publicBaseUrl}/api/v1/payments/sepay/return/cancel?paymentId=${payment._id}`,
+      success_url: resolveCallbackUrl(
+        sepayMetadata.successUrl,
+        `${publicBaseUrl}/api/v1/payments/sepay/return/success?paymentId=${payment._id}`
+      ),
+      error_url: resolveCallbackUrl(
+        sepayMetadata.errorUrl,
+        `${publicBaseUrl}/api/v1/payments/sepay/return/error?paymentId=${payment._id}`
+      ),
+      cancel_url: resolveCallbackUrl(
+        sepayMetadata.cancelUrl,
+        `${publicBaseUrl}/api/v1/payments/sepay/return/cancel?paymentId=${payment._id}`
+      ),
     };
 
     if (sepayMetadata.customerId) {
