@@ -112,23 +112,25 @@ exports.createInvoiceForSubscription = async (req, res, next) => {
 };
 
 // POST /api/v1/invoices/booking
+// NOTE: hotels do not require prepayment. This endpoint now creates an invoice for an appointment.
+// It expects `appointmentId` in the body and will create an invoice linked to that appointment.
 exports.createInvoiceForBooking = async (req, res, next) => {
   try {
-    const { bookingId, currency = 'VND', dueDate } = req.body;
-    if (!bookingId) return res.status(400).json({ success: false, message: 'bookingId is required' });
+    const { appointmentId, currency = 'VND', dueDate } = req.body;
+    if (!appointmentId) return res.status(400).json({ success: false, message: 'appointmentId is required' });
 
-    const bookingIdTrimmed = String(bookingId).trim();
-    const booking = await HotelBooking.findById(bookingIdTrimmed);
-    if (!booking) {
+    const appointmentIdTrimmed = String(appointmentId).trim();
+    const appointment = await Appointment.findById(appointmentIdTrimmed).populate('service');
+    if (!appointment) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found',
-        bookingId: bookingIdTrimmed,
+        message: 'Appointment not found',
+        appointmentId: appointmentIdTrimmed,
       });
     }
 
-    const price = (booking.pricing && booking.pricing.total) || 0;
-    const invoiceItems = [{ type: 'booking', refId: booking._id, name: `Hotel booking ${booking._id}`, price, quantity: 1 }];
+    const price = (appointment.service && appointment.service.price) || 0;
+    const invoiceItems = [{ type: 'appointment', refId: appointment._id, name: `Appointment ${appointment._id}`, price, quantity: 1 }];
     const subtotal = price;
     const tax = 0;
     const discount = 0;
@@ -143,7 +145,7 @@ exports.createInvoiceForBooking = async (req, res, next) => {
       discount,
       total,
       currency,
-      booking: booking._id,
+      appointment: appointment._id,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
 

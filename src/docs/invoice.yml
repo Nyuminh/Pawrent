@@ -130,8 +130,8 @@ paths:
 
   /invoices/booking:
     post:
-      summary: Tạo hóa đơn cho booking
-      description: Tạo hóa đơn cho booking khách sạn thú cưng
+      summary: Tạo hóa đơn cho appointment (legacy booking endpoint repurposed)
+      description: Hotels do not require prepayment; this endpoint now creates an invoice for an appointment. Truyền `appointmentId`.
       tags: [Invoices]
       security:
         - bearerAuth: []
@@ -142,9 +142,9 @@ paths:
             schema:
               type: object
               required:
-                - bookingId
+                - appointmentId
               properties:
-                bookingId:
+                appointmentId:
                   type: string
                 currency:
                   type: string
