@@ -116,8 +116,16 @@ exports.createInvoiceForBooking = async (req, res, next) => {
   try {
     const { bookingId, currency = 'VND', dueDate } = req.body;
     if (!bookingId) return res.status(400).json({ success: false, message: 'bookingId is required' });
-    const booking = await HotelBooking.findById(bookingId);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    const bookingIdTrimmed = String(bookingId).trim();
+    const booking = await HotelBooking.findById(bookingIdTrimmed);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+        bookingId: bookingIdTrimmed,
+      });
+    }
 
     const price = (booking.pricing && booking.pricing.total) || 0;
     const invoiceItems = [{ type: 'booking', refId: booking._id, name: `Hotel booking ${booking._id}`, price, quantity: 1 }];
