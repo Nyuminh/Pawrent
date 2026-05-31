@@ -180,39 +180,82 @@ paths:
               schema:
                 $ref: '#/components/schemas/Invoice'
 
-    /invoices/service:
-      post:
-        summary: Tạo hóa đơn cho một Service
-        description: Tạo hóa đơn cho dịch vụ đã định nghĩa trong hệ thống (ví dụ cắt tỉa, khám bệnh). Truyền `serviceId` và `quantity` nếu cần.
-        tags: [Invoices]
-        security:
-          - bearerAuth: []
-        requestBody:
-          required: true
+  /invoices/service:
+    post:
+      summary: Tạo hóa đơn cho một Service
+      description: Tạo hóa đơn cho dịch vụ đã định nghĩa trong hệ thống (ví dụ cắt tỉa, khám bệnh). Truyền `serviceId` và `quantity` nếu cần.
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - serviceId
+              properties:
+                serviceId:
+                  type: string
+                quantity:
+                  type: integer
+                  default: 1
+                currency:
+                  type: string
+                dueDate:
+                  type: string
+                  format: date
+      responses:
+        201:
+          description: Hóa đơn service được tạo
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - serviceId
-                properties:
-                  serviceId:
-                    type: string
-                  quantity:
-                    type: integer
-                    default: 1
-                  currency:
-                    type: string
-                  dueDate:
-                    type: string
-                    format: date
-        responses:
-          201:
-            description: Hóa đơn service được tạo
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Invoice'
+                $ref: '#/components/schemas/Invoice'
+
+  /invoices/products:
+    post:
+      summary: Tạo hóa đơn từ các sản phẩm được chọn
+      description: Truyền mảng `products` gồm `productId` và `quantity`, backend sẽ tự lấy giá từng sản phẩm và tính tổng tiền.
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - products
+              properties:
+                products:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - productId
+                    properties:
+                      productId:
+                        type: string
+                        description: ID sản phẩm
+                      quantity:
+                        type: integer
+                        default: 1
+                currency:
+                  type: string
+                dueDate:
+                  type: string
+                  format: date
+      responses:
+        201:
+          description: Hóa đơn products được tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
 
   /invoices/{id}:
     get:

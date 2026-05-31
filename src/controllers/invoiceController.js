@@ -2,6 +2,7 @@ const Invoice = require('../models/Invoice');
 const HotelBooking = require('../models/HotelBooking');
 const Appointment = require('../models/Appointment');
 const Service = require('../models/Service');
+const Product = require('../models/Product');
 const plans = require('../config/plans');
 
 function makeInvoiceNumber() {
@@ -182,6 +183,76 @@ exports.createInvoiceForService = async (req, res, next) => {
       total,
       currency,
       service: service._id,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+    });
+
+    return res.status(201).json({ success: true, data: invoice });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/v1/invoices/products
+exports.createInvoiceForProducts = async (req, res, next) => {
+  try {
+    const { products, currency = 'VND', dueDate } = req.body;
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ success: false, message: 'products is required and must be a non-empty array' });
+    }
+
+    const normalizedProducts = products.map((item) => ({
+      productId: item && item.productId ? String(item.productId).trim() : '',
+      quantity: Number(item && item.quantity !== undefined ? item.quantity : 1),
+    }));
+
+    if (normalizedProducts.some((item) => !item.productId)) {
+      return res.status(400).json({ success: false, message: 'Each product must include a valid productId' });
+    }
+
+    const productIds = [...new Set(normalizedProducts.map((item) => item.productId))];
+    const productDocs = await Product.find({ _id: { $in: productIds } });
+    const productMap = new Map(productDocs.map((product) => [String(product._id), product]));
+
+    const missingProductIds = productIds.filter((id) => !productMap.has(id));
+    if (missingProductIds.length > 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'One or more products not found',
+        productIds: missingProductIds,
+      });
+    }
+
+    const invoiceItems = [];
+    let subtotal = 0;
+
+    normalizedProducts.forEach((item) => {
+      const product = productMap.get(item.productId);
+      const quantity = Number.isFinite(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+      const price = Number(product.price || 0);
+      invoiceItems.push({
+        type: 'product',
+        refId: product._id,
+        name: product.name,
+        price,
+        quantity,
+      });
+      subtotal += price * quantity;
+    });
+
+    const tax = 0;
+    const discount = 0;
+    const total = subtotal - discount + tax;
+
+    const invoice = await Invoice.create({
+      invoiceNumber: makeInvoiceNumber(),
+      user: req.user ? req.user.id : undefined,
+      items: invoiceItems,
+      subtotal,
+      tax,
+      discount,
+      total,
+      currency,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
 
