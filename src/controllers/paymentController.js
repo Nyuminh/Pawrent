@@ -360,6 +360,13 @@ exports.createSePayPayment = async (req, res, next) => {
     const normalizedMetadata = normalizeMetadata(metadata);
     let amount = rawAmount;
 
+    if (!successUrl || !errorUrl || !cancelUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng truyền successUrl, errorUrl và cancelUrl từ frontend.',
+      });
+    }
+
     if (invoiceId) {
       const Invoice = require('../models/Invoice');
       const invoice = await Invoice.findById(invoiceId);
@@ -389,11 +396,7 @@ exports.createSePayPayment = async (req, res, next) => {
     const paymentId = String(payment._id);
     const orderInvoiceNumber = `SP-${paymentId}`;
     const baseUrl = getBaseUrl();
-    const publicBaseUrl = getPublicBaseUrl(req);
     const checkoutPageUrl = `${baseUrl}/api/v1/payments/sepay/checkout/${paymentId}`;
-    const defaultSuccessUrl = `${publicBaseUrl}/api/v1/payments/sepay/return/success?paymentId=${paymentId}`;
-    const defaultErrorUrl = `${publicBaseUrl}/api/v1/payments/sepay/return/error?paymentId=${paymentId}`;
-    const defaultCancelUrl = `${publicBaseUrl}/api/v1/payments/sepay/return/cancel?paymentId=${paymentId}`;
 
     payment.providerPaymentId = orderInvoiceNumber;
     payment.checkoutUrl = checkoutPageUrl;
@@ -406,9 +409,9 @@ exports.createSePayPayment = async (req, res, next) => {
         paymentMethod,
         operation,
         customerId: customerId || null,
-        successUrl: successUrl || defaultSuccessUrl,
-        errorUrl: errorUrl || defaultErrorUrl,
-        cancelUrl: cancelUrl || defaultCancelUrl,
+        successUrl,
+        errorUrl,
+        cancelUrl,
       },
     };
     await payment.save();
