@@ -120,7 +120,19 @@ exports.getMyAppointments = async (req, res, next) => {
   try {
     const { status, petId, pet, page = 1, limit = 20 } = req.query;
 
-    const query = { user: req.user.id };
+    const activePetIds = await Pet.find({ owner: req.user.id, isActive: true }).distinct('_id');
+    if (!activePetIds.length) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        total: 0,
+        page: Number(page),
+        totalPages: 0,
+        data: [],
+      });
+    }
+
+    const query = { user: req.user.id, pet: { $in: activePetIds } };
     if (status) query.status = status;
 
     const petFilterId = petId || pet;
@@ -131,25 +143,37 @@ exports.getMyAppointments = async (req, res, next) => {
           message: 'ID thú cưng không hợp lệ.',
         });
       }
+      if (!activePetIds.some((id) => String(id) === String(petFilterId))) {
+        return res.status(200).json({
+          success: true,
+          count: 0,
+          total: 0,
+          page: Number(page),
+          totalPages: 0,
+          data: [],
+        });
+      }
       query.pet = petFilterId;
     }
 
     const total = await Appointment.countDocuments(query);
     const appointments = await Appointment.find(query)
-      .populate('pet', 'name species breed avatar')
+      .populate({ path: 'pet', select: 'name species breed avatar', match: { isActive: true } })
       .populate('service', 'name price')
       .populate('vet', '_id fullName avatar email phone')
       .sort('-date')
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
+    const visibleAppointments = appointments.filter((appointment) => appointment.pet);
+
     res.status(200).json({
       success: true,
-      count: appointments.length,
+      count: visibleAppointments.length,
       total,
       page: Number(page),
       totalPages: Math.ceil(total / limit),
-      data: appointments,
+      data: visibleAppointments,
     });
   } catch (error) {
     next(error);
