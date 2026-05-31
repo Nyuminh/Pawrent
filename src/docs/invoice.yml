@@ -180,6 +180,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/Invoice'
 
+    /invoices/service:
+      post:
+        summary: Tạo hóa đơn cho một Service
+        description: Tạo hóa đơn cho dịch vụ đã định nghĩa trong hệ thống (ví dụ cắt tỉa, khám bệnh). Truyền `serviceId` và `quantity` nếu cần.
+        tags: [Invoices]
+        security:
+          - bearerAuth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - serviceId
+                properties:
+                  serviceId:
+                    type: string
+                  quantity:
+                    type: integer
+                    default: 1
+                  currency:
+                    type: string
+                  dueDate:
+                    type: string
+                    format: date
+        responses:
+          201:
+            description: Hóa đơn service được tạo
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Invoice'
+
   /invoices/{id}:
     get:
       summary: Lấy thông tin chi tiết hóa đơn

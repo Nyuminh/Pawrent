@@ -145,6 +145,42 @@ exports.createInvoiceForBooking = async (req, res, next) => {
   }
 };
 
+// POST /api/v1/invoices/service
+exports.createInvoiceForService = async (req, res, next) => {
+  try {
+    const { serviceId, quantity = 1, currency = 'VND', dueDate } = req.body;
+    if (!serviceId) return res.status(400).json({ success: false, message: 'serviceId is required' });
+
+    const service = await Service.findById(serviceId);
+    if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
+
+    const price = Number(service.price || 0);
+    const qty = Number(quantity || 1);
+    const invoiceItems = [{ type: 'service', refId: service._id, name: service.name || 'Service', price, quantity: qty }];
+    const subtotal = price * qty;
+    const tax = 0;
+    const discount = 0;
+    const total = subtotal - discount + tax;
+
+    const invoice = await Invoice.create({
+      invoiceNumber: makeInvoiceNumber(),
+      user: req.user ? req.user.id : undefined,
+      items: invoiceItems,
+      subtotal,
+      tax,
+      discount,
+      total,
+      currency,
+      service: service._id,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+    });
+
+    return res.status(201).json({ success: true, data: invoice });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // POST /api/v1/invoices/cart
 exports.createInvoiceFromCart = async (req, res, next) => {
   try {
