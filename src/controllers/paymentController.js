@@ -240,6 +240,13 @@ function setSePayHtmlHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
 }
 
+async function clearInvoiceCartIfPaid(invoice) {
+  if (!invoice || !invoice.cart) return;
+
+  const User = require('../models/User');
+  await User.findByIdAndUpdate(invoice.cart, { $set: { cart: [] } });
+}
+
 // POST /api/v1/payments/momo/create
 // Requires env: MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY, MOMO_ENDPOINT, BACKEND_URL, FRONTEND_URL
 exports.createMomoPayment = async (req, res, next) => {
@@ -670,6 +677,10 @@ exports.sepayWebhook = async (req, res, next) => {
           invoice.payment = payment._id;
           invoice.status = payment.status === 'paid' ? 'paid' : payment.status === 'failed' ? 'cancelled' : invoice.status;
           await invoice.save();
+
+          if (payment.status === 'paid') {
+            await clearInvoiceCartIfPaid(invoice);
+          }
         }
       }
     } catch (invoiceErr) {
@@ -700,6 +711,17 @@ exports.momoWebhook = async (req, res, next) => {
         if (p2) {
           if (Number(resultCode) === 0) p2.status = 'paid'; else p2.status = 'failed';
           await p2.save();
+
+          if (Number(resultCode) === 0 && p2.metadata && p2.metadata.invoiceId) {
+            const Invoice = require('../models/Invoice');
+            const invoice = await Invoice.findById(p2.metadata.invoiceId);
+            if (invoice) {
+              invoice.payment = p2._id;
+              invoice.status = 'paid';
+              await invoice.save();
+              await clearInvoiceCartIfPaid(invoice);
+            }
+          }
         }
       }
       return res.json({ success: true });
@@ -726,6 +748,10 @@ exports.momoWebhook = async (req, res, next) => {
         invoice.status = Number(resultCode) === 0 ? 'paid' : 'cancelled';
         invoice.payment = payment._id;
         await invoice.save();
+
+        if (Number(resultCode) === 0) {
+          await clearInvoiceCartIfPaid(invoice);
+        }
       }
     } catch (e) {
       // ignore invoice update errors
