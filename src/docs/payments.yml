@@ -212,3 +212,65 @@ paths:
                 properties:
                   success:
                     type: boolean
+
+  /payments/invoice/{invoiceId}:
+    get:
+      summary: Lấy thông tin thanh toán theo hóa đơn
+      description: Lấy chi tiết payment liên quan đến một hóa đơn cụ thể. Người dùng chỉ có thể xem payment của hóa đơn của chính mình, admin có thể xem tất cả.
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 6630f1b6f6d4e8a1c2b3d4e5
+          description: ID hóa đơn
+      responses:
+        200:
+          description: Lấy payment thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      user:
+                        type: string
+                      amount:
+                        type: number
+                      currency:
+                        type: string
+                        example: VND
+                      provider:
+                        type: string
+                        example: sepay
+                      status:
+                        type: string
+                        enum: [pending, paid, failed]
+                      providerPaymentId:
+                        type: string
+                      checkoutUrl:
+                        type: string
+                      qrUrl:
+                        type: string
+                      metadata:
+                        type: object
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+        403:
+          description: Không có quyền xem hóa đơn này
+        404:
+          description: Không tìm thấy hóa đơn hoặc payment

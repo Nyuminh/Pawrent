@@ -535,6 +535,10 @@ exports.deleteAppointment = async (req, res, next) => {
       });
     }
 
+    // Delete associated invoices
+    const Invoice = require('../models/Invoice');
+    await Invoice.deleteMany({ appointment: appointment._id });
+
     await Appointment.findByIdAndDelete(req.params.id);
 
     res.status(200).json({

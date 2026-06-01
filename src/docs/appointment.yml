@@ -439,6 +439,7 @@ paths:
   /appointments/{id}:
     delete:
       summary: Xóa lịch khám
+      description: Xóa lịch hẹn và tất cả hóa đơn liên quan đến lịch hẹn này. Chỉ có thể xóa lịch hẹn đang chờ xác nhận hoặc đã xác nhận.
       tags: [Appointments]
       security:
         - bearerAuth: []
