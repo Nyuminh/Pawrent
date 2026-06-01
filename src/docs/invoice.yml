@@ -288,6 +288,36 @@ paths:
           description: Không có quyền truy cập
         404:
           description: Không tìm thấy hóa đơn
+    delete:
+      summary: Xóa hóa đơn theo ID
+      description: Xóa một hóa đơn theo ID. Không cần phân quyền, chỉ cần xác thực.
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 6630f1b6f6d4e8a1c2b3d4e5
+          description: ID hóa đơn cần xóa
+      responses:
+        200:
+          description: Xóa hóa đơn thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        401:
+          description: Không được xác thực
+        404:
+          description: Không tìm thấy hóa đơn
 
   /invoices/{id}/status:
     get:

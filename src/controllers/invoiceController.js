@@ -349,3 +349,28 @@ exports.getInvoiceStatus = async (req, res, next) => {
     next(err);
   }
 };
+
+// @desc    Delete invoice by ID
+// @route   DELETE /api/v1/invoices/:id
+// @access  Public
+exports.deleteInvoice = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy hóa đơn.',
+      });
+    }
+
+    await Invoice.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Xóa hóa đơn thành công.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
