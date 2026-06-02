@@ -306,7 +306,7 @@ exports.createInvoiceFromCart = async (req, res, next) => {
 exports.getInvoices = async (req, res, next) => {
   try {
     let query = {};
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'vet') {
       query = {};
     } else {
       query = { user: req.user.id };
