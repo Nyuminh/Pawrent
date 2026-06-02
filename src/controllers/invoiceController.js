@@ -324,7 +324,7 @@ exports.getInvoiceById = async (req, res, next) => {
     const invoice = await Invoice.findById(req.params.id).populate('booking').populate('appointment').populate('payment');
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-    if (req.user.role !== 'admin' && String(invoice.user) !== String(req.user.id)) {
+    if (req.user.role !== 'admin' && req.user.role !== 'vet' && String(invoice.user) !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
@@ -340,7 +340,7 @@ exports.getInvoiceStatus = async (req, res, next) => {
     const invoice = await Invoice.findById(req.params.id).populate('payment');
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-    if (req.user.role !== 'admin' && String(invoice.user) !== String(req.user.id)) {
+    if (req.user.role !== 'admin' && req.user.role !== 'vet' && String(invoice.user) !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
