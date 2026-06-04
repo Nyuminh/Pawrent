@@ -146,6 +146,7 @@ paths:
               properties:
                 appointmentId:
                   type: string
+                  description: ID của appointment
                 currency:
                   type: string
       responses:
@@ -203,9 +204,6 @@ paths:
                   default: 1
                 currency:
                   type: string
-                dueDate:
-                  type: string
-                  format: date
       responses:
         201:
           description: Hóa đơn service được tạo
@@ -246,6 +244,9 @@ paths:
                         default: 1
                 currency:
                   type: string
+                address:
+                  type: string
+                  description: Địa chỉ giao hàng/thanh toán
                 dueDate:
                   type: string
                   format: date
@@ -363,12 +364,17 @@ components:
       properties:
         type:
           type: string
+          description: Loại item (appointment|booking|subscription|product)
         refId:
           type: string
-        description:
+          description: ID tham chiếu
+        name:
           type: string
+          description: Tên item (cho appointment sẽ hiển thị tên dịch vụ)
         price:
           type: number
+        quantity:
+          type: integer
 
     Invoice:
       type: object
@@ -382,9 +388,13 @@ components:
           properties:
             _id:
               type: string
-            name:
+            fullName:
               type: string
             email:
+              type: string
+            phone:
+              type: string
+            address:
               type: string
         items:
           type: array
@@ -392,14 +402,28 @@ components:
             $ref: '#/components/schemas/InvoiceItem'
         subtotal:
           type: number
+        tax:
+          type: number
+        discount:
+          type: number
         total:
           type: number
         currency:
           type: string
         status:
           type: string
+          enum: [pending, paid, cancelled]
+        address:
+          type: string
+          description: Địa chỉ giao hàng/thanh toán
+        appointment:
+          type: object
+          description: Chi tiết appointment nếu hóa đơn là cho appointment
         payment:
           type: string
+        dueDate:
+          type: string
+          format: date
         createdAt:
           type: string
           format: date-time

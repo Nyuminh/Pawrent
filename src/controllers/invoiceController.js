@@ -29,7 +29,7 @@ exports.createInvoice = async (req, res, next) => {
       const appointment = await Appointment.findById(appointmentId).populate('service');
       if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found' });
       const price = (appointment.service && appointment.service.price) || 0;
-      invoiceItems.push({ type: 'appointment', refId: appointment._id, name: `Appointment ${appointment._id}`, price, quantity: 1 });
+      invoiceItems.push({ type: 'appointment', refId: appointment._id, name: appointment.service?.name || `Appointment ${appointment._id}`, price, quantity: 1 });
       subtotal += price;
     }
 
@@ -131,7 +131,8 @@ exports.createInvoiceForBooking = async (req, res, next) => {
     }
 
     const price = (appointment.service && appointment.service.price) || 0;
-    const invoiceItems = [{ type: 'appointment', refId: appointment._id, name: `Appointment ${appointment._id}`, price, quantity: 1 }];
+    const serviceName = appointment.service?.name || `Appointment ${appointment._id}`;
+    const invoiceItems = [{ type: 'appointment', refId: appointment._id, name: serviceName, price, quantity: 1 }];
     const subtotal = price;
     const tax = 0;
     const discount = 0;
@@ -195,7 +196,7 @@ exports.createInvoiceForService = async (req, res, next) => {
 // POST /api/v1/invoices/products
 exports.createInvoiceForProducts = async (req, res, next) => {
   try {
-    const { products, currency = 'VND', dueDate } = req.body;
+    const { products, currency = 'VND', dueDate, address } = req.body;
 
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ success: false, message: 'products is required and must be a non-empty array' });
@@ -253,6 +254,7 @@ exports.createInvoiceForProducts = async (req, res, next) => {
       discount,
       total,
       currency,
+      address: address || undefined,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
 
@@ -265,6 +267,7 @@ exports.createInvoiceForProducts = async (req, res, next) => {
 // POST /api/v1/invoices/cart
 exports.createInvoiceFromCart = async (req, res, next) => {
   try {
+    
     // load user's cart
     await req.user.populate({ path: 'cart.product', select: 'name price' });
     const cart = req.user.cart || [];
@@ -311,8 +314,39 @@ exports.getInvoices = async (req, res, next) => {
     } else {
       query = { user: req.user.id };
     }
-    const invoices = await Invoice.find(query).sort({ createdAt: -1 });
-    res.status(200).json({ success: true, count: invoices.length, data: invoices });
+    const invoices = await Invoice.find(query)
+      .populate('user', 'fullName email phone address')
+      .populate({
+        path: 'appointment',
+        populate: {
+          path: 'service',
+          select: 'name price'
+        }
+      })
+      .sort({ createdAt: -1 });
+    
+    // Enhance invoice data with service name for appointment items
+    const enhancedInvoices = invoices.map((invoice) => {
+      const invoiceObj = invoice.toObject ? invoice.toObject() : invoice;
+      
+      if (invoiceObj.appointment && invoiceObj.appointment.service) {
+        const serviceName = invoiceObj.appointment.service.name;
+        // Update appointment invoice item name with service name
+        invoiceObj.items = invoiceObj.items.map((item) => {
+          if (item.type === 'appointment') {
+            return {
+              ...item,
+              name: serviceName || item.name
+            };
+          }
+          return item;
+        });
+      }
+      
+      return invoiceObj;
+    });
+    
+    res.status(200).json({ success: true, count: enhancedInvoices.length, data: enhancedInvoices });
   } catch (err) {
     next(err);
   }
@@ -321,14 +355,40 @@ exports.getInvoices = async (req, res, next) => {
 // GET /api/v1/invoices/:id
 exports.getInvoiceById = async (req, res, next) => {
   try {
-    const invoice = await Invoice.findById(req.params.id).populate('booking').populate('appointment').populate('payment');
+    const invoice = await Invoice.findById(req.params.id)
+      .populate('user', 'fullName email phone address')
+      .populate('booking')
+      .populate({
+        path: 'appointment',
+        populate: {
+          path: 'service',
+          select: 'name price'
+        }
+      })
+      .populate('payment');
+    
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
     if (req.user.role !== 'admin' && req.user.role !== 'vet' && String(invoice.user) !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
-    res.status(200).json({ success: true, data: invoice });
+    // Enhance with service name for appointment items
+    let invoiceObj = invoice.toObject ? invoice.toObject() : invoice;
+    if (invoiceObj.appointment && invoiceObj.appointment.service) {
+      const serviceName = invoiceObj.appointment.service.name;
+      invoiceObj.items = invoiceObj.items.map((item) => {
+        if (item.type === 'appointment') {
+          return {
+            ...item,
+            name: serviceName || item.name
+          };
+        }
+        return item;
+      });
+    }
+
+    res.status(200).json({ success: true, data: invoiceObj });
   } catch (err) {
     next(err);
   }

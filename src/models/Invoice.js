@@ -24,6 +24,7 @@ const InvoiceSchema = new mongoose.Schema(
     appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
     subscriptionPlan: { type: String },
     payment: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment' },
+    address: { type: String, trim: true },
     dueDate: Date,
   },
   { timestamps: true }
