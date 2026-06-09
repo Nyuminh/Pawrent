@@ -192,6 +192,32 @@ exports.updateHotel = async (req, res, next) => {
     delete req.body.rating;
     delete req.body.commissionRate;
 
+    // Parse JSON string fields from multipart/form-data
+    const jsonFields = ['operatingHours', 'address', 'capacity', 'policies'];
+    jsonFields.forEach(field => {
+      if (req.body[field] && typeof req.body[field] === 'string') {
+        try {
+          req.body[field] = JSON.parse(req.body[field]);
+        } catch (e) {
+          // Keep as-is if not valid JSON
+        }
+      }
+    });
+
+    // Parse services array from JSON string
+    if (req.body.services && typeof req.body.services === 'string') {
+      try {
+        req.body.services = JSON.parse(req.body.services);
+      } catch (e) {
+        // Keep as-is if not valid JSON
+      }
+    }
+
+    // Parse acceptedPets from comma-separated string
+    if (req.body.acceptedPets && typeof req.body.acceptedPets === 'string') {
+      req.body.acceptedPets = req.body.acceptedPets.split(',').map(s => s.trim());
+    }
+
     // Handle multiple image uploads
     if (req.files && req.files.length > 0) {
       const newImages = req.files.map(file => ({
