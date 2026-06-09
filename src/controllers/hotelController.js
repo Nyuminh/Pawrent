@@ -169,10 +169,17 @@ exports.getHotel = async (req, res, next) => {
 // @access  Private (hotel owner)
 exports.updateHotel = async (req, res, next) => {
   try {
-    let hotel = await PetHotel.findOne({
-      _id: req.params.id,
-      owner: req.user.id,
-    });
+    let hotel;
+
+    // Admin can update any hotel, owner can only update their own
+    if (req.user.role === 'admin') {
+      hotel = await PetHotel.findById(req.params.id);
+    } else {
+      hotel = await PetHotel.findOne({
+        _id: req.params.id,
+        owner: req.user.id,
+      });
+    }
 
     if (!hotel) {
       return res.status(404).json({
