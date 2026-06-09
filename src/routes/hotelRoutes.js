@@ -6,6 +6,7 @@ const {
   getHotels,
   getHotel,
   updateHotel,
+  deleteHotel,
   getRoomOccupancy,
 } = require('../controllers/hotelController');
 
@@ -21,5 +22,6 @@ router.get('/:hotelId/rooms/occupancy', protect, getRoomOccupancy);
 router.get('/:id', optionalAuth, getHotel);
 router.post('/', protect, createHotel);
 router.put('/:id', protect, upload.array('images', 10), updateHotel);
+router.delete('/:id', protect, deleteHotel);
 
 module.exports = router;

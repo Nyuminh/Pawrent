@@ -212,6 +212,47 @@ exports.updateHotel = async (req, res, next) => {
   }
 };
 
+// @desc    Delete hotel
+// @route   DELETE /api/v1/hotels/:id
+// @access  Private (hotel owner or admin)
+exports.deleteHotel = async (req, res, next) => {
+  try {
+    const hotel = await PetHotel.findById(req.params.id);
+
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy khách sạn.',
+      });
+    }
+
+    // Check if user is owner or admin
+    const isOwner = hotel.owner.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xóa khách sạn này.',
+      });
+    }
+
+    // Delete associated bookings
+    await HotelBooking.deleteMany({ hotel: req.params.id });
+
+    // Delete hotel
+    await PetHotel.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Xóa khách sạn thành công.',
+      data: {},
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ==================== HOTEL BOOKINGS ====================
 
 // @desc    Create hotel booking

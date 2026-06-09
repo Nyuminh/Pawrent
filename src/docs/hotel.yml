@@ -772,6 +772,42 @@ paths:
           description: Không có quyền cập nhật khách sạn này
         404:
           description: Không tìm thấy khách sạn
+    delete:
+      summary: Xóa khách sạn
+      description: |
+        Xóa khách sạn. Chỉ chủ khách sạn hoặc admin có quyền xóa.
+        Các booking liên quan sẽ được xóa theo.
+      tags: [Hotels]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: "507f1f77bcf86cd799439011"
+      responses:
+        200:
+          description: Xóa thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Xóa khách sạn thành công."
+                  data:
+                    type: object
+                    example: {}
+        403:
+          description: Không có quyền xóa khách sạn này
+        404:
+          description: Không tìm thấy khách sạn
 
   /hotels/{hotelId}/rooms/occupancy:
     get:
