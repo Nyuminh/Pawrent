@@ -24,7 +24,7 @@ router.get('/my', protect, getMyHotels);
 
 // ===== HOTEL DETAIL ROUTES =====
 router.get('/:id', optionalAuth, getHotel);
-router.post('/', protect, createHotel);
+router.post('/', protect, upload.array('images', 10), createHotel);
 router.put('/:id', protect, upload.array('images', 10), updateHotel);
 router.delete('/:id', protect, deleteHotel);
 

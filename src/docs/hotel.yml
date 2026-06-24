@@ -313,82 +313,70 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               required: [name, description, address, phone]
               properties:
                 name:
                   type: string
+                  description: Tên khách sạn (bắt buộc)
                   example: Happy Pet Hotel
                 description:
                   type: string
+                  description: Mô tả khách sạn (bắt buộc)
                   example: Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp
                 address:
-                  type: object
-                  required: [street, city]
-                  properties:
-                    street:
-                      type: string
-                      example: "123 Đường Nguyễn Hữu Cảnh"
-                    city:
-                      type: string
-                      example: "TP. Hồ Chí Minh"
-                    district:
-                      type: string
-                      example: "Quận 1"
-                    ward:
-                      type: string
-                      example: "Phường Bến Nghé"
+                  type: string
+                  description: |
+                    Địa chỉ khách sạn (JSON string, bắt buộc).
+                    Ví dụ: {"street":"123 Đường ABC","city":"TP. Hồ Chí Minh","district":"Quận 1","ward":"Phường Bến Nghé"}
+                  example: '{"street":"123 Đường Nguyễn Hữu Cảnh","city":"TP. Hồ Chí Minh","district":"Quận 1","ward":"Phường Bến Nghé"}'
                 phone:
                   type: string
+                  description: Số điện thoại liên hệ (bắt buộc)
                   example: "0123456789"
                 email:
                   type: string
+                  description: Email liên hệ
                   example: "contact@happypethotel.vn"
                 acceptedPets:
+                  type: string
+                  description: |
+                    Loại thú cưng được chấp nhận.
+                    Nhập dạng chuỗi ngăn bởi dấu phẩy: dog,cat,bird
+                  example: "dog,cat"
+                images:
                   type: array
                   items:
                     type: string
-                    enum: [dog, cat, bird, hamster, rabbit, other]
-                  example: [dog, cat]
+                    format: binary
+                  description: Ảnh khách sạn (tối đa 10 ảnh, định dạng JPEG/PNG/GIF/WebP, mỗi file tối đa 5MB)
                 services:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                        example: "Phòng VIP"
-                      description:
-                        type: string
-                        example: "Phòng sang trọng với điều hòa"
-                      price:
-                        type: number
-                        example: 500000
-                      currency:
-                        type: string
-                        example: "VND"
-              example:
-                name: "Happy Pet Hotel"
-                description: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
-                address:
-                  street: "123 Đường Nguyễn Hữu Cảnh"
-                  city: "TP. Hồ Chí Minh"
-                  district: "Quận 1"
-                  ward: "Phường Bến Nghé"
-                phone: "0123456789"
-                email: "contact@happypethotel.vn"
-                acceptedPets: [dog, cat]
-                services:
-                  - name: "Phòng VIP"
-                    description: "Phòng sang trọng với điều hòa"
-                    price: 500000
-                    currency: "VND"
-                  - name: "Tắm gội"
-                    description: "Dịch vụ tắm gội chuyên nghiệp"
-                    price: 150000
-                    currency: "VND"
+                  type: string
+                  description: |
+                    Danh sách dịch vụ (JSON string).
+                    Ví dụ: [{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]
+                  example: '[{"name":"Tắm gội","description":"Dịch vụ tắm gội","price":150000,"currency":"VND"}]'
+                rooms:
+                  type: string
+                  description: |
+                    Danh sách loại phòng (JSON string).
+                    Ví dụ: [{"type":"standard","name":"Phòng Standard","pricePerNight":200000,"capacity":2,"totalRooms":10}]
+                  example: '[{"type":"standard","name":"Phòng Standard","pricePerNight":200000,"capacity":2,"totalRooms":10,"availableRooms":10}]'
+                operatingHours:
+                  type: string
+                  description: |
+                    Giờ hoạt động (JSON string).
+                    Ví dụ: {"checkIn":"14:00","checkOut":"12:00","isOpen24h":false}
+                  example: '{"checkIn":"14:00","checkOut":"12:00","isOpen24h":false}'
+                policies:
+                  type: string
+                  description: |
+                    Chính sách khách sạn (JSON string).
+                    Ví dụ: {"cancellationHours":24,"requireVaccination":true}
+                  example: '{"cancellationHours":24,"requireVaccination":true}'
+
       responses:
         201:
           description: Đăng ký thành công

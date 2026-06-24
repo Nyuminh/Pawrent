@@ -63,9 +63,49 @@ const transformHotelResponse = (hotel) => {
 exports.createHotel = async (req, res, next) => {
   try {
     req.body.owner = req.user.id;
+
+    // Parse JSON string fields từ multipart/form-data
+    const jsonFields = ['operatingHours', 'address', 'capacity', 'policies'];
+    jsonFields.forEach((field) => {
+      if (req.body[field] && typeof req.body[field] === 'string') {
+        try {
+          req.body[field] = JSON.parse(req.body[field]);
+        } catch (e) {
+          // giữ nguyên nếu không phải JSON hợp lệ
+        }
+      }
+    });
+
+    // Parse services array từ JSON string
+    if (req.body.services && typeof req.body.services === 'string') {
+      try {
+        req.body.services = JSON.parse(req.body.services);
+      } catch (e) {}
+    }
+
+    // Parse rooms array từ JSON string
+    if (req.body.rooms && typeof req.body.rooms === 'string') {
+      try {
+        req.body.rooms = JSON.parse(req.body.rooms);
+      } catch (e) {}
+    }
+
+    // Parse acceptedPets từ chuỗi phân cách bởi dấu phẩy
+    if (req.body.acceptedPets && typeof req.body.acceptedPets === 'string') {
+      req.body.acceptedPets = req.body.acceptedPets.split(',').map((s) => s.trim());
+    }
+
+    // Xử lý upload ảnh từ Cloudinary
+    if (req.files && req.files.length > 0) {
+      req.body.images = req.files.map((file) => ({
+        url: file.path,
+        caption: '',
+      }));
+    }
+
     const hotel = await PetHotel.create(req.body);
 
-    // Update user role
+    // Cập nhật role user thành hotel_owner
     if (req.user.role === 'user') {
       req.user.role = 'hotel_owner';
       await req.user.save({ validateBeforeSave: false });
@@ -83,6 +123,7 @@ exports.createHotel = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // @desc    Get all hotels
 // @route   GET /api/v1/hotels
