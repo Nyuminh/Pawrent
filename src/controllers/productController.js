@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const User = require('../models/User');
 
 // @desc    Get all products
 // @route   GET /api/v1/products
@@ -172,6 +173,8 @@ exports.createProduct = async (req, res, next) => {
       stock,
       petTypes,
       specifications,
+      color,
+      size,
     } = req.body;
 
     // Handle image uploads from Cloudinary - transform to match schema {url, caption}
@@ -186,6 +189,8 @@ exports.createProduct = async (req, res, next) => {
       petTypes,
       images: images,
       specifications,
+      color,
+      size,
     });
 
     res.status(201).json({
@@ -248,6 +253,12 @@ exports.deleteProduct = async (req, res, next) => {
         message: 'Không tìm thấy sản phẩm.',
       });
     }
+
+    // Xóa sản phẩm khỏi giỏ hàng của tất cả user
+    await User.updateMany(
+      { 'cart.product': product._id },
+      { $pull: { cart: { product: product._id } } }
+    );
 
     await Product.findByIdAndDelete(req.params.id);
 

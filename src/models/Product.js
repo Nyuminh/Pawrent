@@ -78,6 +78,16 @@ const ProductSchema = new mongoose.Schema(
       enum: ['dog', 'cat', 'bird', 'hamster', 'rabbit', 'other'],
       required: [true, 'Phải chọn ít nhất 1 loại thú cưng'],
     },
+    color: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'Màu sắc tối đa 50 ký tự'],
+    },
+    size: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'Kích thước tối đa 50 ký tự'],
+    },
     specifications: {
       type: Map,
       of: String,

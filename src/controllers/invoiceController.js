@@ -205,6 +205,8 @@ exports.createInvoiceForProducts = async (req, res, next) => {
     const normalizedProducts = products.map((item) => ({
       productId: item && item.productId ? String(item.productId).trim() : '',
       quantity: Number(item && item.quantity !== undefined ? item.quantity : 1),
+      color: item && item.color ? String(item.color).trim() : undefined,
+      size: item && item.size ? String(item.size).trim() : undefined,
     }));
 
     if (normalizedProducts.some((item) => !item.productId)) {
@@ -231,13 +233,16 @@ exports.createInvoiceForProducts = async (req, res, next) => {
       const product = productMap.get(item.productId);
       const quantity = Number.isFinite(item.quantity) && item.quantity > 0 ? item.quantity : 1;
       const price = Number(product.price || 0);
-      invoiceItems.push({
+      const invoiceItem = {
         type: 'product',
         refId: product._id,
         name: product.name,
         price,
         quantity,
-      });
+      };
+      if (item.color) invoiceItem.color = item.color;
+      if (item.size) invoiceItem.size = item.size;
+      invoiceItems.push(invoiceItem);
       subtotal += price * quantity;
     });
 

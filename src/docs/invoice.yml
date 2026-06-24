@@ -242,6 +242,14 @@ paths:
                       quantity:
                         type: integer
                         default: 1
+                      color:
+                        type: string
+                        description: Màu sắc cụ thể của sản phẩm (không bắt buộc)
+                        example: 'Đỏ'
+                      size:
+                        type: string
+                        description: Kích thước cụ thể của sản phẩm (không bắt buộc)
+                        example: 'M'
                 currency:
                   type: string
                 address:
@@ -375,6 +383,12 @@ components:
           type: number
         quantity:
           type: integer
+        color:
+          type: string
+          description: Màu sắc sản phẩm (chỉ có với item loại product)
+        size:
+          type: string
+          description: Kích thước sản phẩm (chỉ có với item loại product)
 
     Invoice:
       type: object

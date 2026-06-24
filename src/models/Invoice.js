@@ -6,6 +6,8 @@ const InvoiceItemSchema = new mongoose.Schema({
   name: { type: String },
   price: { type: Number, required: true },
   quantity: { type: Number, default: 1 },
+  color: { type: String },
+  size: { type: String },
 });
 
 const InvoiceSchema = new mongoose.Schema(

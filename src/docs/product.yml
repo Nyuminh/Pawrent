@@ -167,6 +167,16 @@ paths:
                     Thông số kỹ thuật (JSON string, tuỳ theo loại sản phẩm).
                     Ví dụ: {"color": "red", "size": "M"}
                   example: '{}'
+                color:
+                  type: string
+                  description: Màu sắc sản phẩm (không bắt buộc, tối đa 50 ký tự)
+                  maxLength: 50
+                  example: 'Đỏ'
+                size:
+                  type: string
+                  description: Kích thước sản phẩm (không bắt buộc, tối đa 50 ký tự, ví dụ S, M, L, XL, 5kg...)
+                  maxLength: 50
+                  example: 'M'
                 discount:
                   type: string
                   description: |
@@ -260,6 +270,16 @@ paths:
                     Thông số kỹ thuật (JSON string).
                     Ví dụ: {"color": "red"}
                   example: '{}'
+                color:
+                  type: string
+                  description: Màu sắc sản phẩm (không bắt buộc, tối đa 50 ký tự)
+                  maxLength: 50
+                  example: 'Xanh'
+                size:
+                  type: string
+                  description: Kích thước sản phẩm (không bắt buộc, ví dụ S, M, L, XL...)
+                  maxLength: 50
+                  example: 'L'
                 discount:
                   type: string
                   description: |
