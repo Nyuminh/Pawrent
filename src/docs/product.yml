@@ -340,6 +340,14 @@ paths:
                   type: integer
                   minimum: 1
                   description: Số lượng muốn thêm
+                color:
+                  type: string
+                  description: Màu sắc sản phẩm (không bắt buộc). Cùng sản phẩm khác màu/size sẽ tạo cart item riêng.
+                  example: 'Đỏ'
+                size:
+                  type: string
+                  description: Kích thước sản phẩm (không bắt buộc). Ví dụ S, M, L, XL...
+                  example: 'M'
       responses:
         200:
           description: Thêm vào giỏ hàng thành công

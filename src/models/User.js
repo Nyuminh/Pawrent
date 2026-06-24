@@ -100,6 +100,14 @@ const UserSchema = new mongoose.Schema(
           min: [1, 'Số lượng phải lớn hơn hoặc bằng 1'],
           default: 1,
         },
+        color: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: String,
+          trim: true,
+        },
         addedAt: {
           type: Date,
           default: Date.now,

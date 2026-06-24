@@ -111,6 +111,9 @@ exports.addToCart = async (req, res, next) => {
       });
     }
 
+    const color = req.body.color ? String(req.body.color).trim() : undefined;
+    const size = req.body.size ? String(req.body.size).trim() : undefined;
+
     const product = await Product.findById(req.params.id);
 
     if (!product || product.status === 'inactive') {
@@ -129,25 +132,33 @@ exports.addToCart = async (req, res, next) => {
 
     const maxQuantity = product.stock.quantity;
     const user = req.user;
+
+    // Match theo product + color + size (cùng sản phẩm khác màu/size sẽ tạo item riêng)
     const existingItem = user.cart.find(
-      (item) => item.product.toString() === product._id.toString()
+      (item) =>
+        item.product.toString() === product._id.toString() &&
+        (item.color || undefined) === color &&
+        (item.size || undefined) === size
     );
 
     if (existingItem) {
       const updatedQuantity = Math.min(existingItem.quantity + quantity, maxQuantity);
       existingItem.quantity = updatedQuantity;
     } else {
-      user.cart.push({
+      const newItem = {
         product: product._id,
         quantity: Math.min(quantity, maxQuantity),
-      });
+      };
+      if (color) newItem.color = color;
+      if (size) newItem.size = size;
+      user.cart.push(newItem);
     }
 
     await user.save();
 
     await user.populate({
       path: 'cart.product',
-      select: 'name price discount stock images status',
+      select: 'name price discount stock images status color size',
     });
 
     res.status(200).json({
@@ -159,6 +170,7 @@ exports.addToCart = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // @desc    Create product
 // @route   POST /api/v1/products
