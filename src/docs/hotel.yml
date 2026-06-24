@@ -428,6 +428,99 @@ paths:
                       isVerified: false
                       createdAt: "2024-05-17T10:30:00Z"
 
+  /hotels/my:
+    get:
+      summary: Lấy danh sách khách sạn của tôi
+      description: |
+        Trả về tất cả khách sạn thuộc sở hữu của người dùng đang đăng nhập (hotel owner).
+        Bao gồm cả khách sạn đang hoạt động và không hoạt động.
+      tags: [Hotels]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    description: Số lượng khách sạn
+                    example: 1
+                  data:
+                    type: array
+                    description: Danh sách khách sạn của chủ sở hữu
+                    items:
+                      type: object
+                      properties:
+                        hotelId:
+                          type: string
+                          example: "507f1f77bcf86cd799439011"
+                        name:
+                          type: string
+                          example: "Happy Pet Hotel"
+                        description:
+                          type: string
+                          example: "Khách sạn yên tĩnh với dịch vụ chăm sóc thú cưng chuyên nghiệp"
+                        owner:
+                          type: object
+                          properties:
+                            ownerId:
+                              type: string
+                              example: "507f1f77bcf86cd799439012"
+                            fullName:
+                              type: string
+                              example: "Nguyễn Văn A"
+                            avatar:
+                              type: string
+                              example: "https://res.cloudinary.com/pawrent/image/upload/avatar.jpg"
+                            phone:
+                              type: string
+                              example: "0123456789"
+                            email:
+                              type: string
+                              example: "owner@example.com"
+                        address:
+                          type: object
+                          properties:
+                            street:
+                              type: string
+                            city:
+                              type: string
+                            district:
+                              type: string
+                            ward:
+                              type: string
+                        phone:
+                          type: string
+                        email:
+                          type: string
+                        rooms:
+                          type: array
+                          items:
+                            type: object
+                        rating:
+                          type: object
+                          properties:
+                            average:
+                              type: number
+                            count:
+                              type: integer
+                        isVerified:
+                          type: boolean
+                        isActive:
+                          type: boolean
+                        createdAt:
+                          type: string
+                          format: date-time
+        401:
+          description: Chưa đăng nhập
+
   /hotels/{id}:
     get:
       summary: Chi tiết khách sạn

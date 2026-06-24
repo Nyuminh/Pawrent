@@ -164,6 +164,27 @@ exports.getHotel = async (req, res, next) => {
   }
 };
 
+// @desc    Get my hotels (hotel owner)
+// @route   GET /api/v1/hotels/my
+// @access  Private (hotel_owner, admin)
+exports.getMyHotels = async (req, res, next) => {
+  try {
+    const hotels = await PetHotel.find({ owner: req.user.id })
+      .populate('owner', 'fullName avatar phone email')
+      .sort('-createdAt');
+
+    const transformedHotels = hotels.map((hotel) => transformHotelResponse(hotel));
+
+    res.status(200).json({
+      success: true,
+      count: transformedHotels.length,
+      data: transformedHotels,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Update hotel
 // @route   PUT /api/v1/hotels/:id
 // @access  Private (hotel owner)

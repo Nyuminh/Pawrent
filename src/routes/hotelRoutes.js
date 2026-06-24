@@ -5,6 +5,7 @@ const {
   createHotel,
   getHotels,
   getHotel,
+  getMyHotels,
   updateHotel,
   deleteHotel,
   getRoomOccupancy,
@@ -17,6 +18,9 @@ router.get('/', optionalAuth, getHotels);
 
 // ===== ROOM OCCUPANCY DASHBOARD =====
 router.get('/:hotelId/rooms/occupancy', protect, getRoomOccupancy);
+
+// ===== MY HOTEL (hotel owner) =====
+router.get('/my', protect, getMyHotels);
 
 // ===== HOTEL DETAIL ROUTES =====
 router.get('/:id', optionalAuth, getHotel);
