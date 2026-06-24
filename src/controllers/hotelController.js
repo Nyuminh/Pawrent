@@ -233,7 +233,7 @@ exports.updateHotel = async (req, res, next) => {
   try {
     let hotel;
 
-    // Admin can update any hotel, owner can only update their own
+    // Admin có thể cập nhật bất kỳ hotel nào, owner chỉ cập nhật của mình
     if (req.user.role === 'admin') {
       hotel = await PetHotel.findById(req.params.id);
     } else {
@@ -244,9 +244,13 @@ exports.updateHotel = async (req, res, next) => {
     }
 
     if (!hotel) {
-      return res.status(404).json({
+      // Kiểm tra xem hotel có tồn tại không để trả về lỗi đúng
+      const exists = await PetHotel.exists({ _id: req.params.id });
+      return res.status(exists ? 403 : 404).json({
         success: false,
-        message: 'Không tìm thấy khách sạn hoặc bạn không có quyền.',
+        message: exists
+          ? 'Bạn không có quyền cập nhật khách sạn này.'
+          : 'Không tìm thấy khách sạn.',
       });
     }
 
@@ -254,39 +258,41 @@ exports.updateHotel = async (req, res, next) => {
     delete req.body.rating;
     delete req.body.commissionRate;
 
-    // Parse JSON string fields from multipart/form-data
+    // Parse JSON string fields từ multipart/form-data
     const jsonFields = ['operatingHours', 'address', 'capacity', 'policies'];
-    jsonFields.forEach(field => {
+    jsonFields.forEach((field) => {
       if (req.body[field] && typeof req.body[field] === 'string') {
         try {
           req.body[field] = JSON.parse(req.body[field]);
-        } catch (e) {
-          // Keep as-is if not valid JSON
-        }
+        } catch (e) {}
       }
     });
 
-    // Parse services array from JSON string
+    // Parse services array từ JSON string
     if (req.body.services && typeof req.body.services === 'string') {
       try {
         req.body.services = JSON.parse(req.body.services);
-      } catch (e) {
-        // Keep as-is if not valid JSON
-      }
+      } catch (e) {}
     }
 
-    // Parse acceptedPets from comma-separated string
+    // Parse rooms array từ JSON string
+    if (req.body.rooms && typeof req.body.rooms === 'string') {
+      try {
+        req.body.rooms = JSON.parse(req.body.rooms);
+      } catch (e) {}
+    }
+
+    // Parse acceptedPets từ chuỗi phân cách bởi dấu phẩy
     if (req.body.acceptedPets && typeof req.body.acceptedPets === 'string') {
-      req.body.acceptedPets = req.body.acceptedPets.split(',').map(s => s.trim());
+      req.body.acceptedPets = req.body.acceptedPets.split(',').map((s) => s.trim());
     }
 
-    // Handle multiple image uploads
+    // Xử lý upload ảnh từ Cloudinary
     if (req.files && req.files.length > 0) {
-      const newImages = req.files.map(file => ({
-        url: file.path, // Cloudinary URL
-        caption: ''
+      req.body.images = req.files.map((file) => ({
+        url: file.path,
+        caption: '',
       }));
-      req.body.images = newImages;
     }
 
     hotel = await PetHotel.findByIdAndUpdate(req.params.id, req.body, {
@@ -306,6 +312,7 @@ exports.updateHotel = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // @desc    Delete hotel
 // @route   DELETE /api/v1/hotels/:id

@@ -16,11 +16,11 @@ const router = express.Router();
 // ===== HOTEL ROUTES =====
 router.get('/', optionalAuth, getHotels);
 
+// ===== MY HOTELS (hotel owner) =====
+router.get('/my', protect, getMyHotels);
+
 // ===== ROOM OCCUPANCY DASHBOARD =====
 router.get('/:hotelId/rooms/occupancy', protect, getRoomOccupancy);
-
-// ===== MY HOTEL (hotel owner) =====
-router.get('/my', protect, getMyHotels);
 
 // ===== HOTEL DETAIL ROUTES =====
 router.get('/:id', optionalAuth, getHotel);
