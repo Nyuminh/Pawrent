@@ -13,6 +13,19 @@ const {
 
 const router = express.Router();
 
+// Helper: multer upload tùy chọn - nếu không có file thì vẫn tiếp tục bình thường
+const optionalUpload = (req, res, next) => {
+  upload.array('images', 10)(req, res, (err) => {
+    if (err) {
+      // Chỉ reject nếu lỗi thực sự (sai format, quá size) - không reject nếu không có file
+      if (err.message && err.message.includes('Chỉ hỗ trợ')) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
+    }
+    next();
+  });
+};
+
 // ===== HOTEL ROUTES =====
 router.get('/', optionalAuth, getHotels);
 
@@ -24,8 +37,8 @@ router.get('/:hotelId/rooms/occupancy', protect, getRoomOccupancy);
 
 // ===== HOTEL DETAIL ROUTES =====
 router.get('/:id', optionalAuth, getHotel);
-router.post('/', protect, upload.array('images', 10), createHotel);
-router.put('/:id', protect, upload.array('images', 10), updateHotel);
+router.post('/', protect, optionalUpload, createHotel);
+router.put('/:id', protect, optionalUpload, updateHotel);
 router.delete('/:id', protect, deleteHotel);
 
 module.exports = router;

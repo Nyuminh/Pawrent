@@ -749,7 +749,7 @@ paths:
             type: string
             example: "507f1f77bcf86cd799439011"
       requestBody:
-        required: true
+        required: false
         content:
           multipart/form-data:
             schema:
@@ -765,7 +765,9 @@ paths:
                   example: "Khách sạn cao cấp với dịch vụ 5 sao cho thú cưng"
                 address:
                   type: string
-                  description: JSON string của address object
+                  description: |
+                    Địa chỉ khách sạn (JSON string).
+                    Ví dụ: {"street":"123 Đường ABC","city":"TP. Hồ Chí Minh","district":"Quận 1","ward":"Phường Bến Nghé"}
                   example: '{"street":"123 Đường Nguyễn Hữu Cảnh","city":"TP. Hồ Chí Minh","district":"Q1","ward":"Phường Bến Nghé"}'
                 phone:
                   type: string
@@ -774,29 +776,45 @@ paths:
                   type: string
                   example: "contact@happypethotel.vn"
                 acceptedPets:
-                  type: array
-                  items:
-                    type: string
-                    enum: [dog, cat, bird, hamster, rabbit, other]
-                  example: [dog, cat, bird]
+                  type: string
+                  description: |
+                    Loại thú cưng được chấp nhận.
+                    Nhập dạng chuỗi ngăn bởi dấu phẩy: dog,cat,bird
+                  example: "dog,cat,bird"
                 images:
                   type: array
                   items:
                     type: string
                     format: binary
-                  description: Ảnh khách sạn (tối đa 10 ảnh, định dạng JPEG/PNG/GIF/WebP, mỗi file tối đa 5MB)
+                  description: Ảnh khách sạn (không bắt buộc, tối đa 10 ảnh, JPEG/PNG/GIF/WebP, mỗi file tối đa 5MB)
                 services:
                   type: string
-                  description: JSON string của mảng services
+                  description: |
+                    Danh sách dịch vụ (JSON string).
+                    Ví dụ: [{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]
                   example: '[{"name":"Phòng VIP","description":"Phòng sang trọng với điều hòa","price":500000,"currency":"VND"},{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]'
+                rooms:
+                  type: string
+                  description: |
+                    Danh sách loại phòng (JSON string).
+                    Ví dụ: [{"type":"standard","name":"Phòng Standard","pricePerNight":200000,"capacity":2,"totalRooms":10,"availableRooms":10}]
+                  example: '[{"type":"standard","name":"Phòng Standard","pricePerNight":200000,"capacity":2,"totalRooms":10,"availableRooms":10},{"type":"vip","name":"Phòng VIP","pricePerNight":500000,"capacity":2,"totalRooms":5,"availableRooms":5}]'
                 operatingHours:
                   type: string
-                  description: JSON string của operatingHours object
+                  description: |
+                    Giờ hoạt động (JSON string).
+                    Ví dụ: {"checkIn":"14:00","checkOut":"12:00","isOpen24h":false}
                   example: '{"checkIn":"14:00","checkOut":"12:00","isOpen24h":false}'
-                capacity:
+                policies:
                   type: string
-                  description: JSON string của capacity object
-                  example: '{"total":50,"available":10}'
+                  description: |
+                    Chính sách khách sạn (JSON string).
+                    Ví dụ: {"cancellationHours":24,"requireVaccination":true}
+                  example: '{"cancellationHours":24,"requireVaccination":true}'
+                status:
+                  type: string
+                  enum: [active, inactive]
+                  description: Trạng thái khách sạn
       responses:
         200:
           description: Cập nhật thành công
