@@ -274,3 +274,91 @@ paths:
           description: Không có quyền xem hóa đơn này
         404:
           description: Không tìm thấy hóa đơn hoặc payment
+
+  /payments/cod:
+    post:
+      summary: Thanh toán khi nhận hàng (COD)
+      description: |
+        Tạo đơn thanh toán theo hình thức **Cash on Delivery (COD)** — không qua cổng thanh toán.
+        
+        Sau khi gọi API này:
+        - Một Payment record với `provider: "cod"` và `status: "cod"` được tạo.
+        - Invoice được gắn với payment vừa tạo.
+        - Các sản phẩm đã mua được **xóa ngay khỏi giỏ hàng** của người dùng.
+        
+        > **Lưu ý:** Invoice vẫn ở trạng thái `pending` vì tiền chưa được thu, chờ giao hàng xong mới cập nhật thành `paid`.
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - invoiceId
+              properties:
+                invoiceId:
+                  type: string
+                  description: ID hóa đơn cần đặt COD (phải đang ở trạng thái pending)
+                  example: 6630f1b6f6d4e8a1c2b3d4e5
+            example:
+              invoiceId: 6630f1b6f6d4e8a1c2b3d4e5
+      responses:
+        201:
+          description: Đặt hàng COD thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.
+                  data:
+                    type: object
+                    properties:
+                      paymentId:
+                        type: string
+                        description: ID của payment vừa tạo
+                        example: 6630f1b6f6d4e8a1c2b3d4e6
+                      invoiceId:
+                        type: string
+                        description: ID hóa đơn
+                        example: 6630f1b6f6d4e8a1c2b3d4e5
+                      amount:
+                        type: number
+                        description: Tổng tiền cần thu khi nhận hàng
+                        example: 150000
+                      currency:
+                        type: string
+                        example: VND
+                      provider:
+                        type: string
+                        example: cod
+                      status:
+                        type: string
+                        example: cod
+        400:
+          description: Thiếu invoiceId hoặc hóa đơn không ở trạng thái pending
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: invoiceId là bắt buộc.
+        401:
+          description: Chưa xác thực
+        403:
+          description: Không có quyền thanh toán hóa đơn này
+        404:
+          description: Không tìm thấy hóa đơn
