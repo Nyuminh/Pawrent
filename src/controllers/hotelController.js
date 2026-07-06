@@ -347,10 +347,9 @@ exports.deleteHotel = async (req, res, next) => {
 
 // @desc    Create hotel booking
 // @route   POST /api/v1/hotel-bookings
-// @access  Private
 exports.createBooking = async (req, res, next) => {
   try {
-    const { hotel: hotelId, roomId, checkIn, checkOut, additionalServices, specialRequests } = req.body;
+    const { hotel: hotelId, checkIn, checkOut, additionalServices, specialRequests, fullName, phone, email } = req.body;
 
     // Verify hotel
     const hotel = await PetHotel.findById(hotelId);
@@ -361,69 +360,27 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
-    // Find room by roomId
-    const room = hotel.rooms.find((r) => String(r._id) === String(roomId));
-    if (!room) {
-      return res.status(400).json({
-        success: false,
-        message: 'Phòng không tồn tại.',
-      });
-    }
-
-    if (room.availableRooms <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Phòng đã hết. Vui lòng chọn loại khác.',
-      });
-    }
-
-    // Auto-assign room number
-    // Find occupied rooms during this period
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
 
-    const occupiedBookings = await HotelBooking.find({
-      hotel: hotelId,
-      roomNumber: { $exists: true },
-      status: { $in: ['confirmed', 'checked_in'] },
-      checkIn: { $lt: checkOutDate },
-      checkOut: { $gt: checkInDate },
-    }).select('roomNumber');
-
-    const occupiedRoomNumbers = occupiedBookings
-      .filter(b => b.roomNumber)
-      .map(b => parseInt(b.roomNumber));
-
-    // Generate room number (101, 102, 103... based on room index in hotel)
-    let roomNumber;
-    const roomIndex = hotel.rooms.findIndex((r) => String(r._id) === String(roomId)) + 1;
-    const prefix = roomIndex;
-
-    for (let i = 1; i <= room.totalRooms; i++) {
-      const candidateNumber = prefix * 100 + i;
-      if (!occupiedRoomNumbers.includes(candidateNumber)) {
-        roomNumber = candidateNumber.toString();
-        break;
-      }
-    }
-
-    if (!roomNumber) {
+    if (checkOutDate <= checkInDate) {
       return res.status(400).json({
         success: false,
-        message: 'Không có phòng trống trong khoảng thời gian này.',
+        message: 'Ngày check-out phải sau ngày check-in.',
       });
     }
 
     const booking = await HotelBooking.create({
       user: req.user.id,
       hotel: hotelId,
-      roomNumber,
+      fullName: fullName || req.user.fullName,
+      phone: phone || req.user.phone,
+      email: email || req.user.email,
       checkIn: checkInDate,
       checkOut: checkOutDate,
       additionalServices,
       specialRequests,
       pricing: {
-        nightlyRate: room.pricePerNight,
         commission: {
           rate: hotel.commissionRate,
         },

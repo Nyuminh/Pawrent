@@ -379,7 +379,6 @@ paths:
               type: object
               required:
                 - hotel
-                - roomId
                 - checkIn
                 - checkOut
               properties:
@@ -387,10 +386,18 @@ paths:
                   type: string
                   description: ID của khách sạn (bắt buộc)
                   example: "507f1f77bcf86cd799439011"
-                roomId:
+                fullName:
                   type: string
-                  description: ID của phòng trong khách sạn (bắt buộc)
-                  example: "507f1f77bcf86cd799439012"
+                  description: Họ tên người đặt phòng (nếu không truyền sẽ lấy từ tài khoản)
+                  example: "Nguyễn Văn A"
+                phone:
+                  type: string
+                  description: Số điện thoại người đặt (nếu không truyền sẽ lấy từ tài khoản)
+                  example: "0123456789"
+                email:
+                  type: string
+                  description: Email người đặt (nếu không truyền sẽ lấy từ tài khoản)
+                  example: "nguyenvana@gmail.com"
                 checkIn:
                   type: string
                   format: date
@@ -401,16 +408,18 @@ paths:
                   format: date
                   description: Ngày check-out (YYYY-MM-DD, bắt buộc)
                   example: "2024-06-05"
-                notes:
+                specialRequests:
                   type: string
-                  description: Ghi chú thêm cho khách sạn
-                  example: "Chó hay sủa, cần chỗ yên tĩnh. Thích chơi với chó khác"
+                  description: Ghi chú / yêu cầu đặc biệt
+                  example: "Chó hay sủa, cần chỗ yên tĩnh"
             example:
               hotel: "507f1f77bcf86cd799439011"
-              roomId: "507f1f77bcf86cd799439012"
+              fullName: "Nguyễn Văn A"
+              phone: "0123456789"
+              email: "nguyenvana@gmail.com"
               checkIn: "2024-06-01"
               checkOut: "2024-06-05"
-              notes: "Chó hay sủa, cần chỗ yên tĩnh"
+              specialRequests: "Chó hay sủa, cần chỗ yên tĩnh"
       responses:
         201:
           description: Đặt phòng thành công
@@ -431,12 +440,13 @@ paths:
                       _id: "507f1f77bcf86cd799439020"
                       user: "507f1f77bcf86cd799439001"
                       hotel: "507f1f77bcf86cd799439011"
+                      fullName: "Nguyễn Văn A"
+                      phone: "0123456789"
+                      email: "nguyenvana@gmail.com"
                       checkIn: "2024-06-01"
                       checkOut: "2024-06-05"
-                      numberOfNights: 4
-                      totalPrice: 2000000
                       status: "pending"
-                      notes: "Chó hay sủa, cần chỗ yên tĩnh"
+                      specialRequests: "Chó hay sủa, cần chỗ yên tĩnh"
                       createdAt: "2024-05-17T10:00:00Z"
   /hotel-bookings/{id}/status:
     put:

@@ -12,9 +12,18 @@ const HotelBookingSchema = new mongoose.Schema(
       ref: 'PetHotel',
       required: true,
     },
-    roomNumber: {
+    // Thông tin người đặt phòng
+    fullName: {
       type: String,
-      description: 'Specific room number assigned (e.g., 101, 102)',
+      trim: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      trim: true,
     },
     checkIn: {
       type: Date,
