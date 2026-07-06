@@ -102,12 +102,6 @@ paths:
                     ward:
                       type: string
                       description: Phường/Xã
-                acceptedPets:
-                  type: array
-                  items:
-                    type: string
-                    enum: [dog, cat, bird, hamster, rabbit, other]
-                  description: Các loại thú cưng được chấp nhận
                 services:
                   type: array
                   items:
@@ -231,11 +225,6 @@ paths:
                       type: string
                     ward:
                       type: string
-                acceptedPets:
-                  type: array
-                  items:
-                    type: string
-                    enum: [dog, cat, bird, hamster, rabbit, other]
                 services:
                   type: array
                   items:

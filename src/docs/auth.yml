@@ -139,14 +139,6 @@ paths:
                       type: string
                       description: "Phường/Xã"
                       example: "Tràng Tiền"
-                acceptedPets:
-                  type: array
-                  description: "Tùy chọn. Các loại thú cưng được chấp nhận"
-                  items:
-                    type: string
-                    enum: [dog, cat, bird, hamster, rabbit, other]
-                  default: ["dog", "cat"]
-                  example: ["dog", "cat", "bird"]
       responses:
         201:
           description: Đăng ký thành công, khách sạn đã được tạo

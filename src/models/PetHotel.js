@@ -32,12 +32,6 @@ const PetHotelSchema = new mongoose.Schema(
       required: [true, 'Vui lòng nhập số điện thoại'],
     },
     email: String,
-    // Pet types accepted
-    acceptedPets: {
-      type: [String],
-      enum: ['dog', 'cat', 'bird', 'hamster', 'rabbit', 'other'],
-      default: ['dog', 'cat'],
-    },
     // Services
     services: [
       {
@@ -120,7 +114,6 @@ PetHotelSchema.pre('save', function (next) {
 
 // Indexes
 PetHotelSchema.index({ 'address.city': 1, isActive: 1 });
-PetHotelSchema.index({ acceptedPets: 1 });
 PetHotelSchema.index({ 'rating.average': -1 });
 
 module.exports = mongoose.model('PetHotel', PetHotelSchema);

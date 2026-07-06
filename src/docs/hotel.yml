@@ -143,12 +143,6 @@ paths:
                           type: string
                           description: Email khách sạn
                           example: "contact@happypethotel.vn"
-                        acceptedPets:
-                          type: array
-                          description: Loại thú cưng được chấp nhận
-                          items:
-                            type: string
-                          example: [dog, cat]
                         services:
                           type: array
                           description: Danh sách dịch vụ cung cấp
@@ -340,12 +334,6 @@ paths:
                   type: string
                   description: Email liên hệ
                   example: "contact@happypethotel.vn"
-                acceptedPets:
-                  type: string
-                  description: |
-                    Loại thú cưng được chấp nhận.
-                    Nhập dạng chuỗi ngăn bởi dấu phẩy: dog,cat,bird
-                  example: "dog,cat"
                 images:
                   type: array
                   items:
@@ -405,7 +393,6 @@ paths:
                         ward: "Phường Bến Nghé"
                       phone: "0123456789"
                       email: "contact@happypethotel.vn"
-                      acceptedPets: [dog, cat]
                       services:
                         - _id: "507f1f77bcf86cd799439013"
                           name: "Phòng VIP"
@@ -587,12 +574,6 @@ paths:
                         type: string
                         description: Email liên hệ khách sạn
                         example: "contact@happypethotel.vn"
-                      acceptedPets:
-                        type: array
-                        description: Các loại thú cưng được chấp nhận
-                        items:
-                          type: string
-                        example: [dog, cat]
                       priceRange:
                         type: object
                         description: Khoảng giá phòng
@@ -775,12 +756,6 @@ paths:
                 email:
                   type: string
                   example: "contact@happypethotel.vn"
-                acceptedPets:
-                  type: string
-                  description: |
-                    Loại thú cưng được chấp nhận.
-                    Nhập dạng chuỗi ngăn bởi dấu phẩy: dog,cat,bird
-                  example: "dog,cat,bird"
                 images:
                   type: array
                   items:
@@ -842,7 +817,6 @@ paths:
                         ward: "Phường Bến Nghé"
                       phone: "0123456789"
                       email: "contact@happypethotel.vn"
-                      acceptedPets: [dog, cat, bird]
                       images:
                         - url: "https://res.cloudinary.com/pawrent/image/upload/v124/hotel1.jpg"
                           caption: "Phòng ở"

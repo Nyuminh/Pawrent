@@ -19,7 +19,6 @@ const transformHotelResponse = (hotel) => {
     address: hotelObj.address,
     phone: hotelObj.phone,
     email: hotelObj.email,
-    acceptedPets: hotelObj.acceptedPets,
     services: hotelObj.services ? hotelObj.services.map(s => ({
       serviceId: s._id,
       name: s.name,
@@ -90,11 +89,6 @@ exports.createHotel = async (req, res, next) => {
       } catch (e) {}
     }
 
-    // Parse acceptedPets từ chuỗi phân cách bởi dấu phẩy
-    if (req.body.acceptedPets && typeof req.body.acceptedPets === 'string') {
-      req.body.acceptedPets = req.body.acceptedPets.split(',').map((s) => s.trim());
-    }
-
     // Xử lý upload ảnh từ Cloudinary
     if (req.files && req.files.length > 0) {
       req.body.images = req.files.map((file) => ({
@@ -144,7 +138,6 @@ exports.getHotels = async (req, res, next) => {
     const query = { isActive: true };
 
     if (city) query['address.city'] = new RegExp(city, 'i');
-    if (petType) query.acceptedPets = petType;
     if (minRating) query['rating.average'] = { $gte: Number(minRating) };
 
     if (minPrice || maxPrice) {
@@ -280,11 +273,6 @@ exports.updateHotel = async (req, res, next) => {
       try {
         req.body.rooms = JSON.parse(req.body.rooms);
       } catch (e) {}
-    }
-
-    // Parse acceptedPets từ chuỗi phân cách bởi dấu phẩy
-    if (req.body.acceptedPets && typeof req.body.acceptedPets === 'string') {
-      req.body.acceptedPets = req.body.acceptedPets.split(',').map((s) => s.trim());
     }
 
     // Xử lý upload ảnh từ Cloudinary

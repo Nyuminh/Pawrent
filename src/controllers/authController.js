@@ -149,7 +149,6 @@ exports.registerHotelOwner = async (req, res, next) => {
       hotelPhone,
       hotelEmail,
       address,
-      acceptedPets = ['dog', 'cat'],
     } = req.body;
 
     // Validate required fields
@@ -209,7 +208,6 @@ exports.registerHotelOwner = async (req, res, next) => {
       phone: hotelPhone || phone,
       email: hotelEmail || email,
       address,
-      acceptedPets,
       services: [],
       rooms: [],
       operatingHours: {
