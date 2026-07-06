@@ -822,3 +822,69 @@ exports.getPaymentByInvoiceId = async (req, res, next) => {
     next(error);
   }
 };
+
+// POST /api/v1/payments/cod
+// Thanh toán khi nhận hàng (Cash on Delivery) - không qua cổng thanh toán
+// Tạo payment với status 'cod', cập nhật invoice và xóa sản phẩm khỏi cart ngay lập tức
+exports.createCodPayment = async (req, res, next) => {
+  try {
+    const { invoiceId } = req.body;
+
+    if (!invoiceId) {
+      return res.status(400).json({ success: false, message: 'invoiceId là bắt buộc.' });
+    }
+
+    const Invoice = require('../models/Invoice');
+    const invoice = await Invoice.findById(invoiceId);
+
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn.' });
+    }
+
+    // Chỉ cho phép thanh toán hóa đơn đang ở trạng thái pending
+    if (invoice.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Hóa đơn đang ở trạng thái "${invoice.status}", không thể thanh toán COD.`,
+      });
+    }
+
+    // Kiểm tra quyền: chỉ chủ hóa đơn hoặc admin mới được thanh toán
+    if (String(invoice.user) !== String(req.user.id) && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền thanh toán hóa đơn này.' });
+    }
+
+    // Tạo payment record với provider 'cod' và status 'cod'
+    const payment = await Payment.create({
+      user: req.user.id,
+      amount: invoice.total,
+      currency: invoice.currency || 'VND',
+      provider: 'cod',
+      status: 'cod',
+      metadata: { invoiceId: invoice._id, note: 'Thanh toán khi nhận hàng' },
+    });
+
+    // Cập nhật invoice: gắn payment và chuyển status sang 'cod' (dùng pending để chờ nhận hàng)
+    invoice.payment = payment._id;
+    invoice.status = 'pending'; // vẫn pending vì chưa thu tiền, chờ giao hàng
+    await invoice.save();
+
+    // Xóa sản phẩm đã mua khỏi cart ngay lập tức
+    await clearInvoiceCartIfPaid(invoice);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.',
+      data: {
+        paymentId: payment._id,
+        invoiceId: invoice._id,
+        amount: payment.amount,
+        currency: payment.currency,
+        provider: 'cod',
+        status: payment.status,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};

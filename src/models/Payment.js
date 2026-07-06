@@ -8,7 +8,7 @@ const PaymentSchema = new mongoose.Schema({
   providerPaymentId: { type: String },
   checkoutUrl: { type: String },
   qrUrl: { type: String },
-  status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'paid', 'failed', 'cod'], default: 'pending' },
   metadata: { type: mongoose.Schema.Types.Mixed },
   expiresAt: { type: Date },
 }, { timestamps: true });
