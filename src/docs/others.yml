@@ -358,7 +358,6 @@ paths:
                           city: "TP. Hồ Chí Minh"
                           rating:
                             average: 4.8
-                        roomType: "vip"
                         checkIn: "2024-06-01"
                         checkOut: "2024-06-05"
                         numberOfNights: 4
@@ -380,7 +379,7 @@ paths:
               type: object
               required:
                 - hotel
-                - roomType
+                - roomId
                 - checkIn
                 - checkOut
               properties:
@@ -388,11 +387,10 @@ paths:
                   type: string
                   description: ID của khách sạn (bắt buộc)
                   example: "507f1f77bcf86cd799439011"
-                roomType:
+                roomId:
                   type: string
-                  enum: [standard, deluxe, vip, suite]
-                  description: Loại phòng (bắt buộc)
-                  example: "vip"
+                  description: ID của phòng trong khách sạn (bắt buộc)
+                  example: "507f1f77bcf86cd799439012"
                 checkIn:
                   type: string
                   format: date
@@ -409,7 +407,7 @@ paths:
                   example: "Chó hay sủa, cần chỗ yên tĩnh. Thích chơi với chó khác"
             example:
               hotel: "507f1f77bcf86cd799439011"
-              roomType: "vip"
+              roomId: "507f1f77bcf86cd799439012"
               checkIn: "2024-06-01"
               checkOut: "2024-06-05"
               notes: "Chó hay sủa, cần chỗ yên tĩnh"
@@ -433,7 +431,6 @@ paths:
                       _id: "507f1f77bcf86cd799439020"
                       user: "507f1f77bcf86cd799439001"
                       hotel: "507f1f77bcf86cd799439011"
-                      roomType: "vip"
                       checkIn: "2024-06-01"
                       checkOut: "2024-06-05"
                       numberOfNights: 4
@@ -495,7 +492,6 @@ paths:
                       _id: "507f1f77bcf86cd799439020"
                       user: "507f1f77bcf86cd799439001"
                       hotel: "507f1f77bcf86cd799439011"
-                      roomType: "vip"
                       checkIn: "2024-06-01"
                       checkOut: "2024-06-05"
                       numberOfNights: 4

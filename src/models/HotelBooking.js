@@ -12,11 +12,6 @@ const HotelBookingSchema = new mongoose.Schema(
       ref: 'PetHotel',
       required: true,
     },
-    roomType: {
-      type: String,
-      enum: ['standard', 'deluxe', 'vip', 'suite'],
-      required: [true, 'Vui lòng chọn loại phòng'],
-    },
     roomNumber: {
       type: String,
       description: 'Specific room number assigned (e.g., 101, 102)',
@@ -129,6 +124,5 @@ HotelBookingSchema.pre('save', function (next) {
 // Indexes
 HotelBookingSchema.index({ user: 1, status: 1 });
 HotelBookingSchema.index({ hotel: 1, status: 1, checkIn: 1 });
-HotelBookingSchema.index({ pet: 1 });
 
 module.exports = mongoose.model('HotelBooking', HotelBookingSchema);

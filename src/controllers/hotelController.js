@@ -350,7 +350,7 @@ exports.deleteHotel = async (req, res, next) => {
 // @access  Private
 exports.createBooking = async (req, res, next) => {
   try {
-    const { hotel: hotelId, roomType, checkIn, checkOut, additionalServices, specialRequests } = req.body;
+    const { hotel: hotelId, roomId, checkIn, checkOut, additionalServices, specialRequests } = req.body;
 
     // Verify hotel
     const hotel = await PetHotel.findById(hotelId);
@@ -361,12 +361,12 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
-    // Find room and pricing
-    const room = hotel.rooms.find((r) => r.type === roomType);
+    // Find room by roomId
+    const room = hotel.rooms.find((r) => String(r._id) === String(roomId));
     if (!room) {
       return res.status(400).json({
         success: false,
-        message: 'Loại phòng không tồn tại.',
+        message: 'Phòng không tồn tại.',
       });
     }
 
@@ -384,7 +384,7 @@ exports.createBooking = async (req, res, next) => {
 
     const occupiedBookings = await HotelBooking.find({
       hotel: hotelId,
-      roomType,
+      roomNumber: { $exists: true },
       status: { $in: ['confirmed', 'checked_in'] },
       checkIn: { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
@@ -394,15 +394,10 @@ exports.createBooking = async (req, res, next) => {
       .filter(b => b.roomNumber)
       .map(b => parseInt(b.roomNumber));
 
-    // Generate room number (101, 102, 103, etc. based on room type)
+    // Generate room number (101, 102, 103... based on room index in hotel)
     let roomNumber;
-    const typePrefix = {
-      'standard': 1,
-      'deluxe': 2,
-      'vip': 3,
-      'suite': 4,
-    };
-    const prefix = typePrefix[roomType];
+    const roomIndex = hotel.rooms.findIndex((r) => String(r._id) === String(roomId)) + 1;
+    const prefix = roomIndex;
 
     for (let i = 1; i <= room.totalRooms; i++) {
       const candidateNumber = prefix * 100 + i;
@@ -422,7 +417,6 @@ exports.createBooking = async (req, res, next) => {
     const booking = await HotelBooking.create({
       user: req.user.id,
       hotel: hotelId,
-      roomType,
       roomNumber,
       checkIn: checkInDate,
       checkOut: checkOutDate,
@@ -457,7 +451,6 @@ exports.getMyBookings = async (req, res, next) => {
 
     const total = await HotelBooking.countDocuments(query);
     const bookings = await HotelBooking.find(query)
-      .populate('pet', 'name species avatar')
       .populate('hotel', 'name address images rating')
       .sort('-createdAt')
       .skip((page - 1) * limit)
@@ -500,7 +493,6 @@ exports.getHotelBookings = async (req, res, next) => {
     const total = await HotelBooking.countDocuments(query);
     const bookings = await HotelBooking.find(query)
       .populate('user', 'fullName phone email')
-      .populate('pet', 'name species breed gender weight allergies')
       .sort('-checkIn')
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -674,7 +666,7 @@ exports.getRoomOccupancy = async (req, res, next) => {
       // Get all bookings for this room type
       let bookingQuery = {
         hotel: hotelId,
-        roomType: room.type,
+        roomId: room._id,
         status: { $in: ['confirmed', 'checked_in'] },
       };
 
@@ -700,7 +692,7 @@ exports.getRoomOccupancy = async (req, res, next) => {
 
       const bookings = await HotelBooking.find(bookingQuery)
         .populate('user', 'fullName phone email')
-        .select('roomNumber roomType checkIn checkOut user status specialRequests');
+        .select('roomNumber checkIn checkOut user status specialRequests');
 
       roomTypeData.bookings = bookings.map(b => ({
         bookingId: b._id,
