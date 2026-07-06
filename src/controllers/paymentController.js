@@ -241,10 +241,28 @@ function setSePayHtmlHeaders(res) {
 }
 
 async function clearInvoiceCartIfPaid(invoice) {
-  if (!invoice || !invoice.cart) return;
+  if (!invoice) return;
 
   const User = require('../models/User');
-  await User.findByIdAndUpdate(invoice.cart, { $set: { cart: [] } });
+
+  // Case 1: invoice created from cart → clear entire cart
+  if (invoice.cart) {
+    await User.findByIdAndUpdate(invoice.cart, { $set: { cart: [] } });
+    return;
+  }
+
+  // Case 2: invoice created from POST /invoices/products → remove only purchased products from cart
+  if (invoice.user && Array.isArray(invoice.items) && invoice.items.length > 0) {
+    const productRefIds = invoice.items
+      .filter((item) => item.type === 'product' && item.refId)
+      .map((item) => String(item.refId));
+
+    if (productRefIds.length > 0) {
+      await User.findByIdAndUpdate(invoice.user, {
+        $pull: { cart: { product: { $in: productRefIds } } },
+      });
+    }
+  }
 }
 
 // POST /api/v1/payments/momo/create
