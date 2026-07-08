@@ -41,22 +41,11 @@ const PetHotelSchema = new mongoose.Schema(
         currency: { type: String, default: 'VND' },
       },
     ],
-    // Room types
-    rooms: [
-      {
-        type: {
-          type: String,
-          enum: ['standard', 'deluxe', 'vip', 'suite'],
-        },
-        name: String,
-        description: String,
-        pricePerNight: Number,
-        capacity: Number,   // max pets per room
-        totalRooms: Number,
-        availableRooms: Number,
-        amenities: [String],
-      },
-    ],
+    // Giá mỗi đêm
+    price: {
+      type: Number,
+      default: 0,
+    },
     // Images
     images: [
       {

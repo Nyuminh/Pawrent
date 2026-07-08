@@ -8,7 +8,6 @@ const {
   getMyHotels,
   updateHotel,
   deleteHotel,
-  getRoomOccupancy,
 } = require('../controllers/hotelController');
 
 const router = express.Router();
@@ -31,9 +30,6 @@ router.get('/', optionalAuth, getHotels);
 
 // ===== MY HOTELS (hotel owner) =====
 router.get('/my', protect, getMyHotels);
-
-// ===== ROOM OCCUPANCY DASHBOARD =====
-router.get('/:hotelId/rooms/occupancy', protect, getRoomOccupancy);
 
 // ===== HOTEL DETAIL ROUTES =====
 router.get('/:id', optionalAuth, getHotel);

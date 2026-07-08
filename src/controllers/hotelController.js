@@ -19,23 +19,13 @@ const transformHotelResponse = (hotel) => {
     address: hotelObj.address,
     phone: hotelObj.phone,
     email: hotelObj.email,
+    price: hotelObj.price || 0,
     services: hotelObj.services ? hotelObj.services.map(s => ({
       serviceId: s._id,
       name: s.name,
       description: s.description,
       price: s.price,
       currency: s.currency,
-    })) : [],
-    rooms: hotelObj.rooms ? hotelObj.rooms.map(r => ({
-      roomId: r._id,
-      type: r.type,
-      name: r.name,
-      description: r.description,
-      pricePerNight: r.pricePerNight,
-      capacity: r.capacity,
-      totalRooms: r.totalRooms,
-      availableRooms: r.availableRooms,
-      amenities: r.amenities,
     })) : [],
     images: hotelObj.images ? hotelObj.images.map(img => ({
       imageId: img._id,
@@ -82,12 +72,6 @@ exports.createHotel = async (req, res, next) => {
       } catch (e) {}
     }
 
-    // Parse rooms array từ JSON string
-    if (req.body.rooms && typeof req.body.rooms === 'string') {
-      try {
-        req.body.rooms = JSON.parse(req.body.rooms);
-      } catch (e) {}
-    }
 
     // Xử lý upload ảnh từ Cloudinary
     if (req.files && req.files.length > 0) {
@@ -141,9 +125,9 @@ exports.getHotels = async (req, res, next) => {
     if (minRating) query['rating.average'] = { $gte: Number(minRating) };
 
     if (minPrice || maxPrice) {
-      query['rooms.pricePerNight'] = {};
-      if (minPrice) query['rooms.pricePerNight'].$gte = Number(minPrice);
-      if (maxPrice) query['rooms.pricePerNight'].$lte = Number(maxPrice);
+      query['price'] = {};
+      if (minPrice) query['price'].$gte = Number(minPrice);
+      if (maxPrice) query['price'].$lte = Number(maxPrice);
     }
 
     const total = await PetHotel.countDocuments(query);
@@ -268,12 +252,6 @@ exports.updateHotel = async (req, res, next) => {
       } catch (e) {}
     }
 
-    // Parse rooms array từ JSON string
-    if (req.body.rooms && typeof req.body.rooms === 'string') {
-      try {
-        req.body.rooms = JSON.parse(req.body.rooms);
-      } catch (e) {}
-    }
 
     // Xử lý upload ảnh từ Cloudinary
     if (req.files && req.files.length > 0) {
@@ -353,7 +331,6 @@ exports.createBooking = async (req, res, next) => {
       hotel: hotelId,
       checkIn,
       checkOut,
-      pricePerNight,
       additionalServices,
       specialRequests,
       fullName,
@@ -380,8 +357,8 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
-    // Tính số đêm và tổng tiền phòng
-    const nightlyRate = Number(pricePerNight) || 0;
+    // Lấy giá từ hotel.price
+    const nightlyRate = hotel.price || 0;
     const numberOfNights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
     // Tính servicesTotal nếu có dịch vụ thêm
@@ -440,6 +417,7 @@ exports.createBooking = async (req, res, next) => {
 
 
 // @desc    Get user's bookings
+
 // @route   GET /api/v1/hotel-bookings
 // @access  Private
 exports.getMyBookings = async (req, res, next) => {
@@ -741,131 +719,3 @@ exports.getAllBookingsForOwner = async (req, res, next) => {
 
 
 
-// ==================== ROOM OCCUPANCY DASHBOARD ====================
-
-// @desc    Get room occupancy status for hotel owner dashboard
-// @route   GET /api/v1/hotels/:hotelId/rooms/occupancy
-// @access  Private (hotel owner)
-exports.getRoomOccupancy = async (req, res, next) => {
-  try {
-    const { hotelId } = req.params;
-    const { dateFrom, dateTo } = req.query;
-
-    // Verify hotel ownership
-    const hotel = await PetHotel.findOne({
-      _id: hotelId,
-      owner: req.user.id,
-    });
-
-    if (!hotel) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy khách sạn hoặc bạn không có quyền.',
-      });
-    }
-
-    // Build occupancy data for each room type
-    const occupancyData = [];
-
-    for (const room of hotel.rooms) {
-      const roomTypeData = {
-        roomId: room._id,
-        type: room.type,
-        name: room.name,
-        description: room.description,
-        pricePerNight: room.pricePerNight,
-        capacity: room.capacity,
-        totalRooms: room.totalRooms,
-        amenities: room.amenities,
-        bookings: [],
-        summary: {
-          totalRooms: room.totalRooms,
-          availableRooms: room.totalRooms,
-          occupiedRooms: 0,
-          occupancyRate: 0,
-        },
-      };
-
-      // Get all bookings for this room type
-      let bookingQuery = {
-        hotel: hotelId,
-        roomId: room._id,
-        status: { $in: ['confirmed', 'checked_in'] },
-      };
-
-      // Filter by date range if provided
-      if (dateFrom || dateTo) {
-        bookingQuery.$or = [];
-        if (dateFrom && dateTo) {
-          // Bookings that overlap with date range
-          bookingQuery.$or.push({
-            checkIn: { $lte: new Date(dateTo) },
-            checkOut: { $gte: new Date(dateFrom) },
-          });
-        } else if (dateFrom) {
-          bookingQuery.$or.push({
-            checkOut: { $gte: new Date(dateFrom) },
-          });
-        } else if (dateTo) {
-          bookingQuery.$or.push({
-            checkIn: { $lte: new Date(dateTo) },
-          });
-        }
-      }
-
-      const bookings = await HotelBooking.find(bookingQuery)
-        .populate('user', 'fullName phone email')
-        .select('roomNumber checkIn checkOut user status specialRequests');
-
-      roomTypeData.bookings = bookings.map(b => ({
-        bookingId: b._id,
-        roomNumber: b.roomNumber || 'TBD',
-        guestName: b.user?.fullName,
-        guestPhone: b.user?.phone,
-        guestEmail: b.user?.email,
-        checkIn: b.checkIn,
-        checkOut: b.checkOut,
-        status: b.status,
-        specialRequests: b.specialRequests,
-        duration: Math.ceil(
-          (new Date(b.checkOut) - new Date(b.checkIn)) / (1000 * 60 * 60 * 24)
-        ),
-      }));
-
-      // Calculate occupancy
-      roomTypeData.summary.occupiedRooms = bookings.length;
-      roomTypeData.summary.availableRooms = room.totalRooms - bookings.length;
-      roomTypeData.summary.occupancyRate = Math.round(
-        (bookings.length / room.totalRooms) * 100
-      );
-
-      occupancyData.push(roomTypeData);
-    }
-
-    // Calculate total occupancy
-    const totalRooms = occupancyData.reduce((sum, r) => sum + r.summary.totalRooms, 0);
-    const totalOccupied = occupancyData.reduce((sum, r) => sum + r.summary.occupiedRooms, 0);
-    const totalAvailable = occupancyData.reduce((sum, r) => sum + r.summary.availableRooms, 0);
-
-    res.status(200).json({
-      success: true,
-      hotel: {
-        hotelId: hotel._id,
-        name: hotel.name,
-      },
-      totalOccupancy: {
-        totalRooms,
-        occupiedRooms: totalOccupied,
-        availableRooms: totalAvailable,
-        occupancyRate: Math.round((totalOccupied / totalRooms) * 100),
-      },
-      dateRange: {
-        from: dateFrom || new Date().toISOString().split('T')[0],
-        to: dateTo || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      },
-      roomTypes: occupancyData,
-    });
-  } catch (error) {
-    next(error);
-  }
-};

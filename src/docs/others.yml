@@ -386,10 +386,6 @@ paths:
                   type: string
                   description: ID của khách sạn (bắt buộc)
                   example: "507f1f77bcf86cd799439011"
-                pricePerNight:
-                  type: number
-                  description: Giá phòng mỗi đêm (VND) — lấy từ rooms[].pricePerNight của khách sạn
-                  example: 500000
                 fullName:
                   type: string
                   description: Họ tên người đặt phòng (nếu không truyền sẽ lấy từ tài khoản)
@@ -418,7 +414,6 @@ paths:
                   example: "Chó hay sủa, cần chỗ yên tĩnh"
             example:
               hotel: "507f1f77bcf86cd799439011"
-              pricePerNight: 500000
               fullName: "Nguyễn Văn A"
               phone: "0123456789"
               email: "nguyenvana@gmail.com"

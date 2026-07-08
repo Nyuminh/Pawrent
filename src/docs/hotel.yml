@@ -346,19 +346,10 @@ paths:
                     Danh sách dịch vụ (JSON string).
                     Ví dụ: [{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]
                   example: '[{"name":"Tắm gội","description":"Dịch vụ tắm gội","price":150000,"currency":"VND"}]'
-                rooms:
-                  type: string
-                  description: |
-                    Danh sách loại phòng (JSON string). Mỗi phòng gồm:
-                    - `type` (string): Loại phòng — `standard` | `deluxe` | `vip` | `suite`
-                    - `name` (string): Tên phòng
-                    - `description` (string): Mô tả phòng
-                    - `pricePerNight` (number): **Giá mỗi đêm (VND)** ― bắt buộc
-                    - `capacity` (number): Số thú cưng tối đa
-                    - `totalRooms` (number): Tổng số phòng
-                    - `availableRooms` (number): Số phòng còn trống
-                    - `amenities` (array of string): Tiện ích
-                  example: '[{"type":"standard","name":"Phòng Standard","description":"Phòng tiêu chuẩn","pricePerNight":200000,"capacity":2,"totalRooms":10,"availableRooms":10,"amenities":["Wi-Fi","Điều hòa"]},{"type":"vip","name":"Phòng VIP","description":"Phòng cao cấp","pricePerNight":500000,"capacity":3,"totalRooms":5,"availableRooms":5,"amenities":["Wi-Fi","Điều hòa","TV"]}]'
+                price:
+                  type: number
+                  description: Giá mỗi đêm (VND) của khách sạn
+                  example: 350000
                 operatingHours:
                   type: string
                   description: |
