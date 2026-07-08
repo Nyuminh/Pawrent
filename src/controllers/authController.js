@@ -499,3 +499,48 @@ exports.getAllVets = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Nâng cấp role lên hotel_owner (gọi sau khi thanh toán gói HOTEL_OWNER)
+// @route   POST /api/v1/auth/upgrade-hotel-owner
+// @access  Private
+exports.upgradeToHotelOwner = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng.' });
+    }
+
+    if (user.role === 'hotel_owner') {
+      return res.status(400).json({
+        success: false,
+        message: 'Tài khoản của bạn đã là Hotel Owner.',
+      });
+    }
+
+    // Chỉ cho phép nâng từ user thường lên hotel_owner
+    const allowedRoles = ['user'];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Không thể nâng cấp từ role "${user.role}" lên hotel_owner.`,
+      });
+    }
+
+    user.role = 'hotel_owner';
+    await user.save({ validateBeforeSave: false });
+
+    // Trả về user data mới (không có password)
+    const userData = user.toObject();
+    delete userData.password;
+    delete userData.refreshToken;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Nâng cấp lên Hotel Owner thành công!',
+      data: { user: userData },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

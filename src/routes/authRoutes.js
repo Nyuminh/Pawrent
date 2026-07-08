@@ -13,6 +13,7 @@ const {
   updateProfile,
   changePassword,
   getAllVets,
+  upgradeToHotelOwner,
 } = require('../controllers/authController');
 
 const router = express.Router();
@@ -246,5 +247,6 @@ router.post('/logout', protect, logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, upload.single('avatar'), updateProfile);
 router.put('/change-password', protect, changePassword);
+router.post('/upgrade-hotel-owner', protect, upgradeToHotelOwner);
 
 module.exports = router;

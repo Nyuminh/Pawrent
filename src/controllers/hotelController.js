@@ -72,6 +72,11 @@ exports.createHotel = async (req, res, next) => {
       } catch (e) {}
     }
 
+    // Parse price thành số (multipart/form-data gửi string)
+    if (req.body.price !== undefined) {
+      req.body.price = Number(req.body.price) || 0;
+    }
+
 
     // Xử lý upload ảnh từ Cloudinary
     if (req.files && req.files.length > 0) {
@@ -250,6 +255,11 @@ exports.updateHotel = async (req, res, next) => {
       try {
         req.body.services = JSON.parse(req.body.services);
       } catch (e) {}
+    }
+
+    // Parse price thành số (multipart/form-data gửi string)
+    if (req.body.price !== undefined) {
+      req.body.price = Number(req.body.price) || 0;
     }
 
 

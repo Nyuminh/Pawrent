@@ -307,3 +307,51 @@ paths:
       responses:
         200:
           description: Đổi mật khẩu thành công
+
+  /auth/upgrade-hotel-owner:
+    post:
+      summary: Nâng cấp tài khoản lên Hotel Owner
+      description: |
+        Nâng cấp role của người dùng hiện tại lên `hotel_owner`.
+
+        **Luồng sử dụng:**
+        1. Tạo hóa đơn gói HOTEL_OWNER: `POST /invoices/subscription` với `{"subscriptionPlan": "HOTEL_OWNER"}`
+        2. Thanh toán hóa đơn (COD hoặc SePay)
+        3. Gọi API này để kích hoạt role hotel_owner
+
+        **Điều kiện:**
+        - Chỉ user thường (`role: user`) mới được nâng cấp
+        - Đã đăng nhập (Bearer token)
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Nâng cấp thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Nâng cấp lên Hotel Owner thành công!"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        example:
+                          _id: "507f1f77bcf86cd799439001"
+                          fullName: "Nguyễn Văn A"
+                          email: "nguyenvana@gmail.com"
+                          role: "hotel_owner"
+        400:
+          description: Tài khoản đã là Hotel Owner
+        403:
+          description: Không thể nâng cấp từ role hiện tại
+        401:
+          description: Chưa đăng nhập
