@@ -28,10 +28,8 @@ module.exports = {
       'health_charts',
     ],
     pricePerMonth: 49000, // VND
-    additionalPetMultiplier: 1.5, // 150% for 2nd pet
-    durationMonths: {
-      month: 1,
-    },
+    additionalPetMultiplier: 1.5,
+    durationMonths: { month: 1 },
   },
   VIP: {
     name: 'Vip',
@@ -50,10 +48,19 @@ module.exports = {
       'health_charts',
     ],
     pricePerYear: 499000, // VND
-    additionalPetMultiplier: 1.5, // 150% for 2nd pet
-    durationMonths: {
-      year: 12,
-    },
+    additionalPetMultiplier: 1.5,
+    durationMonths: { year: 12 },
+  },
+  HOTEL_OWNER: {
+    name: 'Hotel Owner',
+    maxPets: 0,
+    features: [
+      'hotel_management',
+      'booking_management',
+      'revenue_dashboard',
+    ],
+    price: 2000, // VND
+    durationMonths: null,
   },
   PREMIUM: null,
 };

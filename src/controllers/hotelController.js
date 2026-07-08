@@ -575,6 +575,100 @@ exports.reviewBooking = async (req, res, next) => {
   }
 };
 
+// @desc    Cancel hotel booking (khách hàng hủy)
+// @route   PUT /api/v1/hotel-bookings/:id/cancel
+// @access  Private (user sở hữu booking)
+exports.cancelBooking = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+
+    const booking = await HotelBooking.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy booking.',
+      });
+    }
+
+    const nonCancellableStatuses = ['checked_in', 'checked_out', 'cancelled'];
+    if (nonCancellableStatuses.includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Không thể hủy booking đang ở trạng thái "${booking.status}".`,
+      });
+    }
+
+    booking.status = 'cancelled';
+    booking.cancellation = {
+      cancelledBy: 'user',
+      reason: reason || 'Khách hàng hủy',
+      cancelledAt: new Date(),
+    };
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Hủy đặt phòng thành công.',
+      data: booking,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all bookings of all hotels owned by the current hotel owner
+// @route   GET /api/v1/hotel-bookings/owner/all
+// @access  Private (hotel_owner)
+exports.getAllBookingsForOwner = async (req, res, next) => {
+  try {
+    const { status, page = 1, limit = 20, hotelId } = req.query;
+
+    // Lấy tất cả khách sạn thuộc hotel owner
+    const hotelQuery = { owner: req.user.id };
+    if (hotelId) hotelQuery._id = hotelId;
+
+    const ownerHotels = await PetHotel.find(hotelQuery).select('_id name');
+    if (!ownerHotels.length) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        total: 0,
+        data: [],
+        message: 'Bạn chưa có khách sạn nào.',
+      });
+    }
+
+    const hotelIds = ownerHotels.map((h) => h._id);
+    const bookingQuery = { hotel: { $in: hotelIds } };
+    if (status) bookingQuery.status = status;
+
+    const total = await HotelBooking.countDocuments(bookingQuery);
+    const bookings = await HotelBooking.find(bookingQuery)
+      .populate('user', 'fullName phone email')
+      .populate('hotel', 'name address')
+      .sort('-createdAt')
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      hotels: ownerHotels,
+      data: bookings,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 // ==================== ROOM OCCUPANCY DASHBOARD ====================
 
 // @desc    Get room occupancy status for hotel owner dashboard

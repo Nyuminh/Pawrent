@@ -20,7 +20,7 @@ const InvoiceSchema = new mongoose.Schema(
     discount: { type: Number, default: 0 },
     total: { type: Number, required: true },
     currency: { type: String, default: 'VND' },
-    status: { type: String, enum: ['pending', 'paid', 'cancelled'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'paid', 'cancelled', 'awaiting_confirmation'], default: 'pending' },
     cart: { type: mongoose.Schema.Types.ObjectId },
     booking: { type: mongoose.Schema.Types.ObjectId, ref: 'HotelBooking' },
     appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },

@@ -864,9 +864,9 @@ exports.createCodPayment = async (req, res, next) => {
       metadata: { invoiceId: invoice._id, note: 'Thanh toán khi nhận hàng' },
     });
 
-    // Cập nhật invoice: gắn payment và chuyển status sang 'cod' (dùng pending để chờ nhận hàng)
+    // Cập nhật invoice: gắn payment và chuyển status sang awaiting_confirmation (chờ xác nhận COD)
     invoice.payment = payment._id;
-    invoice.status = 'pending'; // vẫn pending vì chưa thu tiền, chờ giao hàng
+    invoice.status = 'awaiting_confirmation'; // chờ xác nhận - sẽ thu tiền khi giao hàng
     await invoice.save();
 
     // Xóa sản phẩm đã mua khỏi cart ngay lập tức

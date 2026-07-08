@@ -102,7 +102,11 @@ paths:
   /invoices/subscription:
     post:
       summary: Tạo hóa đơn cho gói subscription
-      description: "Tạo hóa đơn cho subscription plan (ví dụ: PLUS, VUP)"
+      description: |
+        Tạo hóa đơn cho các gói subscription:
+        - **PLUS** — 49.000 VND/tháng
+        - **VIP** — 499.000 VND/năm
+        - **HOTEL_OWNER** — 2.000 VND (quản lý khách sạn)
       tags: [Invoices]
       security:
         - bearerAuth: []
@@ -117,9 +121,14 @@ paths:
               properties:
                 subscriptionPlan:
                   type: string
-                  description: Mã gói subscription (PLUS, VUP...)
+                  enum: [PLUS, VIP, HOTEL_OWNER]
+                  description: Mã gói subscription
+                  example: HOTEL_OWNER
                 currency:
                   type: string
+                  example: VND
+            example:
+              subscriptionPlan: HOTEL_OWNER
       responses:
         201:
           description: Hóa đơn subscription được tạo
@@ -127,6 +136,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Invoice'
+        400:
+          description: Gói subscription không hợp lệ
 
   /invoices/booking:
     post:
@@ -356,12 +367,70 @@ paths:
                     properties:
                       status:
                         type: string
+                        enum: [pending, paid, cancelled, awaiting_confirmation]
                       payment:
                         type: object
         401:
           description: Không được xác thực
         403:
           description: Không có quyền truy cập
+        404:
+          description: Không tìm thấy hóa đơn
+
+    patch:
+      summary: Cập nhật trạng thái hóa đơn
+      description: |
+        Cập nhật trạng thái hóa đơn.
+        - **Admin** có thể đặt bất kỳ trạng thái nào.
+        - **User** chỉ được hủy hóa đơn của chính mình (`status: cancelled`).
+      tags: [Invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 6630f1b6f6d4e8a1c2b3d4e5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, paid, cancelled, awaiting_confirmation]
+                  description: Trạng thái mới của hóa đơn
+                  example: cancelled
+            example:
+              status: cancelled
+      responses:
+        200:
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Cập nhật trạng thái hóa đơn thành công.
+                  data:
+                    $ref: '#/components/schemas/Invoice'
+        400:
+          description: Trạng thái không hợp lệ
+        401:
+          description: Không được xác thực
+        403:
+          description: Không có quyền cập nhật hóa đơn này
         404:
           description: Không tìm thấy hóa đơn
 
@@ -426,7 +495,13 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, paid, cancelled]
+          enum: [pending, paid, cancelled, awaiting_confirmation]
+          description: |
+            Trạng thái hóa đơn:
+            - `pending` — Chờ thanh toán
+            - `awaiting_confirmation` — Đã đặt COD, chờ xác nhận giao hàng
+            - `paid` — Đã thanh toán
+            - `cancelled` — Đã hủy
         address:
           type: string
           description: Địa chỉ giao hàng/thanh toán

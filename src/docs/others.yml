@@ -504,10 +504,7 @@ paths:
                       hotel: "507f1f77bcf86cd799439011"
                       checkIn: "2024-06-01"
                       checkOut: "2024-06-05"
-                      numberOfNights: 4
-                      totalPrice: 2000000
                       status: "confirmed"
-                      notes: "Chó hay sủa, cần chỗ yên tĩnh"
                       updatedAt: "2024-05-17T10:30:00Z"
         400:
           description: Yêu cầu không hợp lệ
@@ -515,7 +512,160 @@ paths:
           description: Không có quyền
         404:
           description: Không tìm thấy booking
-          
+
+  /hotel-bookings/{id}/cancel:
+    put:
+      summary: Hủy đặt phòng (khách hàng tự hủy)
+      description: Khách hàng hủy đặt phòng của chính mình. Không thể hủy nếu đã check-in, check-out, hoặc đã cancelled.
+      tags: [Hotels & Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "507f1f77bcf86cd799439020"
+          description: ID của booking cần hủy
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Lý do hủy (tùy chọn)
+                  example: "Thay đổi kế hoạch du lịch"
+            example:
+              reason: "Thay đổi kế hoạch du lịch"
+      responses:
+        200:
+          description: Hủy đặt phòng thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Hủy đặt phòng thành công."
+                  data:
+                    type: object
+                    example:
+                      _id: "507f1f77bcf86cd799439020"
+                      status: "cancelled"
+                      cancellation:
+                        cancelledBy: "user"
+                        reason: "Thay đổi kế hoạch du lịch"
+                        cancelledAt: "2024-05-17T10:30:00Z"
+        400:
+          description: Không thể hủy booking ở trạng thái hiện tại
+        403:
+          description: Không có quyền hủy booking này
+        404:
+          description: Không tìm thấy booking
+
+  /hotel-bookings/owner/all:
+    get:
+      summary: Xem tất cả booking của các khách sạn mình quản lý
+      description: |
+        Dành cho **Hotel Owner**. Lấy toàn bộ danh sách booking từ tất cả khách sạn thuộc sở hữu của hotel owner đang đăng nhập.
+        Có thể lọc theo `status`, `hotelId`, và phân trang.
+      tags: [Hotels & Bookings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, checked_in, checked_out, cancelled, no_show]
+          description: Lọc theo trạng thái booking
+        - name: hotelId
+          in: query
+          schema:
+            type: string
+          description: Lọc theo ID khách sạn cụ thể (trong danh sách của owner)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 12
+                  page:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 1
+                  hotels:
+                    type: array
+                    description: Danh sách khách sạn của owner
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                    example:
+                      - _id: "507f1f77bcf86cd799439011"
+                        name: "Happy Pet Hotel"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                    example:
+                      - _id: "507f1f77bcf86cd799439020"
+                        user:
+                          _id: "507f1f77bcf86cd799439001"
+                          fullName: "Nguyễn Văn A"
+                          phone: "0123456789"
+                          email: "nguyenvana@gmail.com"
+                        hotel:
+                          _id: "507f1f77bcf86cd799439011"
+                          name: "Happy Pet Hotel"
+                        fullName: "Nguyễn Văn A"
+                        phone: "0123456789"
+                        email: "nguyenvana@gmail.com"
+                        checkIn: "2024-06-01"
+                        checkOut: "2024-06-05"
+                        status: "confirmed"
+                        specialRequests: "Cần chỗ yên tĩnh"
+                        createdAt: "2024-05-17T10:00:00Z"
+        401:
+          description: Không được xác thực
+        403:
+          description: Không có quyền truy cập
+
+
   /chat:
     post:
       summary: Gửi tin nhắn/Chat với AI tư vấn (Premium)

@@ -9,6 +9,8 @@ const {
   updateBookingStatus,
   reviewBooking,
   getRoomOccupancy,
+  cancelBooking,
+  getAllBookingsForOwner,
 } = require('../controllers/hotelController');
 
 const router = express.Router();
@@ -27,7 +29,9 @@ router.route('/')
   .get(getMyBookings)
   .post(bookingValidation, validate, createBooking);
 
+router.get('/owner/all', getAllBookingsForOwner);
 router.get('/hotel/:hotelId', getHotelBookings);
+router.put('/:id/cancel', cancelBooking);
 router.put('/:id/status', updateBookingStatus);
 router.post('/:id/review', reviewBooking);
 

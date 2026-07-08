@@ -374,7 +374,9 @@ exports.getInvoiceById = async (req, res, next) => {
     
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-    if (req.user.role !== 'admin' && req.user.role !== 'vet' && String(invoice.user) !== String(req.user.id)) {
+    // So sánh user id đúng cách (invoice.user có thể là ObjectId hoặc populated object)
+    const invoiceUserId = invoice.user && invoice.user._id ? String(invoice.user._id) : String(invoice.user);
+    if (req.user.role !== 'admin' && req.user.role !== 'vet' && invoiceUserId !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
@@ -405,11 +407,57 @@ exports.getInvoiceStatus = async (req, res, next) => {
     const invoice = await Invoice.findById(req.params.id).populate('payment');
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-    if (req.user.role !== 'admin' && req.user.role !== 'vet' && String(invoice.user) !== String(req.user.id)) {
+    const invoiceUserId2 = invoice.user && invoice.user._id ? String(invoice.user._id) : String(invoice.user);
+    if (req.user.role !== 'admin' && req.user.role !== 'vet' && invoiceUserId2 !== String(req.user.id)) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
     return res.status(200).json({ success: true, data: { status: invoice.status, payment: invoice.payment } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /api/v1/invoices/:id/status
+// @desc    Cập nhật trạng thái hóa đơn (admin cập nhật tất cả, user chỉ hủy hóa đơn của mình)
+exports.updateInvoiceStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const allowedStatuses = ['pending', 'paid', 'cancelled', 'awaiting_confirmation'];
+
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Trạng thái không hợp lệ. Cho phép: ${allowedStatuses.join(', ')}`,
+      });
+    }
+
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn.' });
+    }
+
+    const invoiceUserId = invoice.user ? String(invoice.user) : null;
+    const isOwner = invoiceUserId === String(req.user.id);
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền cập nhật hóa đơn này.' });
+    }
+
+    // User thường chỉ được phép hủy hóa đơn của mình
+    if (!isAdmin && status !== 'cancelled') {
+      return res.status(403).json({ success: false, message: 'Bạn chỉ có thể hủy hóa đơn.' });
+    }
+
+    invoice.status = status;
+    await invoice.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cập nhật trạng thái hóa đơn thành công.',
+      data: invoice,
+    });
   } catch (err) {
     next(err);
   }
