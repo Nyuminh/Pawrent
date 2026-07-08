@@ -349,7 +349,17 @@ exports.deleteHotel = async (req, res, next) => {
 // @route   POST /api/v1/hotel-bookings
 exports.createBooking = async (req, res, next) => {
   try {
-    const { hotel: hotelId, checkIn, checkOut, additionalServices, specialRequests, fullName, phone, email } = req.body;
+    const {
+      hotel: hotelId,
+      checkIn,
+      checkOut,
+      pricePerNight,
+      additionalServices,
+      specialRequests,
+      fullName,
+      phone,
+      email,
+    } = req.body;
 
     // Verify hotel
     const hotel = await PetHotel.findById(hotelId);
@@ -370,6 +380,24 @@ exports.createBooking = async (req, res, next) => {
       });
     }
 
+    // Tính số đêm và tổng tiền phòng
+    const nightlyRate = Number(pricePerNight) || 0;
+    const numberOfNights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+
+    // Tính servicesTotal nếu có dịch vụ thêm
+    let servicesTotal = 0;
+    if (additionalServices && additionalServices.length > 0) {
+      servicesTotal = additionalServices.reduce(
+        (sum, s) => sum + (s.price || 0) * (s.quantity || 1),
+        0
+      );
+    }
+
+    const roomTotal = nightlyRate * numberOfNights;
+    const subtotal = roomTotal + servicesTotal;
+    const commissionAmount = Math.round(subtotal * (hotel.commissionRate || 0));
+    const total = subtotal;
+
     const booking = await HotelBooking.create({
       user: req.user.id,
       hotel: hotelId,
@@ -381,21 +409,35 @@ exports.createBooking = async (req, res, next) => {
       additionalServices,
       specialRequests,
       pricing: {
+        nightlyRate,
+        numberOfNights,
+        roomTotal,
+        servicesTotal,
+        subtotal,
         commission: {
           rate: hotel.commissionRate,
+          amount: commissionAmount,
         },
+        total,
+        currency: 'VND',
       },
     });
 
     res.status(201).json({
       success: true,
       message: 'Đặt phòng thành công!',
-      data: booking,
+      data: {
+        ...booking.toObject(),
+        numberOfNights,
+        nightlyRate,
+        totalPrice: total,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 // @desc    Get user's bookings
 // @route   GET /api/v1/hotel-bookings
@@ -631,7 +673,7 @@ exports.getAllBookingsForOwner = async (req, res, next) => {
     const hotelQuery = { owner: req.user.id };
     if (hotelId) hotelQuery._id = hotelId;
 
-    const ownerHotels = await PetHotel.find(hotelQuery).select('_id name');
+    const ownerHotels = await PetHotel.find(hotelQuery).select('_id name rooms');
     if (!ownerHotels.length) {
       return res.status(200).json({
         success: true,
@@ -641,6 +683,12 @@ exports.getAllBookingsForOwner = async (req, res, next) => {
         message: 'Bạn chưa có khách sạn nào.',
       });
     }
+
+    // Map hotelId -> rooms để tra cứu giá phòng
+    const hotelRoomMap = {};
+    ownerHotels.forEach((h) => {
+      hotelRoomMap[String(h._id)] = h.rooms || [];
+    });
 
     const hotelIds = ownerHotels.map((h) => h._id);
     const bookingQuery = { hotel: { $in: hotelIds } };
@@ -654,19 +702,43 @@ exports.getAllBookingsForOwner = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
+    // Tính totalPrice = số đêm × giá/đêm
+    const data = bookings.map((b) => {
+      const bObj = b.toObject ? b.toObject() : b;
+
+      // Tính số đêm
+      const nights = bObj.checkIn && bObj.checkOut
+        ? Math.ceil((new Date(bObj.checkOut) - new Date(bObj.checkIn)) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      // Lấy giá từ pricing nếu có, hoặc tính từ hotel rooms
+      const nightlyRate = bObj.pricing?.nightlyRate || 0;
+      const totalPrice = nightlyRate > 0
+        ? nightlyRate * nights
+        : (bObj.pricing?.total || 0);
+
+      return {
+        ...bObj,
+        numberOfNights: nights,
+        nightlyRate,
+        totalPrice,
+      };
+    });
+
     res.status(200).json({
       success: true,
-      count: bookings.length,
+      count: data.length,
       total,
       page: Number(page),
       totalPages: Math.ceil(total / limit),
-      hotels: ownerHotels,
-      data: bookings,
+      hotels: ownerHotels.map((h) => ({ hotelId: h._id, name: h.name })),
+      data,
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 
 // ==================== ROOM OCCUPANCY DASHBOARD ====================
