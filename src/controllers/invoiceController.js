@@ -419,17 +419,39 @@ exports.getInvoiceStatus = async (req, res, next) => {
 };
 
 // PATCH /api/v1/invoices/:id/status
-// @desc    Cập nhật trạng thái hóa đơn (admin cập nhật tất cả, user chỉ hủy hóa đơn của mình)
+// @desc    Cập nhật trạng thái hóa đơn và/hoặc trạng thái đơn hàng
 exports.updateInvoiceStatus = async (req, res, next) => {
   try {
-    const { status } = req.body;
-    const allowedStatuses = ['pending', 'paid', 'cancelled', 'awaiting_confirmation'];
+    const { status, orderStatus } = req.body;
 
-    if (!status || !allowedStatuses.includes(status)) {
+    const allowedStatuses = ['pending', 'paid', 'cancelled', 'awaiting_confirmation'];
+    const allowedOrderStatuses = [
+      'awaiting_confirmation',
+      'confirmed',
+      'preparing',
+      'shipping',
+      'delivered',
+      'completed',
+      'cancelled',
+      'return_requested',
+      'returned',
+    ];
+
+    // Validate input
+    if (status && !allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Trạng thái không hợp lệ. Cho phép: ${allowedStatuses.join(', ')}`,
+        message: `status không hợp lệ. Cho phép: ${allowedStatuses.join(', ')}`,
       });
+    }
+    if (orderStatus && !allowedOrderStatuses.includes(orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: `orderStatus không hợp lệ. Cho phép: ${allowedOrderStatuses.join(', ')}`,
+      });
+    }
+    if (!status && !orderStatus) {
+      return res.status(400).json({ success: false, message: 'Vui lòng cung cấp status hoặc orderStatus.' });
     }
 
     const invoice = await Invoice.findById(req.params.id);
@@ -440,28 +462,36 @@ exports.updateInvoiceStatus = async (req, res, next) => {
     const invoiceUserId = invoice.user ? String(invoice.user) : null;
     const isOwner = invoiceUserId === String(req.user.id);
     const isAdmin = req.user.role === 'admin';
+    const isHotelOwner = req.user.role === 'hotel_owner';
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin && !isHotelOwner) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền cập nhật hóa đơn này.' });
     }
 
-    // User thường chỉ được phép hủy hóa đơn của mình
-    if (!isAdmin && status !== 'cancelled') {
-      return res.status(403).json({ success: false, message: 'Bạn chỉ có thể hủy hóa đơn.' });
+    // User thường chỉ được hủy hóa đơn của mình
+    if (!isAdmin && !isHotelOwner) {
+      if (status && status !== 'cancelled') {
+        return res.status(403).json({ success: false, message: 'Bạn chỉ có thể hủy hóa đơn.' });
+      }
+      if (orderStatus) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền thay đổi trạng thái đơn hàng.' });
+      }
     }
 
-    invoice.status = status;
+    if (status) invoice.status = status;
+    if (orderStatus) invoice.orderStatus = orderStatus;
     await invoice.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Cập nhật trạng thái hóa đơn thành công.',
+      message: 'Cập nhật thành công.',
       data: invoice,
     });
   } catch (err) {
     next(err);
   }
 };
+
 
 // @desc    Delete invoice by ID
 // @route   DELETE /api/v1/invoices/:id

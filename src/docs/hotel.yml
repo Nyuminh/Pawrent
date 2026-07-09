@@ -165,48 +165,10 @@ paths:
                               currency:
                                 type: string
                                 example: "VND"
-                        rooms:
-                          type: array
-                          description: Danh sách loại phòng
-                          items:
-                            type: object
-                            properties:
-                              roomId:
-                                type: string
-                                description: ID loại phòng
-                                example: "507f1f77bcf86cd799439014"
-                              type:
-                                type: string
-                                enum: [standard, deluxe, vip, suite]
-                                example: "vip"
-                              name:
-                                type: string
-                                example: "Phòng VIP"
-                              description:
-                                type: string
-                                example: "Phòng cao cấp"
-                              pricePerNight:
-                                type: number
-                                description: Giá mỗi đêm (VND)
-                                example: 500000
-                              capacity:
-                                type: integer
-                                description: Sức chứa (số thú cưng)
-                                example: 2
-                              totalRooms:
-                                type: integer
-                                description: Tổng số phòng loại này
-                                example: 10
-                              availableRooms:
-                                type: integer
-                                description: Số phòng còn trống
-                                example: 8
-                              amenities:
-                                type: array
-                                description: Tiện nghi phòng
-                                items:
-                                  type: string
-                                example: [điều hòa, giường lớn, TV]
+                        price:
+                          type: number
+                          description: Giá mỗi đêm (VND)
+                          example: 350000
                         images:
                           type: array
                           description: Danh sách hình ảnh khách sạn
@@ -473,10 +435,10 @@ paths:
                           type: string
                         email:
                           type: string
-                        rooms:
-                          type: array
-                          items:
-                            type: object
+                        price:
+                          type: number
+                          description: Giá mỗi đêm (VND)
+                          example: 350000
                         rating:
                           type: object
                           properties:
@@ -766,19 +728,10 @@ paths:
                     Danh sách dịch vụ (JSON string).
                     Ví dụ: [{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]
                   example: '[{"name":"Phòng VIP","description":"Phòng sang trọng với điều hòa","price":500000,"currency":"VND"},{"name":"Tắm gội","description":"Tắm gội chuyên nghiệp","price":150000,"currency":"VND"}]'
-                rooms:
-                  type: string
-                  description: |
-                    Danh sách loại phòng (JSON string). Mỗi phòng gồm:
-                    - `type` (string): Loại phòng — `standard` | `deluxe` | `vip` | `suite`
-                    - `name` (string): Tên phòng
-                    - `description` (string): Mô tả phòng
-                    - `pricePerNight` (number): **Giá mỗi đêm (VND)** ― bắt buộc
-                    - `capacity` (number): Số thú cưng tối đa
-                    - `totalRooms` (number): Tổng số phòng
-                    - `availableRooms` (number): Số phòng còn trống
-                    - `amenities` (array of string): Tiện ích
-                  example: '[{"type":"standard","name":"Phòng Standard","description":"Phòng tiêu chuẩn","pricePerNight":200000,"capacity":2,"totalRooms":10,"availableRooms":10,"amenities":["Wi-Fi","Điều hòa"]},{"type":"vip","name":"Phòng VIP","description":"Phòng cao cấp","pricePerNight":500000,"capacity":3,"totalRooms":5,"availableRooms":5,"amenities":["Wi-Fi","Điều hòa","TV"]}]'
+                price:
+                  type: number
+                  description: Giá mỗi đêm (VND)
+                  example: 350000
                 operatingHours:
                   type: string
                   description: |
@@ -885,14 +838,6 @@ paths:
         403:
           description: Không có quyền xóa khách sạn này
         404:
-          description: Không tìm thấy khách sạn
-
-  /hotels/{hotelId}/rooms/occupancy:
-    get:
-      summary: Dashboard xem tình trạng phòng - Chủ khách sạn
-      description: Xem chi tiết tình trạng phòng, ai đang ở phòng nào, giờ check-in/out tiếp theo. Chỉ chủ khách sạn có quyền truy cập.
-      tags: [Hotels]
-      security:
         - bearerAuth: []
       parameters:
         - in: path

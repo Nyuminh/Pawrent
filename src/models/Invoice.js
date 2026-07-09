@@ -21,6 +21,22 @@ const InvoiceSchema = new mongoose.Schema(
     total: { type: Number, required: true },
     currency: { type: String, default: 'VND' },
     status: { type: String, enum: ['pending', 'paid', 'cancelled', 'awaiting_confirmation'], default: 'pending' },
+    // Trạng thái đơn hàng (dành cho đơn ship sản phẩm)
+    orderStatus: {
+      type: String,
+      enum: [
+        'awaiting_confirmation', // Chờ xác nhận
+        'confirmed',             // Đã xác nhận
+        'preparing',             // Đang chuẩn bị hàng
+        'shipping',              // Đang vận chuyển
+        'delivered',             // Đã giao hàng
+        'completed',             // Hoàn thành
+        'cancelled',             // Đã hủy
+        'return_requested',      // Yêu cầu hoàn trả
+        'returned',              // Đã hoàn trả
+      ],
+      default: null,
+    },
     cart: { type: mongoose.Schema.Types.ObjectId },
     booking: { type: mongoose.Schema.Types.ObjectId, ref: 'HotelBooking' },
     appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },

@@ -867,6 +867,7 @@ exports.createCodPayment = async (req, res, next) => {
     // Cập nhật invoice: gắn payment và chuyển status sang awaiting_confirmation (chờ xác nhận COD)
     invoice.payment = payment._id;
     invoice.status = 'awaiting_confirmation'; // chờ xác nhận - sẽ thu tiền khi giao hàng
+    invoice.orderStatus = 'awaiting_confirmation'; // trạng thái đơn hàng: chờ xác nhận
     await invoice.save();
 
     // Xóa sản phẩm đã mua khỏi cart ngay lập tức
@@ -882,6 +883,7 @@ exports.createCodPayment = async (req, res, next) => {
         currency: payment.currency,
         provider: 'cod',
         status: payment.status,
+        orderStatus: invoice.orderStatus,
       },
     });
   } catch (err) {
