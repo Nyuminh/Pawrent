@@ -492,6 +492,62 @@ exports.updateInvoiceStatus = async (req, res, next) => {
   }
 };
 
+// PATCH /api/v1/invoices/:id/order-status
+// @desc    Cập nhật trạng thái đơn hàng (orderStatus) — chỉ admin và hotel_owner
+exports.updateOrderStatus = async (req, res, next) => {
+  try {
+    const { orderStatus } = req.body;
+
+    const allowedOrderStatuses = [
+      'awaiting_confirmation',
+      'confirmed',
+      'preparing',
+      'shipping',
+      'delivered',
+      'completed',
+      'cancelled',
+      'return_requested',
+      'returned',
+    ];
+
+    if (!orderStatus || !allowedOrderStatuses.includes(orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: `orderStatus không hợp lệ. Cho phép: ${allowedOrderStatuses.join(', ')}`,
+      });
+    }
+
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn.' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isHotelOwner = req.user.role === 'hotel_owner';
+
+    if (!isAdmin && !isHotelOwner) {
+      return res.status(403).json({ success: false, message: 'Chỉ admin hoặc hotel_owner mới được cập nhật trạng thái đơn hàng.' });
+    }
+
+    invoice.orderStatus = orderStatus;
+    await invoice.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cập nhật trạng thái đơn hàng thành công.',
+      data: {
+        _id: invoice._id,
+        invoiceNumber: invoice.invoiceNumber,
+        orderStatus: invoice.orderStatus,
+        status: invoice.status,
+        updatedAt: invoice.updatedAt,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 // @desc    Delete invoice by ID
 // @route   DELETE /api/v1/invoices/:id
