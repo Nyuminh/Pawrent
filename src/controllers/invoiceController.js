@@ -12,7 +12,7 @@ function makeInvoiceNumber() {
 // POST /api/v1/invoices
 exports.createInvoice = async (req, res, next) => {
   try {
-    const { items, bookingId, appointmentId, subscriptionPlan, currency = 'VND', dueDate } = req.body;
+    const { items, bookingId, appointmentId, subscriptionPlan, currency = 'VND', dueDate, paymentMethod } = req.body;
 
     const invoiceItems = [];
     let subtotal = 0;
@@ -65,6 +65,7 @@ exports.createInvoice = async (req, res, next) => {
       discount,
       total,
       currency,
+      paymentMethod: paymentMethod || null,
       booking: bookingId || undefined,
       appointment: appointmentId || undefined,
       subscriptionPlan: subscriptionPlan || undefined,

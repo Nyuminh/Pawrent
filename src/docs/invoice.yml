@@ -40,6 +40,14 @@ paths:
                 currency:
                   type: string
                   description: Mã tiền tệ (mặc định VND)
+                paymentMethod:
+                  type: string
+                  enum: [cod, bank]
+                  description: |
+                    Phương thức thanh toán:
+                    - `cod` — Thanh toán khi nhận hàng
+                    - `bank` — Chuyển khoản ngân hàng
+                  example: cod
       responses:
         201:
           description: Hóa đơn được tạo
@@ -644,6 +652,15 @@ components:
             - `cancelled` — Đã hủy
             - `return_requested` — Yêu cầu hoàn trả
             - `returned` — Đã hoàn trả
+        paymentMethod:
+          type: string
+          nullable: true
+          enum: [cod, bank]
+          description: |
+            Phương thức thanh toán:
+            - `cod` — Thanh toán khi nhận hàng
+            - `bank` — Chuyển khoản ngân hàng
+          example: cod
         address:
           type: string
           description: Địa chỉ giao hàng/thanh toán

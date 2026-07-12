@@ -21,6 +21,11 @@ const InvoiceSchema = new mongoose.Schema(
     total: { type: Number, required: true },
     currency: { type: String, default: 'VND' },
     status: { type: String, enum: ['pending', 'paid', 'cancelled', 'awaiting_confirmation'], default: 'pending' },
+    paymentMethod: {
+      type: String,
+      enum: ['cod', 'bank'],
+      default: null,
+    },
     // Trạng thái đơn hàng (dành cho đơn ship sản phẩm)
     orderStatus: {
       type: String,
