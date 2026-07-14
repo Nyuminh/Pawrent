@@ -6,7 +6,7 @@ const Product = require('../models/Product');
 const plans = require('../config/plans');
 
 function makeInvoiceNumber() {
-  return `INV-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+  return `INV-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 // POST /api/v1/invoices
@@ -197,7 +197,7 @@ exports.createInvoiceForService = async (req, res, next) => {
 // POST /api/v1/invoices/products
 exports.createInvoiceForProducts = async (req, res, next) => {
   try {
-    const { products, currency = 'VND', dueDate, address } = req.body;
+    const { products, currency = 'VND', dueDate, address, paymentMethod } = req.body;
 
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ success: false, message: 'products is required and must be a non-empty array' });
@@ -261,6 +261,7 @@ exports.createInvoiceForProducts = async (req, res, next) => {
       total,
       currency,
       address: address || undefined,
+      paymentMethod: paymentMethod || undefined,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
 
@@ -273,7 +274,7 @@ exports.createInvoiceForProducts = async (req, res, next) => {
 // POST /api/v1/invoices/cart
 exports.createInvoiceFromCart = async (req, res, next) => {
   try {
-    
+
     // load user's cart
     await req.user.populate({ path: 'cart.product', select: 'name price' });
     const cart = req.user.cart || [];
@@ -330,11 +331,11 @@ exports.getInvoices = async (req, res, next) => {
         }
       })
       .sort({ createdAt: -1 });
-    
+
     // Enhance invoice data with service name for appointment items
     const enhancedInvoices = invoices.map((invoice) => {
       const invoiceObj = invoice.toObject ? invoice.toObject() : invoice;
-      
+
       if (invoiceObj.appointment && invoiceObj.appointment.service) {
         const serviceName = invoiceObj.appointment.service.name;
         // Update appointment invoice item name with service name
@@ -348,10 +349,10 @@ exports.getInvoices = async (req, res, next) => {
           return item;
         });
       }
-      
+
       return invoiceObj;
     });
-    
+
     res.status(200).json({ success: true, count: enhancedInvoices.length, data: enhancedInvoices });
   } catch (err) {
     next(err);
@@ -372,7 +373,7 @@ exports.getInvoiceById = async (req, res, next) => {
         }
       })
       .populate('payment');
-    
+
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
     // So sánh user id đúng cách (invoice.user có thể là ObjectId hoặc populated object)

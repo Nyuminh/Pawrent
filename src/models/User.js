@@ -35,9 +35,23 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Vui lòng nhập mật khẩu'],
+      required: [
+        function () {
+          return !this.googleId && !this.isGoogleLogin;
+        },
+        'Vui lòng nhập mật khẩu'
+      ],
       minlength: [6, 'Mật khẩu tối thiểu 6 ký tự'],
       select: false, // Don't return password by default
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    isGoogleLogin: {
+      type: Boolean,
+      default: false,
     },
     avatar: {
       type: String,

@@ -277,6 +277,10 @@ paths:
                 dueDate:
                   type: string
                   format: date
+                paymentMethod:
+                  type: string
+                  enum: [cod, bank]
+                  description: Phương thức thanh toán
       responses:
         201:
           description: Hóa đơn products được tạo

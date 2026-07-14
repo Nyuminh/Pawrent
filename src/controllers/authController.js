@@ -107,8 +107,8 @@ exports.register = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: assignedRole === 'vet' 
-        ? 'Đăng ký bác sĩ thú y thành công!' 
+      message: assignedRole === 'vet'
+        ? 'Đăng ký bác sĩ thú y thành công!'
         : 'Đăng ký thành công!',
       data: {
         user: userData,
@@ -472,7 +472,7 @@ exports.getAllVets = async (req, res, next) => {
     const { page = 1, limit = 20, search } = req.query;
 
     const query = { role: 'vet' };
-    
+
     if (search) {
       query.$or = [
         { fullName: new RegExp(search, 'i') },
@@ -542,5 +542,65 @@ exports.upgradeToHotelOwner = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// @desc    Login with Google
+// @route   POST /api/v1/auth/google
+// @access  Public
+exports.googleLogin = async (req, res, next) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: 'Google ID Token is required.' });
+    }
+
+    // Verify token with google-auth-library
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name: fullName, picture: avatar } = payload;
+
+    // Check if user exists by googleId
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Check if user exists by email (to link accounts if they already registered with same email)
+      user = await User.findOne({ email });
+      if (user) {
+        user.googleId = googleId;
+        user.isGoogleLogin = true;
+        if (!user.avatar || user.avatar === 'default-avatar.png') {
+          user.avatar = avatar;
+        }
+        await user.save({ validateBeforeSave: false }); // skip validators if any
+      } else {
+        // Create new user
+        user = await User.create({
+          googleId,
+          email,
+          fullName,
+          avatar,
+          isGoogleLogin: true,
+          role: 'user',
+          subscription: { plan: 'free', name: 'Miễn phí', durationUnit: 'year', isActive: true, maxPets: 1 }
+        });
+      }
+    } else if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin.',
+      });
+    }
+
+    await sendTokenResponse(user, 200, res, 'Đăng nhập Google thành công!');
+  } catch (error) {
+    console.error("Google Login Error:", error);
+    res.status(401).json({ success: false, message: 'Xác thực Google thất bại hoặc Token không hợp lệ.' });
   }
 };
