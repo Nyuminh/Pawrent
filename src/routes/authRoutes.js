@@ -14,6 +14,7 @@ const {
   changePassword,
   getAllVets,
   upgradeToHotelOwner,
+  googleLogin,
 } = require('../controllers/authController');
 
 const router = express.Router();
@@ -239,6 +240,35 @@ router.post('/register-hotel-owner', hotelOwnerValidation, validate, registerHot
  *         description: Login successful
  */
 router.post('/login', loginValidation, validate, login);
+
+/**
+ * @swagger
+ * /auth/google:
+ *   post:
+ *     summary: Login or Register with Google
+ *     description: Send the Google ID Token obtained from the frontend. The backend will verify it and log the user in or create a new account automatically.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [idToken]
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: The ID token received from Google Auth on the client side.
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       400:
+ *         description: idToken is missing
+ *       401:
+ *         description: Invalid Google Token
+ */
+router.post('/google', googleLogin);
+
 router.post('/refresh-token', refreshToken);
 router.get('/vets', getAllVets);
 
