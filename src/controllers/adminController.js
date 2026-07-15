@@ -226,16 +226,20 @@ exports.getDashboard = async (req, res, next) => {
     ]);
 
     // Services (appointment, service)
+    const Service = require('../models/Service');
     const paidServiceInvoices = await Invoice.find({
       status: 'paid',
       'items.type': { $in: ['service', 'appointment'] }
     });
 
     const appointmentIds = [];
+    const directServiceIds = [];
     paidServiceInvoices.forEach(inv => {
       inv.items.forEach(item => {
         if (item.type === 'appointment' && item.refId) {
           appointmentIds.push(item.refId);
+        } else if (item.type === 'service' && item.refId) {
+          directServiceIds.push(item.refId);
         }
       });
     });
@@ -253,23 +257,28 @@ exports.getDashboard = async (req, res, next) => {
       }
     });
 
+    const existingServices = await Service.find({ _id: { $in: directServiceIds } });
+    const existingServiceIds = new Set(existingServices.map(s => s._id.toString()));
+
     const serviceStats = {};
     paidServiceInvoices.forEach(inv => {
       inv.items.forEach(item => {
         if (item.type === 'service' || item.type === 'appointment') {
           let serviceId = null;
-          let serviceName = item.name;
+          let serviceName = null;
 
           if (item.type === 'appointment' && item.refId) {
             const mapped = appointmentToServiceMap[item.refId.toString()];
             if (mapped) {
               serviceId = mapped.serviceId;
               serviceName = mapped.name;
-            } else {
-              serviceId = item.refId.toString();
             }
-          } else if (item.refId) {
-            serviceId = item.refId.toString();
+          } else if (item.type === 'service' && item.refId) {
+            const refIdStr = item.refId.toString();
+            if (existingServiceIds.has(refIdStr)) {
+              serviceId = refIdStr;
+              serviceName = item.name;
+            }
           }
 
           if (serviceId) {
