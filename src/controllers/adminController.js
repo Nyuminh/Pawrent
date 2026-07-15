@@ -14,7 +14,7 @@ exports.getDashboard = async (req, res, next) => {
 
     // 1. User stats: total, breakdown by role
     const [totalUsers, usersByRole] = await Promise.all([
-      User.countDocuments(),
+      User.countDocuments({ role: { $nin: ['vet', 'admin'] } }),
       User.aggregate([
         { $group: { _id: '$role', count: { $sum: 1 } } }
       ])
@@ -39,7 +39,7 @@ exports.getDashboard = async (req, res, next) => {
     twelveMonthsAgo.setHours(0, 0, 0, 0);
 
     const userMonthlyTrendsRaw = await User.aggregate([
-      { $match: { createdAt: { $gte: twelveMonthsAgo } } },
+      { $match: { role: { $nin: ['vet', 'admin'] }, createdAt: { $gte: twelveMonthsAgo } } },
       {
         $group: {
           _id: {
@@ -226,21 +226,71 @@ exports.getDashboard = async (req, res, next) => {
     ]);
 
     // Services (appointment, service)
-    const topServices = await Invoice.aggregate([
-      { $match: { status: 'paid' } },
-      { $unwind: '$items' },
-      { $match: { 'items.type': { $in: ['service', 'appointment'] } } },
-      {
-        $group: {
-          _id: '$items.refId',
-          name: { $first: '$items.name' },
-          quantitySold: { $sum: '$items.quantity' },
-          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+    const paidServiceInvoices = await Invoice.find({
+      status: 'paid',
+      'items.type': { $in: ['service', 'appointment'] }
+    });
+
+    const appointmentIds = [];
+    paidServiceInvoices.forEach(inv => {
+      inv.items.forEach(item => {
+        if (item.type === 'appointment' && item.refId) {
+          appointmentIds.push(item.refId);
         }
-      },
-      { $sort: { quantitySold: -1 } },
-      { $limit: 5 }
-    ]);
+      });
+    });
+
+    const appointments = await Appointment.find({ _id: { $in: appointmentIds } })
+      .populate('service', 'name');
+
+    const appointmentToServiceMap = {};
+    appointments.forEach(app => {
+      if (app.service) {
+        appointmentToServiceMap[app._id.toString()] = {
+          serviceId: app.service._id.toString(),
+          name: app.service.name
+        };
+      }
+    });
+
+    const serviceStats = {};
+    paidServiceInvoices.forEach(inv => {
+      inv.items.forEach(item => {
+        if (item.type === 'service' || item.type === 'appointment') {
+          let serviceId = null;
+          let serviceName = item.name;
+
+          if (item.type === 'appointment' && item.refId) {
+            const mapped = appointmentToServiceMap[item.refId.toString()];
+            if (mapped) {
+              serviceId = mapped.serviceId;
+              serviceName = mapped.name;
+            } else {
+              serviceId = item.refId.toString();
+            }
+          } else if (item.refId) {
+            serviceId = item.refId.toString();
+          }
+
+          if (serviceId) {
+            if (!serviceStats[serviceId]) {
+              serviceStats[serviceId] = {
+                _id: serviceId,
+                name: serviceName || 'Dịch vụ không tên',
+                quantitySold: 0,
+                revenue: 0
+              };
+            }
+            serviceStats[serviceId].quantitySold += item.quantity || 1;
+            serviceStats[serviceId].revenue += (item.price || 0) * (item.quantity || 1);
+          }
+        }
+      });
+    });
+
+    const topServices = Object.values(serviceStats)
+      .sort((a, b) => b.quantitySold - a.quantitySold)
+      .slice(0, 5);
 
     // Hotels (bookings)
     const topHotelsRaw = await HotelBooking.aggregate([
