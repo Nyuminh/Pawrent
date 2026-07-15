@@ -3,18 +3,31 @@ const User = require('../models/User');
 
 // Helper: Send token response
 const sendTokenResponse = async (user, statusCode, res, message) => {
-  const accessToken = user.generateAccessToken();
-  const refreshToken = user.generateRefreshToken();
+  // Generate tokens manually to support lean objects
+  const accessToken = jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE }
+  );
+  const refreshToken = jwt.sign(
+    { id: user._id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: process.env.JWT_REFRESH_EXPIRE }
+  );
 
-  // Save refresh token in DB
-  user.refreshToken = refreshToken;
-  user.lastLogin = new Date();
-  await user.save({ validateBeforeSave: false });
+  const lastLogin = new Date();
+
+  // Save refresh token using updateOne (much faster than save())
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { refreshToken, lastLogin } }
+  );
 
   // Remove sensitive fields
-  const userData = user.toObject();
+  const userData = user.toObject ? user.toObject() : { ...user };
   delete userData.password;
   delete userData.refreshToken;
+  userData.lastLogin = lastLogin;
 
   res.status(statusCode).json({
     success: true,
@@ -272,7 +285,8 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    // Optimize performance: use .lean() to bypass heavy mongoose document instantiation
+    const user = await User.findOne({ email }).select('+password').lean();
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -287,12 +301,20 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    const isMatch = await user.matchPassword(password);
+    const bcrypt = require('bcryptjs');
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
         message: 'Email hoặc mật khẩu không chính xác.',
       });
+    }
+
+    // Re-hash old passwords to lower cost (10) for faster future logins
+    if (user.password && (user.password.startsWith('$2a$12$') || user.password.startsWith('$2b$12$'))) {
+      const salt = await bcrypt.genSalt(10);
+      const newHash = await bcrypt.hash(password, salt);
+      await User.updateOne({ _id: user._id }, { $set: { password: newHash } });
     }
 
     await sendTokenResponse(user, 200, res, 'Đăng nhập thành công!');
@@ -316,9 +338,10 @@ exports.refreshToken = async (req, res, next) => {
     }
 
     // Verify refresh token
+    const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
-    const user = await User.findById(decoded.id).select('+refreshToken');
+    const user = await User.findById(decoded.id).select('+refreshToken role').lean();
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(401).json({
         success: false,
@@ -326,12 +349,22 @@ exports.refreshToken = async (req, res, next) => {
       });
     }
 
-    // Generate new tokens
-    const newAccessToken = user.generateAccessToken();
-    const newRefreshToken = user.generateRefreshToken();
+    // Generate new tokens manually
+    const newAccessToken = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE }
+    );
+    const newRefreshToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRE }
+    );
 
-    user.refreshToken = newRefreshToken;
-    await user.save({ validateBeforeSave: false });
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { refreshToken: newRefreshToken } }
+    );
 
     res.status(200).json({
       success: true,
