@@ -28,9 +28,31 @@ paths:
                         properties:
                           total:
                             type: integer
-                          premium:
-                            type: integer
+                          breakdown:
+                            type: object
+                            properties:
+                              user:
+                                type: integer
+                              vet:
+                                type: integer
+                              hotel_owner:
+                                type: integer
+                              admin:
+                                type: integer
+                          monthlyTrends:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                month:
+                                  type: string
+                                count:
+                                  type: integer
                       pets:
+                        type: integer
+                      vets:
+                        type: integer
+                      hotels:
                         type: integer
                       appointments:
                         type: integer
@@ -38,6 +60,72 @@ paths:
                         type: integer
                       revenue:
                         type: object
+                        properties:
+                          totalRevenue:
+                            type: integer
+                          productRevenue:
+                            type: integer
+                          serviceRevenue:
+                            type: integer
+                          monthlyBreakdown:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                month:
+                                  type: string
+                                totalRevenue:
+                                  type: integer
+                                productRevenue:
+                                  type: integer
+                                serviceRevenue:
+                                  type: integer
+                                productQuantity:
+                                  type: integer
+                                serviceQuantity:
+                                  type: integer
+                      featured:
+                        type: object
+                        properties:
+                          products:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                name:
+                                  type: string
+                                quantitySold:
+                                  type: integer
+                                revenue:
+                                  type: integer
+                          services:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                name:
+                                  type: string
+                                quantitySold:
+                                  type: integer
+                                revenue:
+                                  type: integer
+                          hotels:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                name:
+                                  type: string
+                                quantitySold:
+                                  type: integer
+                                revenue:
+                                  type: integer
         401:
           description: Chưa xác thực
         403:

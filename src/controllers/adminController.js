@@ -10,68 +10,299 @@ const HotelBooking = require('../models/HotelBooking');
 // @access  Private (admin)
 exports.getDashboard = async (req, res, next) => {
   try {
-    const [
-      totalUsers,
-      totalPets,
-      totalVets,
-      totalHotels,
-      totalAppointments,
-      totalBookings,
-      premiumUsers,
-      recentUsers,
-    ] = await Promise.all([
+    const Invoice = require('../models/Invoice');
+
+    // 1. User stats: total, breakdown by role
+    const [totalUsers, usersByRole] = await Promise.all([
       User.countDocuments(),
+      User.aggregate([
+        { $group: { _id: '$role', count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const userBreakdown = {
+      user: 0,
+      vet: 0,
+      hotel_owner: 0,
+      admin: 0
+    };
+    usersByRole.forEach(r => {
+      if (r._id) {
+        userBreakdown[r._id] = r.count;
+      }
+    });
+
+    // Monthly user trends (last 12 months)
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+    twelveMonthsAgo.setDate(1);
+    twelveMonthsAgo.setHours(0, 0, 0, 0);
+
+    const userMonthlyTrendsRaw = await User.aggregate([
+      { $match: { createdAt: { $gte: twelveMonthsAgo } } },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Other simple counts
+    const [totalPets, totalVets, totalHotels, totalAppointments, totalBookings] = await Promise.all([
       Pet.countDocuments({ isActive: true }),
       Vet.countDocuments({ isActive: true }),
       PetHotel.countDocuments({ isActive: true }),
       Appointment.countDocuments(),
-      HotelBooking.countDocuments(),
-      User.countDocuments({
-        'subscription.plan': { $ne: 'free' },
-        'subscription.isActive': true,
-      }),
-      User.find().sort('-createdAt').limit(10).select('fullName email role createdAt'),
+      HotelBooking.countDocuments()
     ]);
 
-    // Revenue from appointments
-    const appointmentRevenue = await Appointment.aggregate([
-      { $match: { 'fee.isPaid': true } },
+    // 2. Revenue stats (Invoices & Hotel Bookings)
+    // Paid invoices by type
+    const invoiceRevenueAllTime = await Invoice.aggregate([
+      { $match: { status: 'paid' } },
+      { $unwind: '$items' },
       {
         $group: {
-          _id: null,
-          totalRevenue: { $sum: '$fee.amount' },
-          totalCommission: { $sum: '$commission.amount' },
-        },
-      },
+          _id: '$items.type',
+          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+          quantity: { $sum: '$items.quantity' }
+        }
+      }
     ]);
 
-    // Revenue from hotel bookings
-    const hotelRevenue = await HotelBooking.aggregate([
+    // Paid Hotel Bookings all time
+    const hotelRevenueAllTime = await HotelBooking.aggregate([
       { $match: { 'payment.status': 'paid' } },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$pricing.total' },
-          totalCommission: { $sum: '$pricing.commission.amount' },
-        },
-      },
+          revenue: { $sum: '$pricing.total' },
+          count: { $sum: 1 }
+        }
+      }
     ]);
+
+    let productRevenue = 0;
+    let serviceRevenue = 0;
+
+    invoiceRevenueAllTime.forEach(item => {
+      const rev = item.revenue || 0;
+      if (item._id === 'product') {
+        productRevenue += rev;
+      } else {
+        serviceRevenue += rev;
+      }
+    });
+
+    if (hotelRevenueAllTime.length > 0) {
+      serviceRevenue += hotelRevenueAllTime[0].revenue || 0;
+    }
+
+    const totalRevenue = productRevenue + serviceRevenue;
+
+    // Monthly breakdown (last 12 months)
+    const invoiceRevenueMonthly = await Invoice.aggregate([
+      { $match: { status: 'paid', createdAt: { $gte: twelveMonthsAgo } } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            type: '$items.type'
+          },
+          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+          quantity: { $sum: '$items.quantity' }
+        }
+      }
+    ]);
+
+    const hotelRevenueMonthly = await HotelBooking.aggregate([
+      { $match: { 'payment.status': 'paid', createdAt: { $gte: twelveMonthsAgo } } },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          revenue: { $sum: '$pricing.total' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Merge monthly statistics
+    const monthlyStats = {};
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthlyStats[key] = {
+        month: key,
+        totalRevenue: 0,
+        productRevenue: 0,
+        serviceRevenue: 0,
+        productQuantity: 0,
+        serviceQuantity: 0
+      };
+    }
+
+    // Populate user registration trends into the monthlyStats
+    const userMonthlyTrends = [];
+    const userMonthlyMap = {};
+    userMonthlyTrendsRaw.forEach(item => {
+      const year = item._id.year;
+      const month = String(item._id.month).padStart(2, '0');
+      const key = `${year}-${month}`;
+      userMonthlyMap[key] = item.count;
+    });
+
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      userMonthlyTrends.push({
+        month: key,
+        count: userMonthlyMap[key] || 0
+      });
+    }
+
+    invoiceRevenueMonthly.forEach(item => {
+      const year = item._id.year;
+      const month = String(item._id.month).padStart(2, '0');
+      const key = `${year}-${month}`;
+
+      if (monthlyStats[key]) {
+        const rev = item.revenue || 0;
+        const qty = item.quantity || 0;
+
+        if (item._id === 'product') {
+          monthlyStats[key].productRevenue += rev;
+          monthlyStats[key].productQuantity += qty;
+        } else {
+          monthlyStats[key].serviceRevenue += rev;
+          monthlyStats[key].serviceQuantity += qty;
+        }
+        monthlyStats[key].totalRevenue += rev;
+      }
+    });
+
+    hotelRevenueMonthly.forEach(item => {
+      const year = item._id.year;
+      const month = String(item._id.month).padStart(2, '0');
+      const key = `${year}-${month}`;
+
+      if (monthlyStats[key]) {
+        const rev = item.revenue || 0;
+        const count = item.count || 0;
+
+        monthlyStats[key].serviceRevenue += rev;
+        monthlyStats[key].serviceQuantity += count;
+        monthlyStats[key].totalRevenue += rev;
+      }
+    });
+
+    const monthlyRevenueData = Object.values(monthlyStats).sort((a, b) => a.month.localeCompare(b.month));
+
+    // 3. Featured Products, Services & Hotels (Top 5)
+    // Products
+    const topProducts = await Invoice.aggregate([
+      { $match: { status: 'paid' } },
+      { $unwind: '$items' },
+      { $match: { 'items.type': 'product' } },
+      {
+        $group: {
+          _id: '$items.refId',
+          name: { $first: '$items.name' },
+          quantitySold: { $sum: '$items.quantity' },
+          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+        }
+      },
+      { $sort: { quantitySold: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Services (appointment, service)
+    const topServices = await Invoice.aggregate([
+      { $match: { status: 'paid' } },
+      { $unwind: '$items' },
+      { $match: { 'items.type': { $in: ['service', 'appointment'] } } },
+      {
+        $group: {
+          _id: '$items.refId',
+          name: { $first: '$items.name' },
+          quantitySold: { $sum: '$items.quantity' },
+          revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+        }
+      },
+      { $sort: { quantitySold: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Hotels (bookings)
+    const topHotelsRaw = await HotelBooking.aggregate([
+      { $match: { 'payment.status': 'paid' } },
+      {
+        $group: {
+          _id: '$hotel',
+          quantitySold: { $sum: 1 },
+          revenue: { $sum: '$pricing.total' }
+        }
+      },
+      { $sort: { quantitySold: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Populate hotel names
+    let topHotels = [];
+    if (topHotelsRaw.length > 0) {
+      topHotels = await PetHotel.populate(topHotelsRaw, { path: '_id', select: 'name' });
+      topHotels = topHotels.map(h => ({
+        id: h._id?._id || h._id,
+        name: h._id?.name || `Khách sạn ${h._id}`,
+        quantitySold: h.quantitySold,
+        revenue: h.revenue
+      }));
+    }
 
     res.status(200).json({
       success: true,
       data: {
-        users: { total: totalUsers, premium: premiumUsers },
+        users: {
+          total: totalUsers,
+          breakdown: userBreakdown,
+          monthlyTrends: userMonthlyTrends
+        },
         pets: totalPets,
         vets: totalVets,
         hotels: totalHotels,
         appointments: totalAppointments,
         bookings: totalBookings,
         revenue: {
-          appointments: appointmentRevenue[0] || { totalRevenue: 0, totalCommission: 0 },
-          hotels: hotelRevenue[0] || { totalRevenue: 0, totalCommission: 0 },
+          totalRevenue,
+          productRevenue,
+          serviceRevenue,
+          monthlyBreakdown: monthlyRevenueData
         },
-        recentUsers,
-      },
+        featured: {
+          products: topProducts.map(p => ({
+            id: p._id,
+            name: p.name || 'Sản phẩm không tên',
+            quantitySold: p.quantitySold,
+            revenue: p.revenue
+          })),
+          services: topServices.map(s => ({
+            id: s._id,
+            name: s.name || 'Dịch vụ không tên',
+            quantitySold: s.quantitySold,
+            revenue: s.revenue
+          })),
+          hotels: topHotels
+        }
+      }
     });
   } catch (error) {
     next(error);
