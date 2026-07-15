@@ -118,7 +118,6 @@ exports.sendMessage = async (req, res, next) => {
     }
 
     const { message, petId } = req.body;
-    const { sessionId } = req.query; // Get sessionId from query params for session continuation
 
     if (!message) {
       return res.status(400).json({
@@ -132,24 +131,16 @@ exports.sendMessage = async (req, res, next) => {
       petInfo = await Pet.findOne({ _id: petId, owner: req.user.id, isActive: true });
     }
 
-    let chat;
-    const newSessionId = sessionId || generateSessionId();
-
-    if (sessionId) {
-      // Continue existing session
-      chat = await ChatHistory.findOne({
-        sessionId,
-        user: req.user.id,
-        isActive: true,
-      });
-    }
+    // Always find the user's single chat history thread (get the most recent one if they have multiple historical ones)
+    let chat = await ChatHistory.findOne({ user: req.user.id }).sort('-updatedAt');
+    const sessionId = chat ? chat.sessionId : 'global';
 
     if (!chat) {
       // New session
       chat = new ChatHistory({
         user: req.user.id,
         pet: petId,
-        sessionId: newSessionId,
+        sessionId: 'global',
         messages: [],
       });
 
@@ -161,6 +152,17 @@ exports.sendMessage = async (req, res, next) => {
         Tuổi: ${petInfo.age || 'không rõ'} tuổi, 
         Tình trạng: ${petInfo.healthStatus}, Dị ứng: ${petInfo.allergies?.join(', ') || 'Không'}` : ''}`,
       });
+    } else {
+      // Update pet context if provided
+      if (petId) {
+        chat.pet = petId;
+        if (chat.messages && chat.messages.length > 0 && chat.messages[0].role === 'system') {
+          chat.messages[0].content = `Bạn là trợ lý AI chăm sóc thú cưng PAWRENT. 
+          ${petInfo ? `Thông tin thú cưng: ${petInfo.name}, ${petInfo.species}, ${petInfo.breed || ''}, 
+          Tuổi: ${petInfo.age || 'không rõ'} tuổi, 
+          Tình trạng: ${petInfo.healthStatus}, Dị ứng: ${petInfo.allergies?.join(', ') || 'Không'}` : ''}`;
+        }
+      }
     }
 
     // Add user message
@@ -183,16 +185,18 @@ exports.sendMessage = async (req, res, next) => {
     if (aiResult.symptoms.length > 0) {
       chat.symptoms = aiResult.symptoms;
     }
+    chat.isActive = true;
 
     await chat.save();
 
     res.status(200).json({
       success: true,
       data: {
-        sessionId: newSessionId,
+        sessionId,
         message: aiResult.response,
         severity: aiResult.severity,
         recommendation: aiResult.recommendation,
+        chat,
       },
     });
   } catch (error) {
@@ -241,20 +245,26 @@ exports.getChatHistory = async (req, res, next) => {
   }
 };
 
-// @desc    Get single chat session
+// @desc    Get single chat session (always returns the user's active session)
 // @route   GET /api/v1/chat/:sessionId
 // @access  Private
 exports.getChatSession = async (req, res, next) => {
   try {
-    const chat = await ChatHistory.findOne({
-      sessionId: req.params.sessionId,
+    let chat = await ChatHistory.findOne({
       user: req.user.id,
-    }).populate('pet', 'name species breed avatar');
+    }).populate('pet', 'name species breed avatar').sort('-updatedAt');
 
     if (!chat) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy phiên chat.',
+      // If no session exists, create a default one for the user
+      chat = await ChatHistory.create({
+        user: req.user.id,
+        sessionId: 'global',
+        messages: [
+          {
+            role: 'system',
+            content: 'Bạn là trợ lý AI chăm sóc thú cưng PAWRENT.'
+          }
+        ]
       });
     }
 
@@ -267,27 +277,16 @@ exports.getChatSession = async (req, res, next) => {
   }
 };
 
-// @desc    End chat session
+// @desc    End chat session (removes chat history to clear/reset the thread)
 // @route   PUT /api/v1/chat/:sessionId/end
 // @access  Private
 exports.endChatSession = async (req, res, next) => {
   try {
-    const chat = await ChatHistory.findOneAndUpdate(
-      { sessionId: req.params.sessionId, user: req.user.id },
-      { isActive: false },
-      { new: true }
-    );
-
-    if (!chat) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy phiên chat.',
-      });
-    }
+    await ChatHistory.deleteMany({ user: req.user.id });
 
     res.status(200).json({
       success: true,
-      message: 'Đã kết thúc phiên chat.',
+      message: 'Đã làm mới và xóa toàn bộ lịch sử chat.',
     });
   } catch (error) {
     next(error);
