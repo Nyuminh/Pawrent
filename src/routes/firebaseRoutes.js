@@ -27,7 +27,7 @@ router.post('/login', firebaseLogin);
 router.post('/upload', protect, upload.single('file'), uploadToStorage);
 
 // 3. Cloud Messaging
-router.post('/send-notification', protect, authorize('admin'), sendNotification);
+router.post('/send-notification', protect, authorize('admin', 'vet'), sendNotification);
 
 // 4. Crashlytics (dummy endpoint)
 router.post('/log-crash', logCrash);
