@@ -197,7 +197,7 @@ exports.createInvoiceForService = async (req, res, next) => {
 // POST /api/v1/invoices/products
 exports.createInvoiceForProducts = async (req, res, next) => {
   try {
-    const { products, currency = 'VND', dueDate, address, paymentMethod } = req.body;
+    const { products, currency = 'VND', dueDate, address, phone, paymentMethod } = req.body;
 
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ success: false, message: 'products is required and must be a non-empty array' });
@@ -261,6 +261,7 @@ exports.createInvoiceForProducts = async (req, res, next) => {
       total,
       currency,
       address: address || undefined,
+      phone: phone || undefined,
       paymentMethod: paymentMethod || undefined,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
@@ -336,6 +337,11 @@ exports.getInvoices = async (req, res, next) => {
     const enhancedInvoices = invoices.map((invoice) => {
       const invoiceObj = invoice.toObject ? invoice.toObject() : invoice;
 
+      // Kéo phone từ User ra ngoài Root nếu Invoice chưa có SĐT riêng (Dễ xài cho Frontend)
+      if (!invoiceObj.phone && invoiceObj.user && invoiceObj.user.phone) {
+        invoiceObj.phone = invoiceObj.user.phone;
+      }
+
       if (invoiceObj.appointment && invoiceObj.appointment.service) {
         const serviceName = invoiceObj.appointment.service.name;
         // Update appointment invoice item name with service name
@@ -384,6 +390,12 @@ exports.getInvoiceById = async (req, res, next) => {
 
     // Enhance with service name for appointment items
     let invoiceObj = invoice.toObject ? invoice.toObject() : invoice;
+
+    // Kéo phone từ User ra ngoài Root
+    if (!invoiceObj.phone && invoiceObj.user && invoiceObj.user.phone) {
+      invoiceObj.phone = invoiceObj.user.phone;
+    }
+
     if (invoiceObj.appointment && invoiceObj.appointment.service) {
       const serviceName = invoiceObj.appointment.service.name;
       invoiceObj.items = invoiceObj.items.map((item) => {
