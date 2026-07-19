@@ -197,7 +197,7 @@ exports.createInvoiceForService = async (req, res, next) => {
 // POST /api/v1/invoices/products
 exports.createInvoiceForProducts = async (req, res, next) => {
   try {
-    const { products, currency = 'VND', dueDate, address, phone, paymentMethod } = req.body;
+    const { products, currency = 'VND', dueDate, address, recipientPhone, recipientName, paymentMethod } = req.body;
 
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ success: false, message: 'products is required and must be a non-empty array' });
@@ -261,7 +261,8 @@ exports.createInvoiceForProducts = async (req, res, next) => {
       total,
       currency,
       address: address || undefined,
-      phone: phone || undefined,
+      recipientPhone: recipientPhone || undefined,
+      recipientName: recipientName || undefined, // Lấy tên người nhận từ User input
       paymentMethod: paymentMethod || undefined,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
@@ -337,9 +338,12 @@ exports.getInvoices = async (req, res, next) => {
     const enhancedInvoices = invoices.map((invoice) => {
       const invoiceObj = invoice.toObject ? invoice.toObject() : invoice;
 
-      // Kéo phone từ User ra ngoài Root nếu Invoice chưa có SĐT riêng (Dễ xài cho Frontend)
-      if (!invoiceObj.phone && invoiceObj.user && invoiceObj.user.phone) {
-        invoiceObj.phone = invoiceObj.user.phone;
+      // Kéo phone và tên người nhận từ User ra ngoài Root nếu Invoice chưa nhập riêng
+      if (!invoiceObj.recipientPhone && invoiceObj.user && invoiceObj.user.phone) {
+        invoiceObj.recipientPhone = invoiceObj.user.phone;
+      }
+      if (!invoiceObj.recipientName && invoiceObj.user && invoiceObj.user.fullName) {
+        invoiceObj.recipientName = invoiceObj.user.fullName;
       }
 
       if (invoiceObj.appointment && invoiceObj.appointment.service) {
@@ -391,9 +395,12 @@ exports.getInvoiceById = async (req, res, next) => {
     // Enhance with service name for appointment items
     let invoiceObj = invoice.toObject ? invoice.toObject() : invoice;
 
-    // Kéo phone từ User ra ngoài Root
-    if (!invoiceObj.phone && invoiceObj.user && invoiceObj.user.phone) {
-      invoiceObj.phone = invoiceObj.user.phone;
+    // Kéo phone và tên người nhận từ User ra ngoài Root
+    if (!invoiceObj.recipientPhone && invoiceObj.user && invoiceObj.user.phone) {
+      invoiceObj.recipientPhone = invoiceObj.user.phone;
+    }
+    if (!invoiceObj.recipientName && invoiceObj.user && invoiceObj.user.fullName) {
+      invoiceObj.recipientName = invoiceObj.user.fullName;
     }
 
     if (invoiceObj.appointment && invoiceObj.appointment.service) {
