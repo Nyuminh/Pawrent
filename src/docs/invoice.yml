@@ -274,6 +274,14 @@ paths:
                 address:
                   type: string
                   description: Địa chỉ giao hàng/thanh toán
+                recipientPhone:
+                  type: string
+                  description: Số điện thoại người nhận hàng (Mặc định lấy từ user đang đăng nhập)
+                  example: "0901234567"
+                recipientName:
+                  type: string
+                  description: Tên người nhận hàng (Mặc định lấy từ user đang đăng nhập)
+                  example: "Nguyễn Văn Khách"
                 dueDate:
                   type: string
                   format: date
@@ -668,6 +676,12 @@ components:
         address:
           type: string
           description: Địa chỉ giao hàng/thanh toán
+        recipientPhone:
+          type: string
+          description: Số điện thoại người nhận hàng (Nổi ở ngoài Root)
+        recipientName:
+          type: string
+          description: Tên người nhận hàng (Nổi ở ngoài Root)
         appointment:
           type: object
           description: Chi tiết appointment nếu hóa đơn là cho appointment
