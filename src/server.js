@@ -20,7 +20,7 @@ const app = express();
 // Trust Vercel proxy (needed for express-rate-limit on Vercel)
 app.set('trust proxy', 1);
 
-// Helmet - secure HTTP headers
+// Helmet - secure HTTP headers (Disable strict policies to allow Firebase Web Test scripts and Popups)
 app.use(helmet());
 
 // CORS
@@ -34,6 +34,7 @@ app.use(
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   })
 );
+
 
 // Rate limiting
 const limiter = rateLimit({
