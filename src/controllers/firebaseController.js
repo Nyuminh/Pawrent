@@ -210,3 +210,45 @@ exports.logCrash = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    5. List all Firebase Auth users (Admin SDK)
+// @route   GET /api/v1/firebase/users
+// @access  Private/Admin
+exports.listFirebaseUsers = async (req, res, next) => {
+    try {
+        const maxResults = Math.min(Number(req.query.limit) || 100, 1000);
+        const pageToken = req.query.pageToken || undefined;
+
+        // Firebase Admin SDK: listUsers trả về tối đa 1000 user mỗi lần gọi
+        const listUsersResult = await getAuth(app).listUsers(maxResults, pageToken);
+
+        const users = listUsersResult.users.map((userRecord) => ({
+            uid: userRecord.uid,
+            email: userRecord.email || null,
+            displayName: userRecord.displayName || null,
+            photoURL: userRecord.photoURL || null,
+            phoneNumber: userRecord.phoneNumber || null,
+            emailVerified: userRecord.emailVerified,
+            disabled: userRecord.disabled,
+            createdAt: userRecord.metadata.creationTime,
+            lastSignedIn: userRecord.metadata.lastSignInTime,
+            providerData: userRecord.providerData.map((p) => ({
+                providerId: p.providerId,
+                email: p.email,
+                displayName: p.displayName,
+            })),
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            // nextPageToken dùng để gọi trang tiếp theo (pagination)
+            nextPageToken: listUsersResult.pageToken || null,
+            data: users,
+        });
+    } catch (error) {
+        console.error('List Firebase Users Error:', error);
+        next(error);
+    }
+};
+
