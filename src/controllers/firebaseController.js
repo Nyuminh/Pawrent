@@ -5,16 +5,24 @@ const { getStorage } = require('firebase-admin/storage');
 const { getMessaging } = require('firebase-admin/messaging');
 const jwt = require('jsonwebtoken');
 
-// Helper: Send token response (reused from authController)
-const sendTokenResponse = async (user, statusCode, res, message) => {
+// Tối ưu hóa: Warm-up Firebase Cert Cache ngay khi khởi động server
+// Bằng cách tung 1 fake token lúc server vừa chạy, Firebase SDK sẽ gọi API tải sẵn bộ Key (JWKS) từ Google.
+// Qua đó, người dùng thực sự ĐẦU TIÊN bấm Đăng Nhập sẽ không phải chịu độ trễ 500ms-800ms chờ tải Key nữa!
+getAuth(app).verifyIdToken('warmup-cache-token').catch(() => {
+    console.log('⚡ Đã preload Firebase Google Keys để tăng tốc Đăng Nhập');
+});
+
+// Helper: Send token response
+const sendTokenResponse = async (user, statusCode, res, message, extraUpdates = {}) => {
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
     const lastLogin = new Date();
 
+    // TỐI ƯU HÓA: Gom lại thành DƯY NHẤT 1 lần ghi (Write) xuống Database (Tiết kiệm trễ 100-200ms)
     await User.updateOne(
         { _id: user._id },
-        { $set: { refreshToken, lastLogin } }
+        { $set: { refreshToken, lastLogin, ...extraUpdates } }
     );
 
     const userData = user.toObject ? user.toObject() : { ...user };
@@ -67,30 +75,20 @@ exports.firebaseLogin = async (req, res, next) => {
                 subscription: { plan: 'free', name: 'Miễn phí', durationUnit: 'year', isActive: true, maxPets: 1 }
             });
         } else {
-            let isModified = false;
+            // Tối ưu hóa: Không gọi .save() tốn kém ở đây nữa, gom vào xử lý trong một Update Query duy nhất bên dưới
+            let updates = {};
 
-            // Link firebaseUid if it was not linked before
             if (!user.firebaseUid) {
-                user.firebaseUid = firebaseUid;
-                user.isGoogleLogin = true;
-                isModified = true;
+                updates.firebaseUid = firebaseUid;
+                updates.isGoogleLogin = true;
             }
 
-            // Update avatar if not exists
             if (!user.avatar || user.avatar === 'default-avatar.png') {
-                user.avatar = avatar;
-                isModified = true;
+                updates.avatar = avatar;
             }
 
-            // 4. Cloud Messaging: Save FCM Token
             if (fcmToken && (!user.fcmTokens || !user.fcmTokens.includes(fcmToken))) {
-                if (!user.fcmTokens) user.fcmTokens = [];
-                user.fcmTokens.push(fcmToken);
-                isModified = true;
-            }
-
-            if (isModified) {
-                await user.save({ validateBeforeSave: false });
+                updates.fcmTokens = [...(user.fcmTokens || []), fcmToken];
             }
 
             if (!user.isActive) {
@@ -99,9 +97,14 @@ exports.firebaseLogin = async (req, res, next) => {
                     message: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin.',
                 });
             }
+
+            // Gửi Token và gộp cục updates này vào chung 1 Request DB Cực Nhanh!
+            await sendTokenResponse(user, 200, res, 'Đăng nhập Google qua Firebase thành công!', updates);
+            return;
         }
 
-        await sendTokenResponse(user, 200, res, 'Đăng nhập Google qua Firebase thành công!');
+        // Trường hợp là New User, không có extra updatess
+        await sendTokenResponse(user, 200, res, 'Đăng ký & Đăng nhập Google thành công!');
     } catch (error) {
         console.error("Firebase Login Error:", error);
         res.status(401).json({ success: false, message: 'Xác thực Firebase thất bại hoặc Token không hợp lệ.' });

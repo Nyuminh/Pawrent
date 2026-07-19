@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // Helper: Send token response
-const sendTokenResponse = async (user, statusCode, res, message) => {
+const sendTokenResponse = async (user, statusCode, res, message, extraUpdates = {}) => {
   // Generate tokens manually to support lean objects
   const accessToken = jwt.sign(
     { id: user._id, role: user.role },
@@ -17,10 +17,11 @@ const sendTokenResponse = async (user, statusCode, res, message) => {
 
   const lastLogin = new Date();
 
-  // Save refresh token using updateOne (much faster than save())
+  // TỐI ƯU HÓA: Gom chung tất cả các lệnh cập nhật vào 1 Query duy nhất
+  const fullUpdates = { refreshToken, lastLogin, ...extraUpdates };
   await User.updateOne(
     { _id: user._id },
-    { $set: { refreshToken, lastLogin } }
+    { $set: fullUpdates }
   );
 
   // Remove sensitive fields
@@ -310,14 +311,14 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // Re-hash old passwords to lower cost (10) for faster future logins
+    // Gộp lệnh Update Hash và Update Token vào chung 1 Request DB
+    let extraUpdates = {};
     if (user.password && (user.password.startsWith('$2a$12$') || user.password.startsWith('$2b$12$'))) {
       const salt = await bcrypt.genSalt(10);
-      const newHash = await bcrypt.hash(password, salt);
-      await User.updateOne({ _id: user._id }, { $set: { password: newHash } });
+      extraUpdates.password = await bcrypt.hash(password, salt);
     }
 
-    await sendTokenResponse(user, 200, res, 'Đăng nhập thành công!');
+    await sendTokenResponse(user, 200, res, 'Đăng nhập thành công!', extraUpdates);
   } catch (error) {
     next(error);
   }
@@ -599,19 +600,25 @@ exports.googleLogin = async (req, res, next) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name: fullName, picture: avatar } = payload;
 
-    // Check if user exists by googleId
-    let user = await User.findOne({ googleId });
+    // Chuyển sang dùng .lean() để bỏ qua cơ chế dựng Schema nặng nề của Mongoose
+    let user = await User.findOne({ googleId }).lean();
+    let extraUpdates = {};
 
     if (!user) {
-      // Check if user exists by email (to link accounts if they already registered with same email)
-      user = await User.findOne({ email });
+      // Tìm bằng email
+      user = await User.findOne({ email }).lean();
       if (user) {
+        // Tối ưu hóa: Thu thập dữ liệu cập nhật, chờ gửi chung 1 lượt
+        extraUpdates.googleId = googleId;
+        extraUpdates.isGoogleLogin = true;
+
         user.googleId = googleId;
         user.isGoogleLogin = true;
+
         if (!user.avatar || user.avatar === 'default-avatar.png') {
+          extraUpdates.avatar = avatar;
           user.avatar = avatar;
         }
-        await user.save({ validateBeforeSave: false }); // skip validators if any
       } else {
         // Create new user
         user = await User.create({
@@ -623,6 +630,7 @@ exports.googleLogin = async (req, res, next) => {
           role: 'user',
           subscription: { plan: 'free', name: 'Miễn phí', durationUnit: 'year', isActive: true, maxPets: 1 }
         });
+        // Create trả về document chứ không phải lean object, nên toObject sẽ tự handle
       }
     } else if (!user.isActive) {
       return res.status(401).json({
@@ -631,7 +639,7 @@ exports.googleLogin = async (req, res, next) => {
       });
     }
 
-    await sendTokenResponse(user, 200, res, 'Đăng nhập Google thành công!');
+    await sendTokenResponse(user, 200, res, 'Đăng nhập Google thành công!', extraUpdates);
   } catch (error) {
     console.error("Google Login Error:", error);
     res.status(401).json({ success: false, message: 'Xác thực Google thất bại hoặc Token không hợp lệ.' });
