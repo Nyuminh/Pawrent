@@ -1,0 +1,132 @@
+tags:
+  - name: Firebase
+    description: API tích hợp thông tin dịch vụ nền tảng Firebase (Google Login, Storage, FCM, Crashlytics)
+
+paths:
+  /firebase/login:
+    post:
+      tags:
+        - Firebase
+      summary: Đăng nhập bằng Google qua Firebase
+      description: Nhận ID Token từ phía client sau khi người dùng thực hiện đăng nhập qua Firebase Auth, tiến hành xác thực và trả về Token truy cập của hệ thống. Đồng thời lưu trữ FCM token cho chức năng Push Notification.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idToken
+              properties:
+                idToken:
+                  type: string
+                  description: Google ID Token nhận được sau khi login Firebase.
+                fcmToken:
+                  type: string
+                  description: Cloud Messaging Token dùng cho việc nhận push notification (tuỳ chọn).
+      responses:
+        '200':
+          description: Đăng nhập thành công và trả về thông tin user cùng accessToken.
+        '400':
+          description: Vui lòng cung cấp Google ID Token.
+        '401':
+          description: Xác thực Firebase thất bại hoặc token không hợp lệ (hết hạn).
+
+  /firebase/upload:
+    post:
+      tags:
+        - Firebase
+      summary: Upload file lên Firebase Storage
+      description: Upload avatar hoặc file media bất kỳ lên Firebase Storage.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File ảnh/video cần upload.
+      responses:
+        '200':
+          description: Upload file thành công và lấy public URL.
+        '400':
+          description: Chưa cung cấp file hơp lệ.
+        '500':
+          description: Lỗi máy chủ hoặc Firebase Storage chặn kết nối.
+
+  /firebase/send-notification:
+    post:
+      tags:
+        - Firebase
+      summary: Gửi thông báo Push Notification (Cloud Messaging)
+      description: Admin hoặc hệ thống sử dụng API này để gửi thông báo FCM theo userId. FCM Tokens đã được lưu vào mảng `fcmTokens` của user khi họ login/cập nhật.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - title
+                - body
+              properties:
+                userId:
+                  type: string
+                  description: ID của User cần gửi thông báo
+                title:
+                  type: string
+                  description: Tiêu đề thông báo
+                body:
+                  type: string
+                  description: Nội dung thông báo
+                data:
+                  type: object
+                  description: Payload kèm dữ liệu ẩn (tùy chọn).
+      responses:
+        '200':
+          description: Yêu cầu gửi notification thành công.
+        '404':
+          description: Không tìm thấy User hoặc người dùng chưa có thiết bị đăng ký nhận thông báo (Không có fcmToken).
+        '500':
+          description: Lỗi khi tương tác Firebase.
+
+  /firebase/log-crash:
+    post:
+      tags:
+        - Firebase
+      summary: Ghi nhận log crash
+      description: Ghi nhận lỗi gặp phải từ phía client truyền lên. Note - Firebase Crashlytics là SDK tích hợp ở Client (không có API cho BE) nên hàm này nhận log hỗ trợ tracking thêm.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  description: Chi tiết Error / Exception.
+                platform:
+                  type: string
+                  description: Môi trường (Android/iOS/Web).
+                route:
+                  type: string
+                  description: Màn hình gặp lỗi.
+                userId:
+                  type: string
+                  description: ID người thao tác dính lỗi.
+      responses:
+        '200':
+          description: Server đã tiếp nhận và ghi console log.

@@ -49,10 +49,19 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    firebaseUid: {
+      type: String,
+      sparse: true,
+    },
     isGoogleLogin: {
       type: Boolean,
       default: false,
     },
+    fcmTokens: [
+      {
+        type: String,
+      }
+    ],
     avatar: {
       type: String,
       default: 'default-avatar.png',
