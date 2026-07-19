@@ -838,6 +838,13 @@ paths:
         403:
           description: Không có quyền xóa khách sạn này
         404:
+          description: Không tìm thấy khách sạn
+
+  /hotels/{hotelId}/occupancy:
+    get:
+      summary: Tình trạng phòng (Occupancy)
+      tags: [Hotels]
+      security:
         - bearerAuth: []
       parameters:
         - in: path
