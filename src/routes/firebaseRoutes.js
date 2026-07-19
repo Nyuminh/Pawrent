@@ -14,7 +14,8 @@ const {
     firebaseLogin,
     uploadToStorage,
     sendNotification,
-    logCrash
+    logCrash,
+    listFirebaseUsers
 } = require('../controllers/firebaseController');
 
 // Import authentication middleware if you want to protect certain routes
@@ -31,5 +32,8 @@ router.post('/send-notification', protect, authorize('admin', 'vet'), sendNotifi
 
 // 4. Crashlytics (dummy endpoint)
 router.post('/log-crash', logCrash);
+
+// 5. List Firebase Auth Users (Admin only)
+router.get('/users', protect, authorize('admin'), listFirebaseUsers);
 
 module.exports = router;

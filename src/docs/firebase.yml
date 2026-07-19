@@ -130,3 +130,105 @@ paths:
       responses:
         '200':
           description: Server đã tiếp nhận và ghi console log.
+
+  /firebase/users:
+    get:
+      tags:
+        - Firebase
+      summary: Lấy danh sách người dùng từ Firebase Auth
+      description: |
+        Sử dụng Firebase Admin SDK để liệt kê tất cả tài khoản đang tồn tại trên Firebase Authentication.
+
+        **Phân quyền:** Chỉ `admin` mới được gọi API này.
+
+        **Phân trang (Cursor-based):**
+        - Mỗi lần gọi trả về tối đa `limit` user (mặc định 100, tối đa 1000).
+        - Nếu response có `nextPageToken`, truyền nó vào query param `?pageToken=...` để lấy trang tiếp theo.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Số lượng user mỗi trang (tối đa 1000)
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+        - name: pageToken
+          in: query
+          description: Token để lấy trang tiếp theo (lấy từ nextPageToken của response trước)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lấy danh sách thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    description: Số lượng user trong trang này
+                    example: 50
+                  nextPageToken:
+                    type: string
+                    nullable: true
+                    description: Token để gọi trang tiếp theo (null nếu đã hết)
+                    example: "eyJhbGciOi..."
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        uid:
+                          type: string
+                          example: "abc123xyz"
+                        email:
+                          type: string
+                          nullable: true
+                          example: "user@gmail.com"
+                        displayName:
+                          type: string
+                          nullable: true
+                          example: "Nguyễn Văn A"
+                        photoURL:
+                          type: string
+                          nullable: true
+                        phoneNumber:
+                          type: string
+                          nullable: true
+                        emailVerified:
+                          type: boolean
+                          example: true
+                        disabled:
+                          type: boolean
+                          example: false
+                        createdAt:
+                          type: string
+                          format: date-time
+                        lastSignedIn:
+                          type: string
+                          format: date-time
+                        providerData:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              providerId:
+                                type: string
+                                example: "google.com"
+                              email:
+                                type: string
+                              displayName:
+                                type: string
+        '401':
+          description: Chưa đăng nhập
+        '403':
+          description: Không có quyền (chỉ admin)
+        '500':
+          description: Lỗi Firebase Admin SDK
+
