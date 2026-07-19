@@ -48,7 +48,8 @@ const InvoiceSchema = new mongoose.Schema(
     subscriptionPlan: { type: String },
     payment: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment' },
     address: { type: String, trim: true },
-    phone: { type: String, trim: true }, // Lưu trực tiếp SĐT giao hàng của khách
+    recipientPhone: { type: String, trim: true }, // Số điện thoại người nhận hàng
+    recipientName: { type: String, trim: true }, // Tên người nhận hàng
     dueDate: Date,
   },
   { timestamps: true }
