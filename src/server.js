@@ -109,6 +109,7 @@ app.use('/api/v1/admin', require('./routes/adminRoutes'));
 app.use('/api/v1/uploads', require('./routes/uploadRoutes'));
 app.use('/api/v1/payments', require('./routes/paymentRoutes'));
 app.use('/api/v1/invoices', require('./routes/invoiceRoutes'));
+app.use('/api/v1/firebase', require('./routes/firebaseRoutes'));
 // Swagger UI Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   explorer: true,
@@ -141,6 +142,7 @@ app.get('/', (req, res) => {
       subscription: '/api/v1/subscription',
       admin: '/api/v1/admin',
       uploads: '/api/v1/uploads',
+      firebase: '/api/v1/firebase',
     },
   });
 });
