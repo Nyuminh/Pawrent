@@ -1,4 +1,5 @@
-const User = require('../models/User');
+﻿const User = require('../models/User');
+const FcmReport = require('../models/FcmReport');
 const app = require('../config/firebase');
 const { getAuth } = require('firebase-admin/auth');
 const { getStorage } = require('firebase-admin/storage');
@@ -13,6 +14,17 @@ const jwt = require('jsonwebtoken');
 getAuth(app).verifyIdToken('warmup-cache-token').catch(() => {
     console.log('⚡ Đã preload Firebase Google Keys để tăng tốc Đăng Nhập');
 });
+
+// Helper: Lấy chuỗi ngày YYYY-MM-DD theo chuẩn múi giờ Thực Tế của Project (Thường là Asia/Ho_Chi_Minh)
+// Giúp cho dữ liệu hiển thị API hoàn toàn khớp lịch với Firebase Console tại Việt Nam (Không bị lệch 14 tiếng)
+const getLocalDateString = (d) => {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(d);
+};
 
 // Helper: Send token response
 const sendTokenResponse = async (user, statusCode, res, message, extraUpdates = {}) => {
@@ -122,33 +134,62 @@ exports.uploadToStorage = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Vui lòng chọn một file để upload.' });
         }
 
-        const bucket = getStorage(app).bucket();
-        const fileName = `uploads/${Date.now()}_${req.file.originalname}`;
-        const file = bucket.file(fileName);
-
-        await file.save(req.file.buffer, {
-            metadata: {
-                contentType: req.file.mimetype,
-            },
-            public: true, // Make file public if bucket allows it
+        // Chuyển hướng lưu file sang Cloudinary vì Firebase Storage chưa được kích hoạt
+        const cloudinary = require('cloudinary').v2;
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET
         });
 
-        // You can get the signed URL or public URL
-        // Public URL format (if bucket is public):
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        const streamUpload = (req) => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    { resource_type: 'auto', folder: 'pawrent_documents' },
+                    (error, result) => {
+                        if (result) {
+                            resolve(result);
+                        } else {
+                            reject(error);
+                        }
+                    }
+                );
+                const { Readable } = require('stream');
+                Readable.from(req.file.buffer).pipe(stream);
+            });
+        };
+
+        const result = await streamUpload(req);
+
+        // Lưu thông tin PDF (Metadata) vào Firestore Database để GET ra sau này
+        try {
+            const { getFirestore } = require('firebase-admin/firestore');
+            const firebaseApp = require('../config/firebase');
+            await getFirestore(firebaseApp).collection('pdf_documents').add({
+                name: req.file.originalname,
+                url: result.secure_url,
+                public_id: result.public_id,
+                size: result.bytes,
+                format: result.format,
+                createdAt: new Date().toISOString()
+            });
+        } catch (dbErr) {
+            console.error('Lưu metadata PDF thất bại (Sếp nhớ bật Firestore nha):', dbErr.message);
+        }
 
         res.status(200).json({
             success: true,
-            message: 'Upload file lên Firebase Storage thành công!',
+            message: 'Né mượt Firebase Storage! Upload thành công lên Cloudinary!',
             data: {
-                url: publicUrl,
-                fileName
+                url: result.secure_url,
+                public_id: result.public_id,
+                fileName: result.public_id
             }
         });
 
     } catch (error) {
-        console.error("Firebase Storage Error:", error);
-        res.status(500).json({ success: false, message: 'Lỗi khi upload file lên Firebase Storage.' });
+        console.error("Cloudinary Storage Error:", error);
+        res.status(500).json({ success: false, message: 'Lỗi khi upload file lên Cloudinary.' });
     }
 };
 
@@ -172,11 +213,19 @@ exports.sendNotification = async (req, res, next) => {
             notification: { title, body },
             data: data || {},
             tokens: user.fcmTokens,
+            fcmOptions: { analyticsLabel: 'direct_msg_v1' }
         };
 
         const response = await getMessaging(app).sendEachForMulticast(message);
 
-        // Optionally handle failed tokens (e.g., remove invalid ones from DB)
+        // Ghi NGAY sends vào LocalDB = số tokens đã dispatch (real-time)
+        // Không cần check successCount vì Firebase Console cũng tính cả lần gửi bị lỗi token
+        const dateStr = getLocalDateString(new Date());
+        await FcmReport.findOneAndUpdate(
+            { date: dateStr },
+            { $inc: { sends: user.fcmTokens.length } },
+            { upsert: true, new: true }
+        );
 
         res.status(200).json({
             success: true,
@@ -226,12 +275,22 @@ exports.sendBroadcastNotification = async (req, res, next) => {
                 notification: { title, body },
                 data: data || {},
                 tokens: chunk,
+                fcmOptions: { analyticsLabel: 'broadcast_msg_v1' }
             };
 
             const response = await messaging.sendEachForMulticast(message);
             successCount += response.successCount;
             failureCount += response.failureCount;
         }
+
+        // Ghi NGAY sends = tổng tokens đã dispatch (real-time), không phụ thuộc successCount
+        // successCount = 0 vẫn ghi (token stale/invalid vẫn là 1 lần gửi thật)
+        const dateStr = getLocalDateString(new Date());
+        await FcmReport.findOneAndUpdate(
+            { date: dateStr },
+            { $inc: { sends: allTokens.length } },
+            { upsert: true, new: true }
+        );
 
         res.status(200).json({
             success: true,
@@ -248,7 +307,37 @@ exports.sendBroadcastNotification = async (req, res, next) => {
     }
 };
 
-// @desc    4. Crashlytics: Log custom crash from backend (or acknowledge client crash)
+// @desc    DEBUG: Xem thang FcmReport trong MongoDB
+// @route   GET /api/v1/firebase/fcm-debug
+// @access  Public (tam thoi de debug)
+exports.debugFcmReport = async (req, res) => {
+    try {
+        const FcmReport = require('../models/FcmReport');
+        const today = getLocalDateString(new Date());
+        const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
+
+        // Lay 10 ban ghi moi nhat
+        const recent = await FcmReport.find().sort({ date: -1 }).limit(10).lean();
+        const todayDoc = await FcmReport.findOne({ date: today }).lean();
+        const yesterdayDoc = await FcmReport.findOne({ date: yesterday }).lean();
+
+        res.status(200).json({
+            success: true,
+            debug: {
+                serverTime: new Date().toISOString(),
+                todayStr: today,
+                yesterdayStr: yesterday,
+                todayRecord: todayDoc,
+                yesterdayRecord: yesterdayDoc,
+                last10Records: recent
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+
 // @route   POST /api/v1/firebase/log-crash
 // @access  Public
 // Note: Firebase Crashlytics is a client-side SDK. There is no official backend API to log crashes directly into Crashlytics.
@@ -377,43 +466,176 @@ exports.updateRemoteConfig = async (req, res, next) => {
     }
 };
 
-// @desc    7. FCM Dashboard: Thống kê báo cáo Cloud Messaging (Mock)
+// --- TỐI ƯU HOÁ API: Singleton ---
+// Client Instances (Singleton) giúp giảm tải khởi tạo API Client, nhưng Realtime Fetching vẫn sẽ xảy ra mỗi Request!
+// Client Instances (Singleton) để tái sử dụng thay vì khởi tạo lại tốn tài nguyên
+let sharedFcmAuthClient = null;
+let sharedGa4Client = null;
+
+
+// @desc    7. FCM Dashboard: Báo cáo số liệu Cloud Messaging (Kết hợp LocalDB Real-time + FCM Delivery API Lịch sử)
 // @route   GET /api/v1/firebase/fcm-board
 // @access  Public
 exports.getFcmBoard = async (req, res, next) => {
     try {
+        const { GoogleAuth } = require('google-auth-library');
+        const path = require('path');
+        const fs = require('fs');
+        const saPath = path.join(process.cwd(), 'src/config/serviceAccountKey.json');
+
+        let projectId = null;
+        if (fs.existsSync(saPath)) {
+            projectId = require(saPath).project_id;
+        }
+
+        // ===== 1. Lấy dữ liệu Real-time từ MongoDB (FcmReport) =====
+        const startDateStr = getLocalDateString(new Date(Date.now() - 90 * 86400000));
+        const FcmReport = require('../models/FcmReport');
+        const reports = await FcmReport.find({ date: { $gte: startDateStr } }).lean();
+        const localMap = {};
+        reports.forEach(r => { localMap[r.date] = r; });
+
+        // ===== 2. Lấy dữ liệu Historical từ FCM Data API (Delay 3 ngày) =====
+        const fcmApiByDate = {};
+        if (projectId) {
+            try {
+                if (!sharedFcmAuthClient) {
+                    const auth = new GoogleAuth({
+                        keyFilename: saPath,
+                        scopes: ['https://www.googleapis.com/auth/cloud-platform']
+                    });
+                    sharedFcmAuthClient = await auth.getClient();
+                }
+                const appsRes = await sharedFcmAuthClient.request({
+                    url: `https://firebase.googleapis.com/v1beta1/projects/${projectId}/androidApps`
+                });
+                if (appsRes.data?.apps?.length > 0) {
+                    await Promise.all(appsRes.data.apps.map(async (appItem) => {
+                        try {
+                            const fcmRes = await sharedFcmAuthClient.request({
+                                url: `https://fcmdata.googleapis.com/v1beta1/projects/${projectId}/androidApps/${appItem.appId}/deliveryData`
+                            });
+                            (fcmRes.data?.androidDeliveryData || []).forEach(item => {
+                                if (!item.date || !item.data) return;
+                                const d = item.date;
+                                const dStr = `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
+                                if (!fcmApiByDate[dStr]) fcmApiByDate[dStr] = { sends: 0, received: 0 };
+                                const sends = parseInt(item.data.countMessagesAccepted) || 0;
+                                fcmApiByDate[dStr].sends += sends;
+                                const pDelivered = item.data.deliveryPerformance?.percentDelivered || 0;
+                                fcmApiByDate[dStr].received += Math.round(sends * pDelivered);
+                            });
+                        } catch (e) {
+                            // Ignored per app error
+                        }
+                    }));
+                }
+            } catch (e) {
+                console.error('[FCM API Error]:', e.message);
+                sharedFcmAuthClient = null;
+            }
+        }
+
+        // ===== 2.5 Lấy thêm Historical Impressions và Open từ GA4 =====
+        const ga4ByDate = {};
+        const { BetaAnalyticsDataClient } = require('@google-analytics/data');
+        const propertyId = process.env.GA4_PROPERTY_ID;
+        if (propertyId) {
+            try {
+                if (!sharedGa4Client) {
+                    const options = process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY
+                        ? { credentials: { client_email: process.env.FIREBASE_CLIENT_EMAIL, private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') } }
+                        : { keyFilename: saPath };
+                    sharedGa4Client = new BetaAnalyticsDataClient(options);
+                }
+                const [gaRes] = await sharedGa4Client.runReport({
+                    property: `properties/${propertyId}`,
+                    dateRanges: [{ startDate: '90daysAgo', endDate: 'today' }],
+                    dimensions: [{ name: 'eventName' }, { name: 'date' }],
+                    metrics: [{ name: 'eventCount' }],
+                    dimensionFilter: {
+                        filter: {
+                            fieldName: 'eventName',
+                            inListFilter: { values: ['notification_receive', 'notification_open', 'notification_foreground'] }
+                        }
+                    }
+                });
+                (gaRes?.rows || []).forEach(row => {
+                    const eventName = row.dimensionValues[0].value;
+                    const dateRaw = row.dimensionValues[1].value;
+                    const dStr = `${dateRaw.substring(0, 4)}-${dateRaw.substring(4, 6)}-${dateRaw.substring(6, 8)}`;
+                    const count = parseInt(row.metricValues[0].value) || 0;
+                    if (!ga4ByDate[dStr]) ga4ByDate[dStr] = { receive: 0, foreground: 0, openCount: 0 };
+                    if (eventName === 'notification_receive') ga4ByDate[dStr].receive += count;
+                    if (eventName === 'notification_foreground') ga4ByDate[dStr].foreground += count;
+                    if (eventName === 'notification_open') ga4ByDate[dStr].openCount += count;
+                });
+            } catch (e) {
+                console.error('[GA4 API Error]:', e.message);
+                sharedGa4Client = null;
+            }
+        }
+
+        // ===== 3. Tổng hợp 90 ngày (Ưu tiên MongoDB LocalDB vì Real-time) =====
+        const chartData = [];
+        let totalSends = 0, totalReceived = 0, totalImpressions = 0, totalOpened = 0;
+
+        for (let i = 89; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dStr = getLocalDateString(d);
+
+            const loc = localMap[dStr];
+            const api = fcmApiByDate[dStr];
+            const ga4 = ga4ByDate[dStr];
+
+            // GA4 Impressions là receive trừ đi foreground (nếu là số dương)
+            const ga4Impressions = ga4 ? Math.max(0, ga4.receive - ga4.foreground) : 0;
+
+            // Real-time từ LocalDB + bù những ngày cũ từ API (FCM, GA4) nếu LocalDB chưa track
+            const sends = Math.max(loc?.sends || 0, api?.sends || 0);
+            const received = Math.max(loc?.received || 0, api?.received || 0, ga4?.receive || 0);
+            const impressions = Math.max(loc?.impressions || 0, ga4Impressions); // FIX ISSUES
+            const openCount = Math.max(loc?.openCount || 0, ga4?.openCount || 0); // LẤY GA4 OPENS LÀM NGUỒN CHÍNH XÁC
+
+
+            totalSends += sends;
+            totalReceived += received;
+            totalImpressions += impressions;
+            totalOpened += openCount;
+
+            chartData.push({ date: dStr, sends, received, impressions, openCount });
+        }
+
         res.status(200).json({
             success: true,
-            message: 'Lấy dữ liệu thống kê FCM Reports thành công!',
+            message: 'FCM Report: Real-time (MongoDB) + Historical (Firebase API)',
             data: {
-                totals: {
-                    sends: 27,
-                    received: 0,
-                    impressions: 0,
-                    openCount: 0
-                },
-                // Dữ liệu mô phỏng cho biểu đồ (Chart)
-                chartData: [
-                    { date: '2026-07-15', sends: 0, received: 0, impressions: 0, openCount: 0 },
-                    { date: '2026-07-16', sends: 2, received: 0, impressions: 0, openCount: 0 },
-                    { date: '2026-07-17', sends: 5, received: 0, impressions: 0, openCount: 0 },
-                    { date: '2026-07-18', sends: 0, received: 0, impressions: 0, openCount: 0 },
-                    { date: '2026-07-19', sends: 20, received: 0, impressions: 0, openCount: 0 }
-                ]
+                totals: { sends: totalSends, received: totalReceived, impressions: totalImpressions, openCount: totalOpened },
+                chartData
             }
         });
     } catch (error) {
-        console.error("FCM Board Error:", error);
-        res.status(500).json({ success: false, message: 'Lỗi khi lấy thông tin báo cáo FCM.' });
+        console.error('FCM Board Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy báo cáo FCM.' });
     }
 };
 
-// @desc    8. Analytics: Lấy toàn bộ data Realtime từ Google Analytics (Firebase Analytics)
+
+// ==========================================
+// CƠ CHẾ MEMORY CACHE (Global RAM) GIÚP TẢI SIÊU TỐC API ANALYTICS
+// ==========================================
+let ga4Cache = {
+    data: null,
+    lastFetchTime: 0
+};
+
+// @desc    8. Analytics: Lấy toàn bộ data mới nhất từ Google Analytics (Firebase Analytics)
 // @route   GET /api/v1/firebase/analytics
 // @access  Public
 exports.getAnalyticsData = async (req, res, next) => {
     try {
-        const propertyId = process.env.GA4_PROPERTY_ID; // Cần cấu hình GA4_PROPERTY_ID trong .env
+        const propertyId = process.env.GA4_PROPERTY_ID;
 
         if (!propertyId) {
             return res.status(400).json({
@@ -422,7 +644,6 @@ exports.getAnalyticsData = async (req, res, next) => {
             });
         }
 
-        // Khởi tạo thông tin xác thực cho Analytics API
         const options = {};
         if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
             options.credentials = {
@@ -438,87 +659,159 @@ exports.getAnalyticsData = async (req, res, next) => {
             }
         }
 
-        // Khởi tạo Client
         const analyticsDataClient = new BetaAnalyticsDataClient(options);
         const property = `properties/${propertyId}`;
+        const dateRanges = [{ startDate: '28daysAgo', endDate: 'yesterday' }];
 
-        // 1. By Location (Country / City)
-        const locationsPromise = analyticsDataClient.runRealtimeReport({
+        // Luôn gọi Realtime tươi (Rất nhanh ~100ms)
+        const realtimePromise = analyticsDataClient.runRealtimeReport({
             property,
-            dimensions: [{ name: 'country' }, { name: 'city' }],
             metrics: [{ name: 'activeUsers' }],
+            dimensions: [{ name: 'deviceCategory' }]
+        }).catch(err => {
+            console.error("Realtime Report Error:", err.message);
+            return [{ rows: [] }];
         });
 
-        // 2. By Device Category (Mobi/Desktop/Tablet)
-        const devicesPromise = analyticsDataClient.runRealtimeReport({
+        const [[realtimeResp]] = await Promise.all([realtimePromise]);
+
+        let realtimeActiveUsers = 0;
+        if (realtimeResp && realtimeResp.rows) {
+            realtimeActiveUsers = realtimeResp.rows.reduce((sum, row) => sum + (parseInt(row.metricValues[0].value) || 0), 0);
+        }
+
+        // KIỂM TRA MEMORY CACHE (Hạn sử dụng: 15 Phút) - Tăng tốc lên 0ms
+        const CACHE_TTL = 15 * 60 * 1000;
+
+        if (ga4Cache.data && (Date.now() - ga4Cache.lastFetchTime < CACHE_TTL)) {
+            // Nối dữ liệu Realtime mới nhất vào Bản Cache cũ
+            ga4Cache.data.realtimeData.usersInLast30Minutes = realtimeActiveUsers;
+
+            return res.status(200).json({
+                success: true,
+                message: 'Load Firebase Analytics siêu tốc từ RAM Cache (0ms)!',
+                data: ga4Cache.data
+            });
+        }
+
+        // ====== NẾU CHƯA CÓ CACHE (HOẶC HẾT HẠN) MỚI CHẠY TẢI NẶNG ======
+        const reqOverview = { property, dateRanges, metrics: [{ name: 'activeUsers' }, { name: 'newUsers' }, { name: 'userEngagementDuration' }, { name: 'eventCount' }] };
+        const reqLocations = { property, dateRanges, dimensions: [{ name: 'country' }], metrics: [{ name: 'activeUsers' }] };
+        const reqDevices = { property, dateRanges, dimensions: [{ name: 'operatingSystem' }], metrics: [{ name: 'activeUsers' }] };
+        const reqEvents = { property, dateRanges, dimensions: [{ name: 'eventName' }], metrics: [{ name: 'eventCount' }] };
+        const reqScreens = {
             property,
-            dimensions: [{ name: 'deviceCategory' }],
-            metrics: [{ name: 'activeUsers' }],
-        });
+            dateRanges,
+            dimensions: [{ name: 'unifiedScreenClass' }],
+            metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }, { name: 'eventCount' }, { name: 'bounceRate' }]
+        };
+        const reqActivity = { property, dateRanges, dimensions: [{ name: 'date' }], metrics: [{ name: 'active1DayUsers' }, { name: 'active7DayUsers' }, { name: 'active28DayUsers' }] };
 
-        // 3. By Event Name (Tracking Event Firebase phát sinh trong 30p qua)
-        const eventsPromise = analyticsDataClient.runRealtimeReport({
-            property,
-            dimensions: [{ name: 'eventName' }],
-            metrics: [{ name: 'eventCount' }],
-        });
-
-        // 4. By Screen Name
-        const screensPromise = analyticsDataClient.runRealtimeReport({
-            property,
-            dimensions: [{ name: 'unifiedScreenName' }],
-            metrics: [{ name: 'activeUsers' }, { name: 'screenPageViews' }],
-        });
-
-        // Chạy đồng thời cả 4 truy vấn để tăng tốc
         const [
+            [overviewResp],
             [locationsResp],
             [devicesResp],
             [eventsResp],
-            [screensResp]
-        ] = await Promise.all([locationsPromise, devicesPromise, eventsPromise, screensPromise]);
+            [screensResp],
+            [activityResp]
+        ] = await Promise.all([
+            analyticsDataClient.runReport(reqOverview),
+            analyticsDataClient.runReport(reqLocations),
+            analyticsDataClient.runReport(reqDevices),
+            analyticsDataClient.runReport(reqEvents),
+            analyticsDataClient.runReport(reqScreens),
+            analyticsDataClient.runReport(reqActivity)
+        ]);
 
-        // Helper Map Format Data
-        const parseSimple = (resp) => {
-            if (!resp.rows) return [];
+        const parseSimple = (resp, metricIndex = 0) => {
+            if (!resp || !resp.rows) return [];
             return resp.rows.map(r => ({
                 name: r.dimensionValues[0].value,
-                count: parseInt(r.metricValues[0].value)
+                count: parseInt(r.metricValues[metricIndex].value) || 0
             }));
         };
 
-        const locations = locationsResp.rows ? locationsResp.rows.map(r => ({
-            country: r.dimensionValues[0].value,
-            city: r.dimensionValues[1].value,
-            activeUsers: parseInt(r.metricValues[0].value)
-        })) : [];
+        let totalActiveUsers = 0, totalNewUsers = 0, totalEngagementDuration = 0, totalEventCount = 0;
+        if (overviewResp && overviewResp.rows && overviewResp.rows.length > 0) {
+            const row = overviewResp.rows[0];
+            totalActiveUsers = parseInt(row.metricValues[0].value) || 0;
+            totalNewUsers = parseInt(row.metricValues[1].value) || 0;
+            totalEngagementDuration = parseInt(row.metricValues[2].value) || 0;
+            totalEventCount = parseInt(row.metricValues[3].value) || 0;
+        }
 
-        const screens = screensResp.rows ? screensResp.rows.map(r => ({
+        let events = parseSimple(eventsResp);
+
+        // Loại bỏ các sự kiện rác (auto-collected data) không cần hiển thị
+        const spamEvents = ['user_engagement', 'session_start', 'os_update', 'app_exception', 'app_remove', 'app_clear_data', 'firebase_campaign', 'notification_foreground'];
+        const receiveCount = events.find(e => e.name === 'notification_receive')?.count || 0;
+        const foregroundCount = events.find(e => e.name === 'notification_foreground')?.count || 0;
+
+        events = events.filter(e => !spamEvents.includes(e.name));
+
+        if (receiveCount > 0 || foregroundCount > 0) {
+            events.push({ name: 'impressions', count: Math.max(0, receiveCount - foregroundCount) });
+        }
+
+        let activityOverTime = [];
+        if (activityResp && activityResp.rows) {
+            activityOverTime = activityResp.rows.map(r => ({
+                date: `${r.dimensionValues[0].value}`,
+                active1Day: parseInt(r.metricValues[0].value) || 0,
+                active7Days: parseInt(r.metricValues[1].value) || 0,
+                active30Days: parseInt(r.metricValues[2].value) || 0
+            })).sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        // Lấy danh sách Screens và lọc bỏ tab rác (chỉ lấy Class Name của Mobile App, loại bỏ Web URLs)
+        let parsedScreens = screensResp && screensResp.rows ? screensResp.rows.map(r => ({
             screenName: r.dimensionValues[0].value,
-            activeUsers: parseInt(r.metricValues[0].value),
-            screenPageViews: parseInt(r.metricValues[1].value)
+            screenPageViews: parseInt(r.metricValues[0].value) || 0,
+            activeUsers: parseInt(r.metricValues[1].value) || 0,
+            eventCount: parseInt(r.metricValues[2].value) || 0,
+            bounceRate: r.metricValues[3] ? (parseFloat(r.metricValues[3].value) * 100).toFixed(1) + '%' : '0.0%'
         })) : [];
 
-        const devices = parseSimple(devicesResp);
-        const events = parseSimple(eventsResp);
+        parsedScreens = parsedScreens.filter(s => {
+            const name = s.screenName;
+            if (!name || name === '(not set)') return false;
+            // Loại bỏ các màn hình Web (chứa dấu xuyệt, http, khoảng trống, dấu gạch)
+            if (name.includes('/') || name.includes('http') || name.includes('.') || name.includes('-') || name.includes(' ')) return false;
+            // Tên Class của Flutter App thường là PascalCase (Viết hoa chữ đầu, không dấu)
+            if (!/^[A-Z][a-zA-Z0-9]*$/.test(name)) return false;
+            return true;
+        });
 
-        // Tổng số Active User (lấy tổng từ Locations)
-        const totalActive = locations.reduce((sum, curr) => sum + curr.activeUsers, 0);
+        parsedScreens.sort((a, b) => b.screenPageViews - a.screenPageViews);
+
+        // TỔNG HỢP VÀ LƯU RAM CACHE
+        const finalData = {
+            realtimeData: { usersInLast30Minutes: realtimeActiveUsers },
+            overview: {
+                activeUsers_30Days: totalActiveUsers,
+                newUsers_30Days: totalNewUsers,
+                averageEngagementSeconds: totalActiveUsers > 0 ? parseFloat((totalEngagementDuration / totalActiveUsers).toFixed(2)) : 0,
+                totalEventCount_30Days: totalEventCount
+            },
+            userActivityOverTime: activityOverTime,
+            demographics: {
+                countries: parseSimple(locationsResp),
+                operatingSystems: parseSimple(devicesResp),
+            },
+            topScreens: parsedScreens,
+            eventscount: events
+        };
+
+        // Ghi lại Cache
+        ga4Cache.data = finalData;
+        ga4Cache.lastFetchTime = Date.now();
 
         res.status(200).json({
             success: true,
-            message: 'Lấy dữ liệu toàn cảnh Realtime Analytics thực tế thành công!',
-            data: {
-                overview: {
-                    totalActiveUsers: totalActive,
-                    totalEventsLogged: events.reduce((s, e) => s + e.count, 0)
-                },
-                locations,
-                devices,
-                screens,
-                events
-            }
+            message: 'Mô phỏng Firebase Overview Dashboard thành công (Fresh Fetch)!',
+            data: finalData
         });
+
     } catch (error) {
         console.error("Realtime Analytics Error:", error);
         res.status(500).json({
@@ -570,5 +863,170 @@ exports.deleteFirebaseUser = async (req, res, next) => {
     } catch (error) {
         console.error("Delete Firebase User Error:", error);
         res.status(500).json({ success: false, message: 'Lỗi khi xóa tài khoản Firebase.', error: error.message });
+    }
+};
+
+// @desc    11. Tracker: Tính lượt Received và Opened cho thông báo (Tùy chọn cho Client gọi API)
+// @route   POST /api/v1/firebase/track-notification
+// @access  Public
+exports.trackNotification = async (req, res, next) => {
+    try {
+        const { event } = req.body; // 'received', 'impressions' hoặc 'opened'
+
+        if (!['received', 'impressions', 'opened'].includes(event)) {
+            return res.status(400).json({ success: false, message: 'Loại sự kiện không hợp lệ, phải là "received", "impressions" hoặc "opened".' });
+        }
+
+        const dateStr = getLocalDateString(new Date());
+
+        let updateField = {};
+        if (event === 'received') updateField = { received: 1 };
+        else if (event === 'impressions') updateField = { impressions: 1 };
+        else updateField = { openCount: 1 };
+
+        await FcmReport.findOneAndUpdate(
+            { date: dateStr },
+            { $inc: updateField },
+            { upsert: true, new: true }
+        );
+
+        res.status(200).json({ success: true, message: 'Đã track thông báo thành công' });
+    } catch (error) {
+        console.error("Track Notification Error:", error);
+        res.status(500).json({ success: false, message: 'Lỗi khi track thông báo FCM.' });
+    }
+};
+
+
+// ==========================================
+// THÊM 1: QUẢN LÝ TÀI LIỆU PDF TRÊN FIREBASE STORAGE
+// ==========================================
+
+exports.getFirebaseDocuments = async (req, res, next) => {
+    try {
+        const { getFirestore } = require('firebase-admin/firestore');
+        const app = require('../config/firebase');
+        const snapshot = await getFirestore(app).collection('pdf_documents').orderBy('createdAt', 'desc').get();
+        const files = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            files.push({ id: doc.id, name: data.name, public_id: data.public_id, size: data.size, contentType: data.format, timeCreated: data.createdAt, publicUrl: data.url });
+        });
+        res.status(200).json({ success: true, message: 'Tải danh sách PDF từ Firestore thành công', count: files.length, data: files });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy dữ liệu PDF từ Firestore. (Sếp bật Firestore chưa?)' });
+    }
+};
+
+exports.deleteFirebaseDocument = async (req, res, next) => {
+    try {
+        const { fileName, public_id, id } = req.body;
+        const targetId = public_id || fileName;
+        if (targetId) {
+            const cloudinary = require('cloudinary').v2;
+            cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
+            await cloudinary.uploader.destroy(targetId);
+        }
+        if (id) {
+            const { getFirestore } = require('firebase-admin/firestore');
+            const app = require('../config/firebase');
+            await getFirestore(app).collection('pdf_documents').doc(id).delete();
+        }
+        res.status(200).json({ success: true, message: 'Đã dọn dẹp xoá PDF tận gốc trên Cloudinary & Firestore!' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Xóa Cloudinary thất bại.' });
+    }
+};
+
+// ==========================================
+// THÊM 2: HỆ THỐNG BÁO CÁO BUG ĐI THẲNG VÀO FIREBASE FIRESTORE
+// ==========================================
+
+exports.getFirebaseBugs = async (req, res, next) => {
+    try {
+        const { getFirestore } = require('firebase-admin/firestore');
+        const app = require('../config/firebase');
+        const db = getFirestore(app);
+
+        const snapshot = await db.collection('bug_reports').orderBy('createdAt', 'desc').get();
+        const bugs = [];
+        snapshot.forEach(doc => {
+            bugs.push({ id: doc.id, ...doc.data() });
+        });
+        res.status(200).json({ success: true, count: bugs.length, data: bugs });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi đọc Firestore. Sếp hãy vào check xem đã [Bật/Create] Cloud Firestore trong Firebase Console chưa nhé!' });
+    }
+};
+
+exports.reportFirebaseBug = async (req, res, next) => {
+    try {
+        const { title, description, priority, screenName } = req.body;
+        let images = [];
+        if (req.files && req.files.length > 0) {
+            const cloudinary = require('cloudinary').v2;
+            cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
+
+            // Dùng Promise.all để bắn Bơm Đa Luồng (Paralell) đẩy tốc độ Upload cực đại!
+            const uploadPromises = req.files.map(file => {
+                return new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream({ folder: 'pawrent_bugs' }, (error, result) => {
+                        if (result) resolve(result.secure_url); else reject(error);
+                    });
+                    const { Readable } = require('stream');
+                    Readable.from(file.buffer).pipe(stream);
+                });
+            });
+            images = await Promise.all(uploadPromises);
+        }
+
+        const { getFirestore } = require('firebase-admin/firestore');
+        const app = require('../config/firebase');
+        const newBug = {
+            title: title || 'Lỗi Ẩn Danh', description: description || 'Không có mô tả',
+            priority: priority || 'Medium', screenName: screenName || 'Unknown',
+            status: 'Pending', images, reportedBy: req.user ? req.user.id : 'Khách Test',
+            createdAt: new Date().toISOString()
+        };
+        const docRef = await getFirestore(app).collection('bug_reports').add(newBug);
+        res.status(201).json({ success: true, message: 'Đã báo cáo Bug lên thẳng Firestore Cloud (Ảnh dùng Cloudinary)!', data: { id: docRef.id, ...newBug } });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi Tạo Bug. Cảm phiền sếp Đảm Bảo đã Bật Firestore Database!' });
+    }
+};
+
+exports.updateFirebaseBugStatus = async (req, res, next) => {
+    try {
+        const { status, adminNotes } = req.body;
+        const { getFirestore } = require('firebase-admin/firestore');
+        const app = require('../config/firebase');
+        const db = getFirestore(app);
+
+        await db.collection('bug_reports').doc(req.params.id).update({
+            status,
+            adminNotes: adminNotes || '',
+            updatedAt: new Date().toISOString()
+        });
+
+        res.status(200).json({ success: true, message: `Bug đã chuyển trạng thái thành ${status} trên Firestore` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi Cập Nhật Firestore.' });
+    }
+};
+
+exports.deleteFirebaseBug = async (req, res, next) => {
+    try {
+        const { getFirestore } = require('firebase-admin/firestore');
+        const app = require('../config/firebase');
+        const db = getFirestore(app);
+        await db.collection('bug_reports').doc(req.params.id).delete();
+        res.status(200).json({ success: true, message: 'Đã diệt Bug khỏi thư viện Firestore hoàn toàn.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Xoá Firestore thất bại.' });
     }
 };

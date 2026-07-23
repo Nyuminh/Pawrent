@@ -390,3 +390,105 @@ paths:
           description: Lỗi kết nối Google Analytics Data API
 
 
+
+  /firebase/documents:
+    get:
+      summary: Lấy danh sách tài liệu PDF (Từ Cloud Storage)
+      tags: [Firebase]
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Xoá Document PDF (Trên Cloud Storage)
+      tags: [Firebase]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  example: 'uploads/abc.pdf'
+      responses:
+        '200':
+          description: OK
+
+  /firebase/bug-reports:
+    get:
+      summary: Khai xuất danh sách Báo cáo Bug (Firestore)
+      tags: [Firebase]
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Báo cáo Bug đính kèm đa phương tiện (Firestore + Storage)
+      tags: [Firebase]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+                screenName:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Chấp nhận
+
+  /firebase/bug-reports/{id}:
+    patch:
+      summary: Thay đổi trạng thái Bug (Admin/Firestore)
+      tags: [Firebase]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [Pending, In Progress, Resolved, Closed]
+                adminNotes:
+                  type: string
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Dọn xoá báo cáo Bug khỏi Firestore
+      tags: [Firebase]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
