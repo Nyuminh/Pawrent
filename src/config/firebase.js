@@ -11,13 +11,16 @@ let app;
 if (getApps().length === 0) {
     try {
         let credentialOptions;
+        let dynamicProjectId = process.env.FIREBASE_PROJECT_ID;
 
         if (fs.existsSync(serviceAccountPath1)) {
             const serviceAccount = require(serviceAccountPath1);
             credentialOptions = cert(serviceAccount);
+            dynamicProjectId = dynamicProjectId || serviceAccount.project_id;
         } else if (fs.existsSync(serviceAccountPath2)) {
             const serviceAccount = require(serviceAccountPath2);
             credentialOptions = cert(serviceAccount);
+            dynamicProjectId = dynamicProjectId || serviceAccount.project_id;
         } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
             credentialOptions = cert({
                 projectId: process.env.FIREBASE_PROJECT_ID,
@@ -30,7 +33,7 @@ if (getApps().length === 0) {
 
         app = initializeApp({
             credential: credentialOptions,
-            storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID || 'your-project-id'}.appspot.com`,
+            storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${dynamicProjectId}.appspot.com`,
         });
         console.log('🔥 Firebase Admin initialized successfully');
     } catch (error) {
